@@ -1,3 +1,5 @@
 ﻿prefix: +
+forcedChannels:
+	enrollments: null
 secrets:
 	discordBotToken: null
