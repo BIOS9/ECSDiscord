@@ -14,6 +14,9 @@ namespace ECSDiscord.Modules.Util
         /// </summary>
         public static bool CheckConfigChannel(this SocketCommandContext context, string category, IConfigurationRoot config)
         {
+            if ((context.User as IGuildUser).GuildPermissions.Administrator) // Allow administrators to use any command in any channel
+                return true;
+
             IConfigurationSection section = config.GetSection("forcedChannels").GetSection(category); // Get command category from config
 
             List<ulong> allowedChannels = new List<ulong>(); // List of allowed channels to show user
