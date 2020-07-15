@@ -43,6 +43,7 @@ namespace ECSDiscord
 
             var provider = services.BuildServiceProvider();
             provider.GetRequiredService<Services.CommandService>(); // Start command handler service
+            provider.GetRequiredService<Services.LoggingService>(); // Start command handler service
 
             await provider.GetRequiredService<Services.StartupService>().StartAsync(); // Run startup service
             await Task.Delay(-1); // Keep program from exiting

@@ -2,6 +2,7 @@
 using Discord.WebSocket;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -34,7 +35,10 @@ namespace ECSDiscord.Services
         {
             string discordToken = _config["secrets:discordBotToken"];     // Get the discord token from the config file
             if (string.IsNullOrWhiteSpace(discordToken))
+            {
+                Log.Fatal($"Cannot find bot token in configuration file. Exiting...");
                 throw new Exception("Bot token not found in configuration file.");
+            }
 
             await _discord.LoginAsync(TokenType.Bot, discordToken);     // Login to discord
             await _discord.StartAsync();                                // Connect to the websocket
