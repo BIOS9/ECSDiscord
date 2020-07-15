@@ -8,12 +8,10 @@ namespace ECSDiscord.BotModules
     [Name("Enrollments")]
     public class EnrollmentsModule : ModuleBase<SocketCommandContext>
     {
-        private readonly Discord.Commands.CommandService _service;
         private readonly IConfigurationRoot _config;
 
-        public EnrollmentsModule(Discord.Commands.CommandService service, IConfigurationRoot config)
+        public EnrollmentsModule(IConfigurationRoot config)
         {
-            _service = service;
             _config = config;
         }
 
