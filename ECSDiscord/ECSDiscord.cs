@@ -4,6 +4,7 @@ using Discord.WebSocket;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
+using System.IO;
 using System.Threading.Tasks;
 
 namespace ECSDiscord
@@ -20,6 +21,12 @@ namespace ECSDiscord
 
         public ECSDiscord()
         {
+            if(!File.Exists(ConfigurationFile))
+            {
+                Log.Fatal($"Cannot find configuration file: \"{ConfigurationFile}\" Exiting...");
+                throw new FileNotFoundException("Cannot find config file.", ConfigurationFile);
+            }
+
             // Add configuration from yaml file.
             Configuration = new ConfigurationBuilder()
                 .AddYamlFile(ConfigurationFile)

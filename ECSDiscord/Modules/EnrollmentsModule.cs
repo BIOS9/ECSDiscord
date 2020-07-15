@@ -10,6 +10,7 @@ namespace ECSDiscord.BotModules
     {
         [Command("join")]
         [Alias("enroll", "enrol")]
+        [RequireContext(ContextType.Guild)]
         public async Task JoinAsync()
         {
 
@@ -17,6 +18,7 @@ namespace ECSDiscord.BotModules
 
         [Command("leave")]
         [Alias("unenroll", "unenrol", "disenroll", "disenrol")]
+        [RequireContext(ContextType.Guild)]
         public async Task LeaveAsync()
         {
 
@@ -24,6 +26,7 @@ namespace ECSDiscord.BotModules
 
         [Command("toggle")]
         [Alias("course", "paper", "disenroll", "disenrol")]
+        [RequireContext(ContextType.Guild)]
         public async Task ToggleAsync()
         {
 
@@ -31,9 +34,10 @@ namespace ECSDiscord.BotModules
 
         [Command("courses")]
         [Alias("list")]
+        [RequireContext(ContextType.Guild)]
         public async Task CoursesAsync()
         {
-
+            //ReplyAsync
         }
     }
 }

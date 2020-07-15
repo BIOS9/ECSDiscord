@@ -34,7 +34,7 @@ namespace ECSDiscord.Services
         {
             string discordToken = _config["secrets:discordBotToken"];     // Get the discord token from the config file
             if (string.IsNullOrWhiteSpace(discordToken))
-                throw new Exception("Please enter bot token into the configuration file.");
+                throw new Exception("Bot token not found in configuration file.");
 
             await _discord.LoginAsync(TokenType.Bot, discordToken);     // Login to discord
             await _discord.StartAsync();                                // Connect to the websocket
