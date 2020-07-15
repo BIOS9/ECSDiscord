@@ -26,7 +26,7 @@ namespace ECSDiscord
         {
             if(!File.Exists(ConfigurationFile)) // Check that config file exists
             {
-                Log.Fatal($"Cannot find configuration file: \"{ConfigurationFile}\" Exiting...");
+                Log.Fatal("Cannot find configuration file: \"{configurationFile}\" Exiting...", ConfigurationFile);
                 throw new FileNotFoundException("Cannot find config file.", ConfigurationFile);
             }
 

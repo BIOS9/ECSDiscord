@@ -1,5 +1,6 @@
 ﻿using Discord;
 using Discord.Commands;
+using ECSDiscord.Modules.Util;
 using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
@@ -24,6 +25,8 @@ namespace ECSDiscord.Modules
         [Command("help")]
         public async Task HelpAsync()
         {
+            if (!Context.CheckConfigChannel("help", _config)) return; // Ensure command is only executed in allowed channels
+
             string prefix = _config["prefix"];
             var builder = new EmbedBuilder()
             {
@@ -65,6 +68,8 @@ namespace ECSDiscord.Modules
         [Command("help")]
         public async Task HelpAsync(string command)
         {
+            if (!Context.CheckConfigChannel("help", _config)) return; // Ensure command is only executed in allowed channels
+
             var result = _service.Search(Context, command);
 
             if (!result.IsSuccess)

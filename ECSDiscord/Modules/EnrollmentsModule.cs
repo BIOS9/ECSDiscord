@@ -1,4 +1,5 @@
 ﻿using Discord.Commands;
+using ECSDiscord.Modules.Util;
 using Microsoft.Extensions.Configuration;
 using System.Threading.Tasks;
 
@@ -22,7 +23,7 @@ namespace ECSDiscord.BotModules
         [Summary("Join a uni course channel.")]
         public async Task JoinAsync(params string[] courses)
         {
-
+            if (!Context.CheckConfigChannel("enrollments", _config)) return; // Ensure command is only executed in allowed channels
         }
 
         [Command("leave")]
@@ -31,7 +32,7 @@ namespace ECSDiscord.BotModules
         [Summary("Leave a uni course channel.")]
         public async Task LeaveAsync(params string[] courses)
         {
-
+            if (!Context.CheckConfigChannel("enrollments", _config)) return; // Ensure command is only executed in allowed channels
         }
 
         [Command("toggle")]
@@ -40,7 +41,7 @@ namespace ECSDiscord.BotModules
         [Summary("Join or leave a uni course channel.")]
         public async Task ToggleAsync(params string[] courses)
         {
-
+            if (!Context.CheckConfigChannel("enrollments", _config)) return; // Ensure command is only executed in allowed channels
         }
 
         [Command("courses")]
@@ -48,6 +49,7 @@ namespace ECSDiscord.BotModules
         [RequireContext(ContextType.Guild)]
         public async Task CoursesAsync()
         {
+            if (!Context.CheckConfigChannel("enrollments", _config)) return; // Ensure command is only executed in allowed channels
             //ReplyAsync
         }
     }
