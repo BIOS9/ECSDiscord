@@ -1,10 +1,6 @@
 ﻿using Discord;
-using Discord.Commands;
 using Discord.WebSocket;
 using Serilog;
-using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace ECSDiscord.Services
@@ -26,7 +22,7 @@ namespace ECSDiscord.Services
 
         private Task OnLogAsync(LogMessage msg)
         {
-            Log.Information(msg.ToString());
+            Log.Information(msg.ToString()); // Log using serilog
             return Task.CompletedTask;
         }
     }

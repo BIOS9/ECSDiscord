@@ -9,6 +9,9 @@ using System.Threading.Tasks;
 
 namespace ECSDiscord
 {
+    /// <summary>
+    /// Main application class.
+    /// </summary>
     class ECSDiscord
     {
         private const string
@@ -21,7 +24,7 @@ namespace ECSDiscord
 
         public ECSDiscord()
         {
-            if(!File.Exists(ConfigurationFile))
+            if(!File.Exists(ConfigurationFile)) // Check that config file exists
             {
                 Log.Fatal($"Cannot find configuration file: \"{ConfigurationFile}\" Exiting...");
                 throw new FileNotFoundException("Cannot find config file.", ConfigurationFile);
@@ -43,7 +46,7 @@ namespace ECSDiscord
 
             var provider = services.BuildServiceProvider();
             provider.GetRequiredService<Services.CommandService>(); // Start command handler service
-            provider.GetRequiredService<Services.LoggingService>(); // Start command handler service
+            provider.GetRequiredService<Services.LoggingService>(); // Start logging service
 
             await provider.GetRequiredService<Services.StartupService>().StartAsync(); // Run startup service
             await Task.Delay(-1); // Keep program from exiting

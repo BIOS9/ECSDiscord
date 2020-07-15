@@ -1,12 +1,9 @@
 ﻿using Discord;
 using Discord.WebSocket;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using System;
-using System.Collections.Generic;
 using System.Reflection;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace ECSDiscord.Services
@@ -31,6 +28,10 @@ namespace ECSDiscord.Services
             _commands = commands;
         }
 
+        /// <summary>
+        /// Start the service and add 
+        /// </summary>
+        /// <returns></returns>
         public async Task StartAsync()
         {
             string discordToken = _config["secrets:discordBotToken"];     // Get the discord token from the config file
