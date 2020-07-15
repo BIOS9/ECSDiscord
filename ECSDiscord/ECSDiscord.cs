@@ -1,8 +1,9 @@
-﻿using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+﻿using Discord;
+using Discord.Commands;
+using Discord.WebSocket;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Serilog;
-using System;
-using System.IO;
 using System.Threading.Tasks;
 
 namespace ECSDiscord
@@ -10,54 +11,67 @@ namespace ECSDiscord
     class ECSDiscord
     {
         private const string
-            BotCredentialFile = @"credentials.json",
-            LogFileName = "log.txt";
+            ConfigurationFile = "config.yml",
+            LogFileName = "logs/log.txt";
         private const RollingInterval
             LogInterval = RollingInterval.Day;
 
-
-        private static DiscordBot _discordBot;
+        public IConfigurationRoot Configuration { get; }
 
         public ECSDiscord()
         {
-            startBot().Wait();
+            // Add configuration from yaml file.
+            Configuration = new ConfigurationBuilder()
+                .AddYamlFile(ConfigurationFile)
+                .Build();
         }
 
         /// <summary>
-        /// Starts Discord bot instance
+        /// Start application.
         /// </summary>
-        private Task startBot()
+        public async Task RunAsync()
         {
-            try
-            {
-                _discordBot = new DiscordBot(readBotToken());
-                _discordBot.Start().ConfigureAwait(false);
-                return Task.Delay(-1); // Run forever
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "Failed to start bot: \"{message}\"", ex.Message);
-                return Task.CompletedTask;
-            }
+            var services = new ServiceCollection();
+            configureServices(services);
+
+            var provider = services.BuildServiceProvider();
+            provider.GetRequiredService<Services.CommandService>(); // Start command handler service
+
+            await provider.GetRequiredService<Services.StartupService>().StartAsync(); // Run startup service
+            await Task.Delay(-1); // Keep program from exiting
         }
 
         /// <summary>
-        /// Reads Discord bot token from the credential file.
+        /// Configure services and add required shared objects.
         /// </summary>
-        /// <returns>string containing the token.</returns>
-        private static string readBotToken()
+        private void configureServices(IServiceCollection services)
         {
-            return JObject.Parse(File.ReadAllText(BotCredentialFile))["bot_token"].Value<string>();
+            services.AddSingleton(new DiscordSocketClient(new DiscordSocketConfig
+            {                                       // Add discord to the collection
+                LogLevel = LogSeverity.Verbose,     // Tell the logger to give Verbose amount of info
+                MessageCacheSize = 1000             // Cache 1,000 messages per channel
+            }))
+            .AddSingleton(new Discord.Commands.CommandService(new CommandServiceConfig
+            {                                       // Add the command service to the collection
+                LogLevel = LogSeverity.Verbose,     // Tell the logger to give Verbose amount of info
+                DefaultRunMode = RunMode.Async,     // Force all commands to run async by default
+            }))
+            .AddSingleton<Services.CommandService>()         // Add the command handler to the collection
+            .AddSingleton<Services.StartupService>()         // Add startupservice to the collection
+            .AddSingleton<Services.LoggingService>()         // Add loggingservice to the collection
+            .AddSingleton(Configuration);           // Add the configuration to the collection
         }
 
-        static void Main(string[] args)
+        static Task Main(string[] args)
         {
+            // Configure logger.
             Log.Logger = new LoggerConfiguration()
                 .MinimumLevel.Debug()
                 .WriteTo.Console()
                 .WriteTo.File(LogFileName, rollingInterval: LogInterval)
                 .CreateLogger();
-            new ECSDiscord();
+
+            return new ECSDiscord().RunAsync();
         }
     }
 }
