@@ -10,7 +10,7 @@ namespace ECSDiscord
     class ECSDiscord
     {
         private const string
-            BotCredentialFile = @"DiscordCredentials.json",
+            BotCredentialFile = @"credentials.json",
             LogFileName = "log.txt";
         private const RollingInterval
             LogInterval = RollingInterval.Day;
