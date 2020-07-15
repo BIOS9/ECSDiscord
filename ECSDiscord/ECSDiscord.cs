@@ -67,7 +67,7 @@ namespace ECSDiscord
                 LogLevel = LogSeverity.Verbose,     // Tell the logger to give Verbose amount of info
                 DefaultRunMode = RunMode.Async,     // Force all commands to run async by default
             }))
-            .AddSingleton<Services.CommandService>()         // Add the command handler to the collection
+            .AddSingleton<Services.CommandService>()         // Add commandservice to the collection
             .AddSingleton<Services.StartupService>()         // Add startupservice to the collection
             .AddSingleton<Services.LoggingService>()         // Add loggingservice to the collection
             .AddSingleton(Configuration);           // Add the configuration to the collection

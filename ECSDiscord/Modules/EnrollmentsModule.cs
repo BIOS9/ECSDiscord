@@ -33,11 +33,11 @@ namespace ECSDiscord.BotModules
             if (!Context.CheckConfigChannel("enrollments", _config)) return; // Ensure command is only executed in allowed channels
         }
 
-        [Command("toggle")]
-        [Alias("course", "paper", "disenroll", "disenrol")]
+        [Command("togglecourse")]
+        [Alias("rank", "role", "course", "paper", "disenroll", "disenrol")]
         [RequireContext(ContextType.Guild)]
         [Summary("Join or leave a uni course channel.")]
-        public async Task ToggleAsync(params string[] courses)
+        public async Task ToggleCourseAsync(params string[] courses)
         {
             if (!Context.CheckConfigChannel("enrollments", _config)) return; // Ensure command is only executed in allowed channels
         }
