@@ -48,6 +48,7 @@ namespace ECSDiscord
             provider.GetRequiredService<Services.CommandService>(); // Start command handler service
             provider.GetRequiredService<Services.LoggingService>(); // Start logging service
             provider.GetRequiredService<Services.EnrollmentsService>(); // Start enrollments service
+            provider.GetRequiredService<Services.CourseService>(); // Start course service
 
             await provider.GetRequiredService<Services.StartupService>().StartAsync(); // Run startup service
             await Task.Delay(-1); // Keep program from exiting
@@ -72,6 +73,7 @@ namespace ECSDiscord
             .AddSingleton<Services.StartupService>()         // Add startupservice to the collection
             .AddSingleton<Services.LoggingService>()         // Add loggingservice to the collection
             .AddSingleton<Services.EnrollmentsService>()     // Add enrollmentsservice to the collection
+            .AddSingleton<Services.CourseService>()          // Add courseservice to the collection
             .AddSingleton(Configuration);           // Add the configuration to the collection
         }
 

@@ -16,10 +16,12 @@ namespace ECSDiscord.BotModules
         
 
         private readonly IConfigurationRoot _config;
+        private readonly EnrollmentsService _enrollments;
 
-        public EnrollmentsModule(IConfigurationRoot config)
+        public EnrollmentsModule(IConfigurationRoot config, EnrollmentsService enrollments)
         {
             _config = config;
+            _enrollments = enrollments;
         }
 
         [Command("join")]
@@ -104,9 +106,9 @@ namespace ECSDiscord.BotModules
             HashSet<string> invalidFormatCourses = new HashSet<string>();
             foreach (string course in courses)
             {
-                string normalised = EnrollmentsService.NormaliseCourseName(course);
+                string normalised = CourseService.NormaliseCourseName(course);
 
-                if (!EnrollmentsService.IsCourseValid(course)) // Ensure all courses are in a valid format
+                if (!_enrollments.IsCourseValid(course)) // Ensure all courses are in a valid format
                     invalidFormatCourses.Add('`' + course + '`');
 
                 if (!string.IsNullOrEmpty(normalised) && !distinctCourses.Add(normalised)) // Enrusre there are no duplicate courses
@@ -117,7 +119,7 @@ namespace ECSDiscord.BotModules
             {
                 string s = invalidFormatCourses.Count > 1 ? "s" : "";
                 string courseList = invalidFormatCourses.Aggregate((x, y) => $"{x}, {y}");
-                error += $"The following courses are not valid: {courseList}.\nPlease ensure the courses are in the format ABCD123 or ABCD-123 (case-insensitive)";
+                error += $"The following courses/roles do not exist: {courseList}.\nIf you think these courses/roles should exist, please ask the \\@admins";
             }
             if (duplicateCourses.Count != 0 && !ignoreDuplicates) // Error duplicate courses
             {
