@@ -133,13 +133,22 @@ namespace ECSDiscord.BotModules
             await ReplyAsync(string.Join(", ", formattedCourses).SanitizeMentions());
         }
 
-        [Command("courses")]
-        [Alias("list")]
+        [Command("listcourses")]
+        [Alias("list", "courses", "ranks", "roles", "papers")]
         [Summary("List the courses you are in.")]
         public async Task CoursesAsync()
         {
             if (!Context.CheckConfigChannel("enrollments", _config)) return; // Ensure command is only executed in allowed channels
-            //ReplyAsync
+
+            List<string> courses = _enrollments.GetUserCourses(Context.User);
+            if (courses.Count == 0)
+                await ReplyAsync("You are not in any courses.");
+            else
+                await ReplyAsync("You are in the following courses:\n" + 
+                    _enrollments.GetUserCourses(Context.User)
+                    .Select(x => $"`{x.ToUpper()}`")
+                    .Aggregate((x, y) => $"{x}, {y}")
+                    .SanitizeMentions());
         }
 
         private bool checkCourses(string[] courses, bool ignoreDuplicates, out string errorMessage, out ISet<string> formattedCourses)
