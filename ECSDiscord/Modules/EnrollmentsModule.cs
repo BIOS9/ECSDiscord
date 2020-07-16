@@ -56,7 +56,7 @@ namespace ECSDiscord.BotModules
                         stringBuilder.Append($":warning:  **{course}** - You are already in `{course}`\n");
                         break;
                     case EnrollmentResult.CourseNotExist:
-                        stringBuilder.Append($":x:  **{course}** - The course `{course}` does not exist\n");
+                        stringBuilder.Append($":x:  **{course}** - Sorry `{course}` does not exist\n");
                         break;
                     case EnrollmentResult.Failure:
                         stringBuilder.Append($":fire:  **{course}** - A server error occured. Please ask and admin to check the logs.\n");
@@ -99,7 +99,7 @@ namespace ECSDiscord.BotModules
                         stringBuilder.Append($":warning:  **{course}** - You are not in `{course}`\n");
                         break;
                     case EnrollmentResult.CourseNotExist:
-                        stringBuilder.Append($":x:  **{course}** - The course `{course}` does not exist\n");
+                        stringBuilder.Append($":x:  **{course}** - Sorry `{course}` does not exist\n");
                         break;
                     case EnrollmentResult.Failure:
                         stringBuilder.Append($":fire:  **{course}** - A server error occured. Please ask and admin to check the logs.\n");
