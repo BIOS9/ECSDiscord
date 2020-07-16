@@ -77,12 +77,12 @@ namespace ECSDiscord
         {
             services.AddSingleton(new DiscordSocketClient(new DiscordSocketConfig
             {                                       // Add discord to the collection
-                LogLevel = LogSeverity.Verbose,     // Tell the logger to give Verbose amount of info
+                LogLevel = LogSeverity.Info,     // Tell the logger to give Verbose amount of info
                 MessageCacheSize = 1000             // Cache 1,000 messages per channel
             }))
             .AddSingleton(new Discord.Commands.CommandService(new CommandServiceConfig
             {                                       // Add the command service to the collection
-                LogLevel = LogSeverity.Verbose,     // Tell the logger to give Verbose amount of info
+                LogLevel = LogSeverity.Info,     // Tell the logger to give Verbose amount of info
                 DefaultRunMode = RunMode.Async,     // Force all commands to run async by default
             }))
             .AddSingleton<Services.CommandService>()         // Add commandservice to the collection
