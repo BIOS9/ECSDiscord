@@ -36,6 +36,9 @@ namespace ECSDiscord.Services
         {
             try
             {
+                SocketGuild guild = _discord.GetGuild(ulong.Parse(_config["guildId"]));
+                await _discord.DownloadUsersAsync(new List<IGuild> { guild });
+
                 if (!IsCourseValid(course, out _))
                     return EnrollmentResult.CourseNotExist;
 
@@ -67,6 +70,9 @@ namespace ECSDiscord.Services
         {
             try
             {
+                SocketGuild guild = _discord.GetGuild(ulong.Parse(_config["guildId"]));
+                await _discord.DownloadUsersAsync(new List<IGuild> { guild });
+
                 if (!IsCourseValid(course, out CourseService.Course courseObject))
                     return EnrollmentResult.CourseNotExist;
 
@@ -76,7 +82,7 @@ namespace ECSDiscord.Services
 
                 await channel.RemovePermissionOverwriteAsync(user);
 
-                SocketGuild guild = _discord.GetGuild(ulong.Parse(_config["guildId"]));
+                
                 if (courseObject.AutoDelete && !channel.PermissionOverwrites.Any(x => x.TargetType == PermissionTarget.User && x.TargetId != guild.EveryoneRole.Id))
                 {
                     Log.Information("Deleting course channel that has no users {channel}", course);
@@ -91,9 +97,10 @@ namespace ECSDiscord.Services
             }
         }
 
-        public async Task<List<string>> GetUserCourses(SocketUser user)
+        public List<string> GetUserCourses(SocketUser user)
         {
-            return null;
+            SocketGuild guild = _discord.GetGuild(ulong.Parse(_config["guildId"]));
+            return guild.TextChannels.Where(x => IsCourseValid(x.Name, out _) && x.PermissionOverwrites.Any(p => p.TargetId == user.Id)).Select(x => x.Name).ToList();
         }
 
         public bool IsCourseValid(string name, out CourseService.Course course)
