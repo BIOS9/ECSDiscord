@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 namespace ECSDiscord.BotModules
 {
     [Name("Enrollments")]
+    [RequireContext(ContextType.Guild)]
     public class EnrollmentsModule : ModuleBase<SocketCommandContext>
     {
         private readonly IConfigurationRoot _config;
@@ -17,7 +18,6 @@ namespace ECSDiscord.BotModules
 
         [Command("join")]
         [Alias("enroll", "enrol")]
-        [RequireContext(ContextType.Guild)]
         [Summary("Join a uni course channel.")]
         public async Task JoinAsync(params string[] courses)
         {
@@ -26,7 +26,6 @@ namespace ECSDiscord.BotModules
 
         [Command("leave")]
         [Alias("unenroll", "unenrol", "disenroll", "disenrol")]
-        [RequireContext(ContextType.Guild)]
         [Summary("Leave a uni course channel.")]
         public async Task LeaveAsync(params string[] courses)
         {
@@ -35,7 +34,6 @@ namespace ECSDiscord.BotModules
 
         [Command("togglecourse")]
         [Alias("rank", "role", "course", "paper", "disenroll", "disenrol")]
-        [RequireContext(ContextType.Guild)]
         [Summary("Join or leave a uni course channel.")]
         public async Task ToggleCourseAsync(params string[] courses)
         {
@@ -44,7 +42,7 @@ namespace ECSDiscord.BotModules
 
         [Command("courses")]
         [Alias("list")]
-        [RequireContext(ContextType.Guild)]
+        [Summary("List the courses you are in.")]
         public async Task CoursesAsync()
         {
             if (!Context.CheckConfigChannel("enrollments", _config)) return; // Ensure command is only executed in allowed channels
