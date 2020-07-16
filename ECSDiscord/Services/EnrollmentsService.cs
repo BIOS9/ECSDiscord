@@ -1,9 +1,6 @@
 ﻿using Discord.WebSocket;
 using Microsoft.Extensions.Configuration;
-using System;
 using System.Collections.Generic;
-using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace ECSDiscord.Services
@@ -34,6 +31,8 @@ namespace ECSDiscord.Services
         {
             if (!IsCourseValid(course))
                 return EnrollmentResult.CourseNotExist;
+
+
             return EnrollmentResult.Success;
         }
 

@@ -1,12 +1,7 @@
 ﻿using Discord;
 using Discord.Commands;
-using ECSDiscord.Modules.Util;
 using ECSDiscord.Services;
 using Microsoft.Extensions.Configuration;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace ECSDiscord.Modules
