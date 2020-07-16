@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Serilog;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace ECSDiscord.Modules.Util
 {
@@ -50,6 +51,17 @@ namespace ECSDiscord.Modules.Util
 
             // Disallow access.
             return false;     
+        }
+
+        /// <summary>
+        /// Prevent @mentions from pinging.
+        /// </summary>
+        /// <remarks>
+        /// Helps prevent the bot being used to abuse @mentions
+        /// </remarks>
+        public static string SanitizeMentions(this string message)
+        {
+            return message.Replace("@", "＠"); // Replace @ mentions with weird alternate @ symbol that doesnt trigger mention
         }
     }
 }

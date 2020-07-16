@@ -74,7 +74,7 @@ namespace ECSDiscord.Modules
 
             if (!result.IsSuccess)
             {
-                await ReplyAsync($"Sorry, I couldn't find a command like **{command}**.");
+                await ReplyAsync($"Sorry, I couldn't find a command like **{command.SanitizeMentions()}**.");
                 return;
             }
 
@@ -82,7 +82,7 @@ namespace ECSDiscord.Modules
             var builder = new EmbedBuilder()
             {
                 Color = new Color(15, 87, 55),
-                Description = $"Here are some commands like **{command}**"
+                Description = $"Here are some commands like **{command.SanitizeMentions()}**"
             };
 
             foreach (var match in result.Commands)

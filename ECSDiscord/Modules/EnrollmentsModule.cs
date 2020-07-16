@@ -4,8 +4,10 @@ using ECSDiscord.Services;
 using Microsoft.Extensions.Configuration;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using static ECSDiscord.Services.EnrollmentsService;
 
 namespace ECSDiscord.BotModules
 {
@@ -17,11 +19,13 @@ namespace ECSDiscord.BotModules
 
         private readonly IConfigurationRoot _config;
         private readonly EnrollmentsService _enrollments;
+        private readonly CourseService _courses;
 
-        public EnrollmentsModule(IConfigurationRoot config, EnrollmentsService enrollments)
+        public EnrollmentsModule(IConfigurationRoot config, EnrollmentsService enrollments, CourseService courses)
         {
             _config = config;
             _enrollments = enrollments;
+            _courses = courses;
         }
 
         [Command("join")]
@@ -35,12 +39,35 @@ namespace ECSDiscord.BotModules
             // Ensure course list is valid
             if (!checkCourses(courses, true, out string errorMessage, out ISet<string> formattedCourses))
             {
-                await ReplyAsync(errorMessage);
+                await ReplyAsync(errorMessage.SanitizeMentions());
                 return;
             }
-            
 
-            await ReplyAsync(string.Join(", ", formattedCourses));
+            await checkUpdating();
+
+            // Add user to courses
+            StringBuilder stringBuilder = new StringBuilder();
+            foreach (string course in formattedCourses)
+            {
+                EnrollmentResult result = await _enrollments.EnrollUser(course, Context.User);
+                switch(result)
+                {
+                    case EnrollmentResult.AlreadyJoined:
+                        stringBuilder.Append($":warning:  **{course}** - You are already in `{course}`\n");
+                        break;
+                    case EnrollmentResult.CourseNotExist:
+                        stringBuilder.Append($":x:  **{course}** - The course `{course}` does not exist\n");
+                        break;
+                    case EnrollmentResult.Failure:
+                        stringBuilder.Append($":fire:  **{course}** - A server error occured. Please ask and admin to check the logs.\n");
+                        break;
+                    case EnrollmentResult.Success:
+                        stringBuilder.Append($":white_check_mark:  **{course}** - Added you to {course} successfully.\n");
+                        break;
+                }
+            }
+
+            await ReplyAsync(stringBuilder.ToString().Trim().SanitizeMentions());
         }
 
         [Command("leave")]
@@ -54,12 +81,36 @@ namespace ECSDiscord.BotModules
             // Ensure course list is valid
             if (!checkCourses(courses, true, out string errorMessage, out ISet<string> formattedCourses))
             {
-                await ReplyAsync(errorMessage);
+                await ReplyAsync(errorMessage.SanitizeMentions());
                 return;
             }
 
+            await checkUpdating();
 
-            await ReplyAsync(string.Join(", ", formattedCourses));
+
+            // Add user to courses
+            StringBuilder stringBuilder = new StringBuilder();
+            foreach (string course in formattedCourses)
+            {
+                EnrollmentResult result = await _enrollments.DisenrollUser(course, Context.User);
+                switch (result)
+                {
+                    case EnrollmentResult.AlreadyLeft:
+                        stringBuilder.Append($":warning:  **{course}** - You are not in `{course}`\n");
+                        break;
+                    case EnrollmentResult.CourseNotExist:
+                        stringBuilder.Append($":x:  **{course}** - The course `{course}` does not exist\n");
+                        break;
+                    case EnrollmentResult.Failure:
+                        stringBuilder.Append($":fire:  **{course}** - A server error occured. Please ask and admin to check the logs.\n");
+                        break;
+                    case EnrollmentResult.Success:
+                        stringBuilder.Append($":white_check_mark:  **{course}** - Removed you from {course} successfully.\n");
+                        break;
+                }
+            }
+
+            await ReplyAsync(stringBuilder.ToString().Trim().SanitizeMentions());
         }
 
         [Command("togglecourse")]
@@ -73,12 +124,13 @@ namespace ECSDiscord.BotModules
             // Ensure course list is valid
             if (!checkCourses(courses, false, out string errorMessage, out ISet<string> formattedCourses))
             {
-                await ReplyAsync(errorMessage);
+                await ReplyAsync(errorMessage.SanitizeMentions());
                 return;
             }
 
+            await checkUpdating();
 
-            await ReplyAsync(string.Join(", ", formattedCourses));
+            await ReplyAsync(string.Join(", ", formattedCourses).SanitizeMentions());
         }
 
         [Command("courses")]
@@ -103,33 +155,20 @@ namespace ECSDiscord.BotModules
 
             HashSet<string> distinctCourses = new HashSet<string>();
             HashSet<string> duplicateCourses = new HashSet<string>();
-            HashSet<string> invalidFormatCourses = new HashSet<string>();
+            
             foreach (string course in courses)
             {
                 string normalised = CourseService.NormaliseCourseName(course);
 
-                if (!_enrollments.IsCourseValid(course)) // Ensure all courses are in a valid format
-                    invalidFormatCourses.Add('`' + course + '`');
-
                 if (!string.IsNullOrEmpty(normalised) && !distinctCourses.Add(normalised)) // Enrusre there are no duplicate courses
                     duplicateCourses.Add('`' + normalised + '`');
             }
-            string error = "";
-            if (invalidFormatCourses.Count != 0) // Error invalid courses
-            {
-                string s = invalidFormatCourses.Count > 1 ? "s" : "";
-                string courseList = invalidFormatCourses.Aggregate((x, y) => $"{x}, {y}");
-                error += $"The following courses/roles do not exist: {courseList}.\nIf you think these courses/roles should exist, please ask the \\@admins";
-            }
+
             if (duplicateCourses.Count != 0 && !ignoreDuplicates) // Error duplicate courses
             {
                 string s = duplicateCourses.Count > 1 ? "s" : "";
                 string courseList = duplicateCourses.Aggregate((x, y) => $"{x}, {y}");
-                error += $"\nDuplicate course{s} found: {courseList}.\nPlease ensure there are no duplicate course.";
-            }
-            if (invalidFormatCourses.Count != 0 || (duplicateCourses.Count != 0 && !ignoreDuplicates)) // Print then end if courses have duplicates or are invalid
-            {
-                errorMessage = error.Trim();
+                errorMessage = $"\nDuplicate course{s} found: {courseList}.Please ensure there are no duplicate course.";;
                 formattedCourses = null;
                 return false;
             }
@@ -137,6 +176,15 @@ namespace ECSDiscord.BotModules
             errorMessage = string.Empty;
             formattedCourses = distinctCourses;
             return true;
+        }
+
+        /// <summary>
+        /// Checks if the course service is currently updating and informs the user.
+        /// </summary>
+        private async Task checkUpdating()
+        {
+            if (_courses.UpdatingCourses)
+                await ReplyAsync("Courses are currently being updated.\nYour request will be processed shortly.");
         }
     }
 }

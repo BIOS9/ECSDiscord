@@ -30,17 +30,19 @@ namespace ECSDiscord.Services
             _config = config;
         }
 
-        public async Task<EnrollmentResult> EnrollUser(string course, SocketGuildUser user)
+        public async Task<EnrollmentResult> EnrollUser(string course, SocketUser user)
+        {
+            if (!IsCourseValid(course))
+                return EnrollmentResult.CourseNotExist;
+            return EnrollmentResult.Success;
+        }
+
+        public async Task<EnrollmentResult> DisenrollUser(string course, SocketUser user)
         {
             return EnrollmentResult.Failure;
         }
 
-        public async Task<EnrollmentResult> DisenrollUser(string course, SocketGuildUser user)
-        {
-            return EnrollmentResult.Failure;
-        }
-
-        public async Task<List<string>> GetUserCourses(SocketGuildUser user)
+        public async Task<List<string>> GetUserCourses(SocketUser user)
         {
             return null;
         }        

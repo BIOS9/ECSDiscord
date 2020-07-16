@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace ECSDiscord.Services
@@ -17,11 +18,13 @@ namespace ECSDiscord.Services
         {
             public readonly string Code;
             public readonly string Description;
+            public readonly ulong DiscordChannel;
 
-            public Course(string code, string description)
+            public Course(string code, string description, ulong discordChannel = 0)
             {
                 Code = code;
                 Description = description;
+                DiscordChannel = discordChannel;
             }
         }
 
@@ -29,14 +32,15 @@ namespace ECSDiscord.Services
 
         private readonly IConfigurationRoot _config;
         private readonly DiscordSocketClient _discord;
-
+        private SemaphoreSlim _writeLock = new SemaphoreSlim(1);
+        public bool UpdatingCourses => _writeLock.CurrentCount == 0;
         private Dictionary<string, Course> _courses = new Dictionary<string, Course>();
 
         public CourseService(IConfigurationRoot config, DiscordSocketClient discord)
         {
             _config = config;
             _discord = discord;
-            DownloadCourseList().Wait();
+            Task.Run(DownloadCourseList);
         }
 
         public IList<Course> GetCourses()
@@ -58,15 +62,20 @@ namespace ECSDiscord.Services
         {
             Match match = CourseRegex.Match(course);
             if (!match.Success)
-                return string.Empty;
+                return course.ToLower().Trim();
 
             return match.Groups[1].Value.ToUpper() + "-" + match.Groups[2].Value;
         }
 
-        public async Task DownloadCourseList()
+        /// <summary>
+        /// Downloads the course list from the VUW web site and updates the local list.
+        /// </summary>
+        /// <returns>Boolean indicating success.</returns>
+        public async Task<bool> DownloadCourseList()
         {
             try
             {
+                await _writeLock.WaitAsync();
                 Log.Information("Course download started");
                 const string webListUrl = "https://service-web.wgtn.ac.nz/dotnet2/catprint.aspx?d=all";
                 string[] urls = new string[]
@@ -103,10 +112,16 @@ namespace ECSDiscord.Services
                 }
                 Log.Information("Course download finished");
                 _courses = courses; // Atomic update of courses
+                return true;
             }
             catch(Exception ex)
             {
                 Log.Error(ex, "Course download failed: {message}. No changes made.", ex.Message);
+                return false;
+            }
+            finally
+            {
+                _writeLock.Release();
             }
         }
     }
