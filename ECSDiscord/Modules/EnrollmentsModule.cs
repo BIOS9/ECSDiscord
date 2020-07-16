@@ -44,6 +44,7 @@ namespace ECSDiscord.BotModules
 
             await checkUpdating();
 
+            await ReplyAsync("Processing...");
             // Add user to courses
             StringBuilder stringBuilder = new StringBuilder();
             foreach (string course in formattedCourses)
@@ -86,7 +87,7 @@ namespace ECSDiscord.BotModules
 
             await checkUpdating();
 
-
+            await ReplyAsync("Processing...");
             // Add user to courses
             StringBuilder stringBuilder = new StringBuilder();
             foreach (string course in formattedCourses)

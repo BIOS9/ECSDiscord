@@ -36,11 +36,28 @@ namespace ECSDiscord
                 .Build();
         }
 
+        private bool checkConfig()
+        {
+            if(string.IsNullOrWhiteSpace(Configuration["guildId"]) || !ulong.TryParse(Configuration["guildId"], out _))
+            {
+                Log.Error("Invalid guildId in config. Please configure the Discord guild ID of the server.");
+                return false;
+            }
+
+            return true;
+        }
+
         /// <summary>
         /// Start application.
         /// </summary>
         public async Task RunAsync()
         {
+            if (!checkConfig())
+            {
+                Log.Fatal("Invalid configuration. Exiting...");
+                return;
+            }
+
             var services = new ServiceCollection();
             configureServices(services);
 
@@ -49,7 +66,6 @@ namespace ECSDiscord
             provider.GetRequiredService<Services.LoggingService>(); // Start logging service
             provider.GetRequiredService<Services.EnrollmentsService>(); // Start enrollments service
             provider.GetRequiredService<Services.CourseService>(); // Start course service
-
             await provider.GetRequiredService<Services.StartupService>().StartAsync(); // Run startup service
             await Task.Delay(-1); // Keep program from exiting
         }
@@ -81,7 +97,7 @@ namespace ECSDiscord
         {
             // Configure logger.
             Log.Logger = new LoggerConfiguration()
-                .MinimumLevel.Debug()
+                .MinimumLevel.Information()
                 .WriteTo.Console()
                 .WriteTo.File(LogFileName, rollingInterval: LogInterval)
                 .CreateLogger();

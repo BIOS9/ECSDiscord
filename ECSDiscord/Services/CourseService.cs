@@ -1,4 +1,6 @@
-﻿using Discord.WebSocket;
+﻿using Discord;
+using Discord.Rest;
+using Discord.WebSocket;
 using HtmlAgilityPack;
 using Microsoft.Extensions.Configuration;
 using Serilog;
@@ -17,17 +19,17 @@ namespace ECSDiscord.Services
         {
             public readonly string Code;
             public readonly string Description;
-            public readonly ulong DiscordChannel;
+            public readonly bool AutoDelete;
 
-            public Course(string code, string description, ulong discordChannel = 0)
+            public Course(string code, string description, bool autoDelete = true)
             {
                 Code = code;
                 Description = description;
-                DiscordChannel = discordChannel;
+                AutoDelete = autoDelete;
             }
         }
 
-        private static readonly Regex CourseRegex = new Regex("([A-Za-z]{4})[ -_]?([0-9]{3})"); // Pattern for course names
+        private static readonly Regex CourseRegex = new Regex("([A-Za-z]+)[ \\-_]?([0-9]+)"); // Pattern for course names
 
         private readonly IConfigurationRoot _config;
         private readonly DiscordSocketClient _discord;
@@ -57,6 +59,54 @@ namespace ECSDiscord.Services
             return _courses.ContainsKey(course);
         }
 
+        public async Task<IGuildChannel> GetOrCreateChannel(string course)
+        {
+            if (!_courses.ContainsKey(course))
+                return null;
+
+            SocketGuild guild = _discord.GetGuild(ulong.Parse(_config["guildId"]));
+
+            IGuildChannel channel = GetChannel(course);
+
+            if (channel != null)
+                return channel;
+
+            RestTextChannel c = await guild.CreateTextChannelAsync(course, x =>
+            {
+                x.Topic = _courses[course].Description;
+            });
+
+            if(!uint.TryParse(_config["courseChannelPermissionsAllowed"], out uint allowedPermissions))
+            {
+                Log.Error("Invalid courseChannelPermissionsAllowed permissions value in config. https://discordapi.com/permissions.html");
+                return null;
+            }
+
+            if (!uint.TryParse(_config["courseChannelPermissionsDenied"], out uint deniedPermissions))
+            {
+                Log.Error("Invalid courseChannelPermissionsDenied permissions value in config. https://discordapi.com/permissions.html");
+                return null;
+            }
+
+            await c.AddPermissionOverwriteAsync(guild.EveryoneRole, new OverwritePermissions(allowedPermissions, deniedPermissions));
+            return c;
+        }
+
+        public IGuildChannel GetChannel(string course)
+        {
+            if (!_courses.ContainsKey(course))
+                return null;
+
+            SocketGuild guild = _discord.GetGuild(ulong.Parse(_config["guildId"]));
+
+            return guild.TextChannels
+                .DefaultIfEmpty(null)
+                .FirstOrDefault(x => x.Name.Equals(course, StringComparison.OrdinalIgnoreCase));
+        }
+
+        /// <summary>
+        /// Makes course of various different formats into the format ABCD-123
+        /// </summary>
         public static string NormaliseCourseName(string course)
         {
             Match match = CourseRegex.Match(course);
@@ -102,7 +152,7 @@ namespace ECSDiscord.Services
 
                         if (CourseRegex.IsMatch(courseCode))
                         {
-                            if (!courses.TryAdd(courseCode, new Course(courseCode, courseDescription.Trim())))
+                            if (!courses.TryAdd(courseCode, new Course(courseCode, courseDescription.Trim(), true)))
                                 Log.Debug("Duplicate course from download: {course}", courseCode);
                         }
                         else
@@ -113,7 +163,7 @@ namespace ECSDiscord.Services
                 _courses = courses; // Atomic update of courses
                 return true;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Log.Error(ex, "Course download failed: {message}. No changes made.", ex.Message);
                 return false;

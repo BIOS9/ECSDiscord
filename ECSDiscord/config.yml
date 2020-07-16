@@ -1,4 +1,9 @@
 ﻿prefix: +
+guildId: null
+courseChannelPermissionsAllowed: 0
+courseChannelPermissionsDenied: 1024
+joinedUserPermissionsAllowed: 1024
+joinedUserPermissionsDenied: 0
 forcedChannels:
 	help: null
 	enrollments: null

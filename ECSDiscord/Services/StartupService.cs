@@ -41,10 +41,27 @@ namespace ECSDiscord.Services
                 throw new Exception("Bot token not found in configuration file.");
             }
 
+            _discord.GuildAvailable += _discord_GuildAvailable;
+
             await _discord.LoginAsync(TokenType.Bot, discordToken);     // Login to discord
             await _discord.StartAsync();                                // Connect to the websocket
 
             await _commands.AddModulesAsync(Assembly.GetEntryAssembly(), _provider);     // Load commands and modules into the command service
+        }
+
+        private async Task _discord_GuildAvailable(SocketGuild arg)
+        {
+            if(!ulong.TryParse(_config["guildId"], out ulong guildId))
+            {
+                Log.Warning("guildId in configuration is invalid. Expected unsigned long integer, got: {id}", _config["guildId"]);
+                return;
+            }
+
+            if(arg.Id != guildId)
+            {
+                Log.Warning("Leaving guild {guild} Config guildId does not match.", arg.Name);
+                await arg.LeaveAsync();
+            }
         }
     }
 }
