@@ -51,11 +51,12 @@ namespace ECSDiscord.BotModules
                 switch(result)
                 {
                     case EnrollmentResult.AlreadyJoined:
-                        stringBuilder.Append($":warning:  **{course}** - You are already in `{course}`\n");
+                        stringBuilder.Append($":warning:  **{course}** - You are already in `{course}`.\n");
                         break;
                     case EnrollmentResult.CourseNotExist:
-                        stringBuilder.Append($":x:  **{course}** - Sorry `{course}` does not exist\n");
+                        stringBuilder.Append($":x:  **{course}** - Sorry `{course}` does not exist.\n");
                         break;
+                    default:
                     case EnrollmentResult.Failure:
                         stringBuilder.Append($":fire:  **{course}** - A server error occured. Please ask and admin to check the logs.\n");
                         break;
@@ -100,11 +101,12 @@ namespace ECSDiscord.BotModules
                 switch (result)
                 {
                     case EnrollmentResult.AlreadyLeft:
-                        stringBuilder.Append($":warning:  **{course}** - You are not in `{course}`\n");
+                        stringBuilder.Append($":warning:  **{course}** - You are not in `{course}`.\n");
                         break;
                     case EnrollmentResult.CourseNotExist:
-                        stringBuilder.Append($":x:  **{course}** - Sorry `{course}` does not exist\n");
+                        stringBuilder.Append($":x:  **{course}** - Sorry `{course}` does not exist.\n");
                         break;
+                    default:
                     case EnrollmentResult.Failure:
                         stringBuilder.Append($":fire:  **{course}** - A server error occured. Please ask and admin to check the logs.\n");
                         break;
@@ -142,11 +144,12 @@ namespace ECSDiscord.BotModules
                 switch (result)
                 {
                     case EnrollmentResult.AlreadyLeft:
-                        stringBuilder.Append($":warning:  **{course}** - You are not in `{course}`\n");
+                        stringBuilder.Append($":warning:  **{course}** - You are not in `{course}`.\n");
                         break;
                     case EnrollmentResult.CourseNotExist:
-                        stringBuilder.Append($":x:  **{course}** - Sorry `{course}` does not exist\n");
+                        stringBuilder.Append($":x:  **{course}** - Sorry `{course}` does not exist.\n");
                         break;
+                    default:
                     case EnrollmentResult.Failure:
                         stringBuilder.Append($":fire:  **{course}** - A server error occured. Please ask and admin to check the logs.\n");
                         break;
@@ -168,7 +171,7 @@ namespace ECSDiscord.BotModules
             if (!Context.CheckConfigChannel("enrollments", _config)) return;
 
             // Ensure course list is valid
-            if (!checkCourses(courses, false, out string errorMessage, out ISet<string> formattedCourses))
+            if (!checkCourses(courses, true, out string errorMessage, out ISet<string> formattedCourses))
             {
                 await ReplyAsync(errorMessage.SanitizeMentions());
                 return;
@@ -176,7 +179,37 @@ namespace ECSDiscord.BotModules
 
             await checkUpdating();
 
-            await ReplyAsync(string.Join(", ", formattedCourses).SanitizeMentions());
+            await ReplyAsync("Processing...");
+
+            List<string> existingCourses = _enrollments.GetUserCourses(Context.User); // List of courses the user is already in, probably should've used a set for that
+
+            // Add user to courses
+            StringBuilder stringBuilder = new StringBuilder();
+            foreach (string course in formattedCourses)
+            {
+                bool alreadyInCourse = existingCourses.Contains(course);
+                EnrollmentResult result = alreadyInCourse ?
+                    await _enrollments.DisenrollUser(course, Context.User) :
+                    await _enrollments.EnrollUser(course, Context.User);
+
+                switch (result)
+                {
+                    case EnrollmentResult.CourseNotExist:
+                        stringBuilder.Append($":warning:  **{course}** - Sorry `{course}` does not exist.\n");
+                        break;
+                    default:
+                    case EnrollmentResult.Failure:
+                        stringBuilder.Append($":fire:  **{course}** - A server error occured. Please ask and admin to check the logs.\n");
+                        break;
+                    case EnrollmentResult.Success:
+                        string actionString = alreadyInCourse ? "Removed you from" : "Added you to";
+                        string iconString = alreadyInCourse ? ":outbox_tray:" : ":inbox_tray:";
+                        stringBuilder.Append($"{iconString}  **{course}** - {actionString} {course} successfully.\n");
+                        break;
+                }
+            }
+
+            await ReplyAsync(stringBuilder.ToString().Trim().SanitizeMentions());
         }
 
         [Command("listcourses")]
