@@ -100,7 +100,7 @@ namespace ECSDiscord.Services
         public List<string> GetUserCourses(SocketUser user)
         {
             SocketGuild guild = _discord.GetGuild(ulong.Parse(_config["guildId"]));
-            return guild.TextChannels.Where(x => IsCourseValid(x.Name, out _) && x.PermissionOverwrites.Any(p => p.TargetId == user.Id)).Select(x => x.Name).ToList();
+            return guild.TextChannels.Where(x => IsCourseValid(x.Name, out _) && x.PermissionOverwrites.Any(p => p.TargetId == user.Id)).Select(x => x.Name.ToUpper()).ToList();
         }
 
         public bool IsCourseValid(string name, out CourseService.Course course)

@@ -76,6 +76,12 @@ namespace ECSDiscord.BotModules
             // Ensure command is only executed in allowed channels
             if (!Context.CheckConfigChannel("enrollments", _config)) return;
 
+            if(courses.Length == 1 && courses[0].Equals("all", System.StringComparison.OrdinalIgnoreCase))
+            {
+                await LeaveAllAsync();
+                return;
+            }
+
             // Ensure course list is valid
             if (!checkCourses(courses, true, out string errorMessage, out ISet<string> formattedCourses))
             {
@@ -89,6 +95,48 @@ namespace ECSDiscord.BotModules
             // Add user to courses
             StringBuilder stringBuilder = new StringBuilder();
             foreach (string course in formattedCourses)
+            {
+                EnrollmentResult result = await _enrollments.DisenrollUser(course, Context.User);
+                switch (result)
+                {
+                    case EnrollmentResult.AlreadyLeft:
+                        stringBuilder.Append($":warning:  **{course}** - You are not in `{course}`\n");
+                        break;
+                    case EnrollmentResult.CourseNotExist:
+                        stringBuilder.Append($":x:  **{course}** - Sorry `{course}` does not exist\n");
+                        break;
+                    case EnrollmentResult.Failure:
+                        stringBuilder.Append($":fire:  **{course}** - A server error occured. Please ask and admin to check the logs.\n");
+                        break;
+                    case EnrollmentResult.Success:
+                        stringBuilder.Append($":white_check_mark:  **{course}** - Removed you from {course} successfully.\n");
+                        break;
+                }
+            }
+
+            await ReplyAsync(stringBuilder.ToString().Trim().SanitizeMentions());
+        }
+
+        [Command("leaveall")]
+        [Alias("disenrolall", "disenrollall")]
+        [Summary("Removes you from all courses.")]
+        public async Task LeaveAllAsync()
+        {
+            if (!Context.CheckConfigChannel("enrollments", _config)) return;
+
+            List<string> courses = _enrollments.GetUserCourses(Context.User);
+            if (courses.Count == 0)
+            {
+                await ReplyAsync("You are not in any courses.");
+                return;
+            }
+
+            await checkUpdating();
+
+            await ReplyAsync("Processing...");
+            // Add user to courses
+            StringBuilder stringBuilder = new StringBuilder();
+            foreach (string course in courses)
             {
                 EnrollmentResult result = await _enrollments.DisenrollUser(course, Context.User);
                 switch (result)
