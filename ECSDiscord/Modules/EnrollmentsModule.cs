@@ -54,14 +54,14 @@ namespace ECSDiscord.BotModules
                         stringBuilder.Append($":warning:  **{course}** - You are already in `{course}`.\n");
                         break;
                     case EnrollmentResult.CourseNotExist:
-                        stringBuilder.Append($":x:  **{course}** - Sorry `{course}` does not exist.\n");
+                        stringBuilder.Append($":warning:  **{course}** - Sorry `{course}` does not exist.\n");
                         break;
                     default:
                     case EnrollmentResult.Failure:
                         stringBuilder.Append($":fire:  **{course}** - A server error occured. Please ask and admin to check the logs.\n");
                         break;
                     case EnrollmentResult.Success:
-                        stringBuilder.Append($":white_check_mark:  **{course}** - Added you to {course} successfully.\n");
+                        stringBuilder.Append($":inbox_tray:  **{course}** - Added you to {course} successfully.\n");
                         break;
                 }
             }
@@ -104,14 +104,14 @@ namespace ECSDiscord.BotModules
                         stringBuilder.Append($":warning:  **{course}** - You are not in `{course}`.\n");
                         break;
                     case EnrollmentResult.CourseNotExist:
-                        stringBuilder.Append($":x:  **{course}** - Sorry `{course}` does not exist.\n");
+                        stringBuilder.Append($":warning:  **{course}** - Sorry `{course}` does not exist.\n");
                         break;
                     default:
                     case EnrollmentResult.Failure:
                         stringBuilder.Append($":fire:  **{course}** - A server error occured. Please ask and admin to check the logs.\n");
                         break;
                     case EnrollmentResult.Success:
-                        stringBuilder.Append($":white_check_mark:  **{course}** - Removed you from {course} successfully.\n");
+                        stringBuilder.Append($":outbox_tray:  **{course}** - Removed you from {course} successfully.\n");
                         break;
                 }
             }
@@ -147,14 +147,14 @@ namespace ECSDiscord.BotModules
                         stringBuilder.Append($":warning:  **{course}** - You are not in `{course}`.\n");
                         break;
                     case EnrollmentResult.CourseNotExist:
-                        stringBuilder.Append($":x:  **{course}** - Sorry `{course}` does not exist.\n");
+                        stringBuilder.Append($":warning:  **{course}** - Sorry `{course}` does not exist.\n");
                         break;
                     default:
                     case EnrollmentResult.Failure:
                         stringBuilder.Append($":fire:  **{course}** - A server error occured. Please ask and admin to check the logs.\n");
                         break;
                     case EnrollmentResult.Success:
-                        stringBuilder.Append($":white_check_mark:  **{course}** - Removed you from {course} successfully.\n");
+                        stringBuilder.Append($":outbox_tray:  **{course}** - Removed you from {course} successfully.\n");
                         break;
                 }
             }
