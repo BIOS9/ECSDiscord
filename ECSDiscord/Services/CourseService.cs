@@ -21,7 +21,7 @@ namespace ECSDiscord.Services
             public readonly string Description;
             public readonly bool AutoDelete;
 
-            public Course(string code, string description, bool autoDelete = true)
+            public Course(string code, string description, bool autoDelete = false)
             {
                 Code = code;
                 Description = description;
@@ -29,7 +29,10 @@ namespace ECSDiscord.Services
             }
         }
 
-        private static readonly Regex CourseRegex = new Regex("([A-Za-z]+)[ \\-_]?([0-9]+)"); // Pattern for course names
+        private static readonly Regex
+            CourseRegex = new Regex("([A-Za-z]+)[ \\-_]?([0-9]+)"), // Pattern for course names
+            DiscordChannelRegex = new Regex("<#[0-9]{1,20}>");
+
 
         private readonly IConfigurationRoot _config;
         private readonly DiscordSocketClient _discord;
@@ -76,7 +79,7 @@ namespace ECSDiscord.Services
                 x.Topic = _courses[course].Description;
             });
 
-            if(!uint.TryParse(_config["courseChannelPermissionsAllowed"], out uint allowedPermissions))
+            if (!uint.TryParse(_config["courseChannelPermissionsAllowed"], out uint allowedPermissions))
             {
                 Log.Error("Invalid courseChannelPermissionsAllowed permissions value in config. https://discordapi.com/permissions.html");
                 return null;
@@ -107,8 +110,20 @@ namespace ECSDiscord.Services
         /// <summary>
         /// Makes course of various different formats into the format ABCD-123
         /// </summary>
-        public static string NormaliseCourseName(string course)
+        public string NormaliseCourseName(string course)
         {
+            if (DiscordChannelRegex.IsMatch(course))
+            {
+                try
+                {
+                    course = ((SocketGuildChannel)_discord.GetChannel(MentionUtils.ParseChannel(course))).Name;
+                }
+                catch (Exception ex)
+                {
+                    Log.Debug("Failed to parse discord channel name. {error}", ex.Message);
+                }
+            }
+
             Match match = CourseRegex.Match(course);
             if (!match.Success)
                 return course.ToLower().Trim();
@@ -152,7 +167,9 @@ namespace ECSDiscord.Services
 
                         if (CourseRegex.IsMatch(courseCode))
                         {
-                            if (!courses.TryAdd(courseCode, new Course(courseCode, courseDescription.Trim(), true)))
+                            if (!bool.TryParse(_config["autoDeleteOnNoUsers"], out bool autoDelete)) // Get autoDelete config setting
+                                throw new Exception("Failed to read autoDeleteOnNoUsers value from config. Expected true/false boolean.");
+                            if (!courses.TryAdd(courseCode, new Course(courseCode, courseDescription.Trim(), autoDelete)))
                                 Log.Debug("Duplicate course from download: {course}", courseCode);
                         }
                         else

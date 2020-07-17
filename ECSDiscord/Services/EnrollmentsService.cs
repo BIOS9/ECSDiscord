@@ -110,7 +110,7 @@ namespace ECSDiscord.Services
                 course = _courses.GetCourse(name);
                 return true;
             }
-            string normalisedName = CourseService.NormaliseCourseName(name);
+            string normalisedName = _courses.NormaliseCourseName(name);
             if (_courses.CourseExists(normalisedName))
             {
                 course = _courses.GetCourse(normalisedName);

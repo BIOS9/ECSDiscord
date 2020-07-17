@@ -14,8 +14,6 @@ namespace ECSDiscord.BotModules
     [RequireContext(ContextType.Guild)]
     public class EnrollmentsModule : ModuleBase<SocketCommandContext>
     {
-        
-
         private readonly IConfigurationRoot _config;
         private readonly EnrollmentsService _enrollments;
         private readonly CourseService _courses;
@@ -167,7 +165,7 @@ namespace ECSDiscord.BotModules
             
             foreach (string course in courses)
             {
-                string normalised = CourseService.NormaliseCourseName(course);
+                string normalised = _courses.NormaliseCourseName(course);
 
                 if (!string.IsNullOrEmpty(normalised) && !distinctCourses.Add(normalised)) // Enrusre there are no duplicate courses
                     duplicateCourses.Add('`' + normalised + '`');

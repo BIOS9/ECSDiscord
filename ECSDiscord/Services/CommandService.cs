@@ -42,7 +42,26 @@ namespace ECSDiscord.Services
                 var result = await _commands.ExecuteAsync(context, argPos, _provider); // Execute the command
 
                 if (!result.IsSuccess) // If not successful, reply with the error.
-                    await context.Channel.SendMessageAsync(result.ToString());
+                {
+                    switch (result.Error)
+                    {
+                        case CommandError.UnknownCommand:
+                            await context.Channel.SendMessageAsync($"Sorry, that is an unknown command.\nTry `{_config["prefix"]}help` to see a list of commands.");
+                            break;
+                        case CommandError.BadArgCount:
+                            await context.Channel.SendMessageAsync($"Sorry, you supplied an invalid number of arguments.\nTry `{_config["prefix"]}help <command>`");
+                            break;
+                        case CommandError.UnmetPrecondition:
+                            if (result.ErrorReason.StartsWith("User requires guild permission"))
+                                await context.Channel.SendMessageAsync("Sorry, you don't have permission to run that command.");
+                            else
+                                await context.Channel.SendMessageAsync("Sorry, something is preventing that command from being run.\nPlease ask an admin to check the logs.");
+                            break;
+                        default:
+                            await context.Channel.SendMessageAsync("An error occured: " + result.ToString());
+                            break;
+                    }
+                }
             }
         }
     }
