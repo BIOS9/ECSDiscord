@@ -52,8 +52,29 @@ namespace ECSDiscord.Services
             _config = config;
             _discord = discord;
             _storageService = storageService;
+            _discord.UserJoined += _discord_UserJoined;
             loadConfig();
             Log.Debug("Verification service loaded.");
+        }
+
+        private async Task _discord_UserJoined(SocketGuildUser user)
+        {
+            try
+            {
+                Log.Debug("Checking new user {user} verificaton status.", user.Id);
+                if (await IsUserVerifiedAsync(user))
+                {
+                    Log.Information("Giving verified role to user {user}", user.Id);
+                    SocketGuild guild = _discord.GetGuild(_guildId);
+                    SocketRole role = guild.GetRole(_verifiedRoleId);
+                    await user.AddRoleAsync(role);
+                    Log.Debug("Successfully gave verified role new user {user}.", user.Id);
+                }
+            }
+            catch(Exception ex)
+            {
+                Log.Error(ex, "Error giving verified role to user who joined. {message}", ex.Message);
+            }
         }
 
         public enum EmailResult
@@ -240,9 +261,15 @@ namespace ECSDiscord.Services
         public async Task<bool> IsUserVerifiedAsync(ulong discordId)
         {
             Log.Debug("User verification check for {id}", discordId);
-            return await _storageService.Users.GetEncryptedUsernameAsync(discordId) != null;
+            try
+            {
+                return await _storageService.Users.GetEncryptedUsernameAsync(discordId) != null;
+            }
+            catch(RecordNotFoundException)
+            {
+                return false;
+            }
         }
-
 
 
         /// <summary>
