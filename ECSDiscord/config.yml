@@ -6,25 +6,25 @@ joinedUserPermissionsAllowed: 1024
 joinedUserPermissionsDenied: 0
 autoDeleteOnNoUsers: false
 verification:
-	emailPattern: "^([a-z0-9]{1,30})@(ecs\\.|my)?(vuw|wgtn)\\.ac\\.nz$"
-	usernameGroup: 1
-	subjectTemplate: null
-	bodyTemplate: null
-	smtpServer: null
-	smtpPort: null
-	smtpFromAddress: null
-	smtpFromName: null
-	smtpUseSsl: false
-	verifiedRoleId: null
-	publicKeyCertPath: pub.crt
+  emailPattern: "^([a-z0-9]{1,30})@(ecs\\.|my)?(vuw|wgtn)\\.ac\\.nz$"
+  usernameGroup: 1
+  subjectTemplate: null
+  bodyTemplate: null
+  smtpServer: null
+  smtpPort: null
+  smtpFromAddress: null
+  smtpFromName: null
+  smtpUseSsl: false
+  verifiedRoleId: null
+  publicKeyCertPath: pub.crt
 forcedChannels:
-	help: null
-	enrollments: null
+  help: null
+  enrollments: null
 secrets:
-	discordBotToken: null
+  discordBotToken: null
 database:
-	server: null
-	port: null
-	database: null
-	username: null
-	password: null
+  server: null
+  port: null
+  database: null
+  username: null
+  password: null
