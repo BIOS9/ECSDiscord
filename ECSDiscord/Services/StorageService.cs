@@ -3,6 +3,7 @@ using MySql.Data.MySqlClient;
 using Serilog;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -12,6 +13,8 @@ namespace ECSDiscord.Services
     {
         private readonly IConfigurationRoot _config;
         private string _mysqlConnectionString;
+        private static readonly DateTime Epoch = new DateTime(1970, 1, 1);
+        private const int EncryptedValueBufferSize = 1024;
 
         public class DuplicateRecordException : Exception
         {
@@ -30,6 +33,8 @@ namespace ECSDiscord.Services
         public class VerificationStorage
         {
             private const string PendingVerificationsTable = "pendingVerifications";
+            private const string VerificationHistoryTable = "verificationHistory";
+
             private StorageService _storageService;
 
             public VerificationStorage(StorageService storageService)
@@ -38,10 +43,30 @@ namespace ECSDiscord.Services
             }
 
 
+            public struct PendingVerification
+            {
+                public readonly string Token;
+                public readonly byte[] EncryptedUsername;
+                public readonly byte[] UsernameHash;
+                public readonly byte[] UsernameHashSalt;
+                public readonly ulong DiscordId;
+                public readonly DateTime CreationTime;
+
+                public PendingVerification(string token, byte[] encryptedUsername, byte[] usernameHash, byte[] usernameHashSalt, ulong discordId, DateTime creationTime)
+                {
+                    Token = token;
+                    EncryptedUsername = encryptedUsername;
+                    UsernameHash = usernameHash;
+                    UsernameHashSalt = usernameHashSalt;
+                    DiscordId = discordId;
+                    CreationTime = creationTime;
+                }
+            }
+
             /// <summary>
             /// Add pending verification token to storage.
             /// </summary>
-            public async Task AddVerificationCodeAsync(string token, string username, ulong discordId)
+            public async Task AddCodeAsync(string token, byte[] encryptedUsername, byte[] usernameHash, byte[] usernameHashSalt, ulong discordId)
             {
                 using (MySqlConnection con = _storageService.GetMySqlConnection())
                 using (MySqlCommand cmd = new MySqlCommand())
@@ -50,25 +75,24 @@ namespace ECSDiscord.Services
                     cmd.Connection = con;
 
                     cmd.CommandText = $"INSERT INTO `{PendingVerificationsTable}` " +
-                        $"(`token`, `username`, `discordSnowflake`, `creationTime`) " +
-                        $"VALUES (@token, @username, @discordId, @time);";
+                        $"(`token`, `encryptedUsername`, `usernameHash`, `usernameHashSalt`, `discordSnowflake`, `creationTime`) " +
+                        $"VALUES (@token, @encryptedUsername, @usernameHash, @usernameHashSalt, @discordId, @time);";
                     cmd.Prepare();
 
                     cmd.Parameters.AddWithValue("@token", token);
-                    cmd.Parameters.AddWithValue("@username", username);
+                    cmd.Parameters.AddWithValue("@encryptedUsername", encryptedUsername);
+                    cmd.Parameters.AddWithValue("@usernameHash", usernameHash);
+                    cmd.Parameters.AddWithValue("@usernameHashSalt", usernameHashSalt);
                     cmd.Parameters.AddWithValue("@discordId", discordId);
 
-                    TimeSpan t = DateTime.UtcNow - new DateTime(1970, 1, 1);
+                    TimeSpan t = DateTime.UtcNow - Epoch;
                     cmd.Parameters.AddWithValue("@time", (long)t.TotalSeconds);
 
                     await cmd.ExecuteNonQueryAsync();
                 }
             }
 
-            /// <summary>
-            /// Delete matching verification token
-            /// </summary>
-            public async Task DeleteVerificationCodeByTokenAsync(string token)
+            public async Task<PendingVerification> GetPendingVerificationAsync(string token)
             {
                 using (MySqlConnection con = _storageService.GetMySqlConnection())
                 using (MySqlCommand cmd = new MySqlCommand())
@@ -76,7 +100,67 @@ namespace ECSDiscord.Services
                     con.Open();
                     cmd.Connection = con;
 
-                    cmd.CommandText = $"DELETE FROM `{PendingVerificationsTable}` WHERE `token` = @token";
+                    cmd.CommandText = $"SELECT `encryptedUsername`, `usernameHash`, `usernameHashSalt`, `discordSnowflake`, `creationTime` " +
+                        $"FROM `{PendingVerificationsTable}` WHERE `token` = @token;";
+                    cmd.Parameters.AddWithValue("@token", token);
+
+                    using (var reader = (MySqlDataReader)await cmd.ExecuteReaderAsync())
+                    {
+                        if(await reader.ReadAsync())
+                        {
+                            byte[] encryptedUsername;
+                            using (MemoryStream ms = new MemoryStream())
+                            {
+                                byte[] buffer = new byte[EncryptedValueBufferSize];
+                                int readSize;
+                                while ((readSize = (int)reader.GetBytes(0, 0, buffer, 0, buffer.Length)) > 0)
+                                    await ms.WriteAsync(buffer, 0, readSize);
+                                encryptedUsername = ms.ToArray();
+                            }
+
+                            byte[] usernameHash;
+                            using (MemoryStream ms = new MemoryStream())
+                            {
+                                byte[] buffer = new byte[EncryptedValueBufferSize];
+                                int readSize;
+                                while ((readSize = (int)reader.GetBytes(1, 0, buffer, 0, buffer.Length)) > 0)
+                                    await ms.WriteAsync(buffer, 0, readSize);
+                                usernameHash = ms.ToArray();
+                            }
+
+                            byte[] usernameHashSalt;
+                            using (MemoryStream ms = new MemoryStream())
+                            {
+                                byte[] buffer = new byte[EncryptedValueBufferSize];
+                                int readSize;
+                                while ((readSize = (int)reader.GetBytes(2, 0, buffer, 0, buffer.Length)) > 0)
+                                    await ms.WriteAsync(buffer, 0, readSize);
+                                usernameHashSalt = ms.ToArray();
+                            }
+
+                            ulong discordId = reader.GetUInt64(3);
+                            DateTime creationTime = Epoch.AddSeconds(reader.GetInt64(4));
+
+                            return new PendingVerification(token, encryptedUsername, usernameHash, usernameHashSalt, discordId, creationTime);
+                        }
+
+                        throw new RecordNotFoundException($"No pending verification with token \"{token}\" was found.");
+                    }
+                }
+            }
+
+            /// <summary>
+            /// Delete matching verification token
+            /// </summary>
+            public async Task DeleteCodeAsync(string token)
+            {
+                using (MySqlConnection con = _storageService.GetMySqlConnection())
+                using (MySqlCommand cmd = new MySqlCommand())
+                {
+                    con.Open();
+                    cmd.Connection = con;
+
+                    cmd.CommandText = $"DELETE FROM `{PendingVerificationsTable}` WHERE `token` = @token;";
                     cmd.Parameters.AddWithValue("@token", token);
 
                     await cmd.ExecuteNonQueryAsync();
@@ -86,7 +170,7 @@ namespace ECSDiscord.Services
             /// <summary>
             /// Delete all verification tokens associated with a Discord ID
             /// </summary>
-            public async Task DeleteVerificationCodeByDiscordIdAsync(ulong discordId)
+            public async Task DeleteCodeAsync(ulong discordId)
             {
                 using (MySqlConnection con = _storageService.GetMySqlConnection())
                 using (MySqlCommand cmd = new MySqlCommand())
@@ -94,8 +178,36 @@ namespace ECSDiscord.Services
                     con.Open();
                     cmd.Connection = con;
 
-                    cmd.CommandText = $"DELETE FROM `{PendingVerificationsTable}` WHERE `discordSnowflake` = @discordId";
+                    cmd.CommandText = $"DELETE FROM `{PendingVerificationsTable}` WHERE `discordSnowflake` = @discordId;";
                     cmd.Parameters.AddWithValue("@discordId", discordId);
+
+                    await cmd.ExecuteNonQueryAsync();
+                }
+            }
+
+            /// <summary>
+            /// Adds a historic record of username verification for an account.
+            /// </summary>
+            public async Task AddHistoryAsync(byte[] encryptedUsername, byte[] usernameHash, byte[] usernameHashSalt, ulong discordId)
+            {
+                using (MySqlConnection con = _storageService.GetMySqlConnection())
+                using (MySqlCommand cmd = new MySqlCommand())
+                {
+                    con.Open();
+                    cmd.Connection = con;
+
+                    cmd.CommandText = $"INSERT INTO `{VerificationHistoryTable}` " +
+                        $"(`discordSnowflake`, `encryptedUsername`, `usernameHash`, `usernameHashSalt`, `verificationTime`) " +
+                        $"VALUES (@discordId, @encryptedUsername, @usernameHash, @usernameHashSalt, @time);";
+                    cmd.Prepare();
+
+                    cmd.Parameters.AddWithValue("@discordId", discordId);
+                    cmd.Parameters.AddWithValue("@encryptedUsername", encryptedUsername);
+                    cmd.Parameters.AddWithValue("@usernameHash", usernameHash);
+                    cmd.Parameters.AddWithValue("@usernameHashSalt", usernameHashSalt);
+
+                    TimeSpan t = DateTime.UtcNow - Epoch;
+                    cmd.Parameters.AddWithValue("@time", (long)t.TotalSeconds);
 
                     await cmd.ExecuteNonQueryAsync();
                 }
@@ -115,7 +227,7 @@ namespace ECSDiscord.Services
             }
 
 
-            public async Task<string> GetVerifiedUsernameAsync(ulong discordId)
+            public async Task<byte[]> GetEncryptedUsernameAsync(ulong discordId)
             {
                 using (MySqlConnection con = _storageService.GetMySqlConnection())
                 using (MySqlCommand cmd = new MySqlCommand())
@@ -123,7 +235,7 @@ namespace ECSDiscord.Services
                     con.Open();
                     cmd.Connection = con;
 
-                    cmd.CommandText = $"SELECT `verifiedVuwUsername` FROM `{UsersTable}` WHERE `discordSnowflake` = @discordId;";
+                    cmd.CommandText = $"SELECT `encryptedUsername` FROM `{UsersTable}` WHERE `discordSnowflake` = @discordId;";
                     cmd.Prepare();
                     cmd.Parameters.AddWithValue("@discordId", discordId);
 
@@ -131,10 +243,58 @@ namespace ECSDiscord.Services
                     {
                         if (await reader.ReadAsync()) // Read one row
                         {
-                            return reader.GetString(0); // Get string in first column
+                            using (MemoryStream ms = new MemoryStream())
+                            {
+                                byte[] buffer = new byte[EncryptedValueBufferSize];
+                                int readSize;
+                                while((readSize = (int)reader.GetBytes(0, 0, buffer, 0, buffer.Length)) > 0)
+                                    await ms.WriteAsync(buffer, 0, readSize);
+                                return ms.ToArray();
+                            }
                         }
-                        throw new RecordNotFoundException($"No user with discordId {discordId} was found.");
+                        throw new RecordNotFoundException($"No user with discordId \"{discordId}\" was found.");
                     }
+                }
+            }
+
+            public async Task SetVerifiedUsernameAsync(ulong discordId, byte[] encryptedUsername)
+            {
+                using (MySqlConnection con = _storageService.GetMySqlConnection())
+                {
+                    await CreateUserIfNotExist(discordId, con);
+                    using (MySqlCommand cmd = new MySqlCommand())
+                    {
+                        con.Open();
+                        cmd.Connection = con;
+
+                        cmd.CommandText = $"UPDATE `{UsersTable}` SET `encryptedUsername` = @encryptedUsername WHERE `discordSnowflake` = @discordId;";
+                        cmd.Prepare();
+                        cmd.Parameters.AddWithValue("@discordId", discordId);
+                        cmd.Parameters.AddWithValue("@encryptedUsername", encryptedUsername);
+
+                        await cmd.ExecuteNonQueryAsync();
+                    }
+                }
+            }
+
+            public async Task CreateUserIfNotExist(ulong discordId)
+            {
+                using (MySqlConnection con = _storageService.GetMySqlConnection())
+                    await CreateUserIfNotExist(discordId, con);
+            }
+
+            public async Task CreateUserIfNotExist(ulong discordId, MySqlConnection con)
+            {
+                using (MySqlCommand cmd = new MySqlCommand())
+                {
+                    con.Open();
+                    cmd.Connection = con;
+
+                    cmd.CommandText = $"INSERT INTO `{UsersTable}` (`discordSnowflake`) VALUES (@discordId);";
+                    cmd.Prepare();
+                    cmd.Parameters.AddWithValue("@discordId", discordId);
+
+                    await cmd.ExecuteNonQueryAsync();
                 }
             }
         }
