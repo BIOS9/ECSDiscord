@@ -1,5 +1,5 @@
 ﻿using Discord.Commands;
-using ECSDiscord.Modules.Util;
+using ECSDiscord.Util;
 using ECSDiscord.Services;
 using Microsoft.Extensions.Configuration;
 using System.Collections.Generic;
