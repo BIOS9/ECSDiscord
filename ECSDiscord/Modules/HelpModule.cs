@@ -1,6 +1,6 @@
 ﻿using Discord;
 using Discord.Commands;
-using ECSDiscord.Modules.Util;
+using ECSDiscord.Util;
 using Microsoft.Extensions.Configuration;
 using System.Collections.Generic;
 using System.Linq;

@@ -4,9 +4,11 @@ using Microsoft.Extensions.Configuration;
 using Serilog;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Net;
 using System.Net.Mail;
 using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -28,12 +30,15 @@ namespace ECSDiscord.Services
             _smtpFromEmail,
             _smtpFromName,
             _smtpSubjectTemplate,
-            _smtpBodyTemplate;
+            _smtpBodyTemplate,
+            _publicKeyCertPath;
         private int _smtpPort;
         private bool _smtpUseSsl;
-
+        private X509Certificate2 _publicKeyCert;
         private SocketGuild _guild;
         private SocketRole _verifiedRole;
+        private RSACryptoServiceProvider _rsa;
+
 
         public VerificationService(IConfigurationRoot config, DiscordSocketClient discord, StorageService storageService)
         {
@@ -48,6 +53,7 @@ namespace ECSDiscord.Services
             Success,
             InvalidEmail,
             AlreadyVerified,
+            UsernameTaken,
             Failure
         }
 
@@ -56,6 +62,7 @@ namespace ECSDiscord.Services
             Success,
             InvalidToken,
             AlreadyVerified,
+            UsernameTaken,
             Failure
         }
 
@@ -78,7 +85,7 @@ namespace ECSDiscord.Services
                 // To and from addresses
                 MailAddress from = new MailAddress(_smtpFromEmail, _smtpFromName, Encoding.UTF8);
                 MailAddress to = new MailAddress(email);
-                
+
                 // Create message
                 MailMessage message = new MailMessage(from, to);
                 message.Body = fillTemplate(_smtpBodyTemplate, email, username, verificationCode, user, _guild);
@@ -86,20 +93,51 @@ namespace ECSDiscord.Services
                 message.Subject = fillTemplate(_smtpSubjectTemplate, email, username, verificationCode, user, _guild);
                 message.SubjectEncoding = Encoding.UTF8;
 
-                Log.Information("Sending verification email to: {email}", email);
+                Log.Information("Sending verification email");
                 await client.SendMailAsync(message);
-                Log.Debug("Verification email successfuly sent to: {email}", email);
+                Log.Debug("Verification email successfuly sent");
 
                 // Clean up
                 message.Dispose();
                 client.Dispose();
-                
+
                 return EmailResult.Success;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Log.Error(ex, "Failed to send verification email: {message}", ex.Message);
                 return EmailResult.Failure;
+            }
+        }
+
+        public async Task<VerificationResult> FinishVerificationAsync(string token, SocketUser user)
+        {
+            try
+            {
+                var pendingVerification = await _storageService.Verification.GetPendingVerificationAsync(token);
+                if (user.Id == pendingVerification.DiscordId)
+                {
+                    await _storageService.Verification.AddHistoryAsync( // Add verification history record
+                        pendingVerification.EncryptedUsername,
+                        pendingVerification.DiscordId);
+                    await _storageService.Users.SetEncryptedUsernameAsync( // Set verified username for user
+                        pendingVerification.DiscordId,
+                        pendingVerification.EncryptedUsername);
+                    await _storageService.Verification.DeleteCodeAsync(pendingVerification.DiscordId); // Delete all pending verification codes for current user
+                    return VerificationResult.Success;
+                }
+                else
+                    return VerificationResult.InvalidToken;
+            }
+            catch (StorageService.RecordNotFoundException ex)
+            {
+                Log.Information("User {user} attempted verification with invalid token.", user.Id);
+                return VerificationResult.InvalidToken;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Failed to verify user {user} error {message}", user.Id, ex.Message);
+                return VerificationResult.Failure;
             }
         }
 
@@ -107,11 +145,14 @@ namespace ECSDiscord.Services
         {
             RandomNumberGenerator rng = RNGCryptoServiceProvider.Create();
 
+            byte[] usernameBytes = Encoding.UTF8.GetBytes(username);
+            byte[] encryptedUsername = _publicKeyCert.GetRSAPublicKey().Encrypt(usernameBytes, RSAEncryptionPadding.OaepSHA256);
+            
             byte[] tokenBuffer = new byte[RandomTokenLength];
             rng.GetBytes(tokenBuffer);
-            string token = Base32.ToBase32String(tokenBuffer);
+            string token = "test";// Base32.ToBase32String(tokenBuffer);
 
-            await _storageService.Verification.AddVerificationCodeAsync(token, username, discordId);
+            await _storageService.Verification.AddPendingVerificationAsync(token, encryptedUsername, discordId);
 
             return token;
         }
@@ -139,8 +180,10 @@ namespace ECSDiscord.Services
 
         public async Task<bool> IsUserVerifiedAsync(ulong discordId)
         {
-            return !string.IsNullOrWhiteSpace(await _storageService.Users.GetVerifiedUsernameAsync(discordId));
+            return await _storageService.Users.GetEncryptedUsernameAsync(discordId) != null;
         }
+
+
 
         /// <summary>
         /// Fills context details into a template string.
@@ -205,6 +248,23 @@ namespace ECSDiscord.Services
             }
 
             _verifiedRole = _guild.GetRole(roleId);
+
+            _publicKeyCertPath = _config["verification:publicKeyCertPath"];
+            if (!File.Exists(_publicKeyCertPath))
+            {
+                Log.Error("Could not find public key certificate file using the path specified in verification settings.");
+                throw new FileNotFoundException("Could not find public key certificate file using the path specified in verification settings.");
+            }
+
+            try
+            {
+                _publicKeyCert = new X509Certificate2(_publicKeyCertPath);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Error loading verification certificate file {message}", ex.Message);
+                throw ex;
+            }
         }
     }
 }

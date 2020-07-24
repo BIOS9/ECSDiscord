@@ -16,6 +16,7 @@ verification:
 	smtpFromName: null
 	smtpUseSsl: false
 	verifiedRoleId: null
+	publicKeyCertPath: pub.crt
 forcedChannels:
 	help: null
 	enrollments: null
