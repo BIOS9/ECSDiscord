@@ -38,6 +38,9 @@ namespace ECSDiscord.Services
             }
 
 
+            /// <summary>
+            /// Add pending verification token to storage.
+            /// </summary>
             public async Task AddVerificationCodeAsync(string token, string username, ulong discordId)
             {
                 using (MySqlConnection con = _storageService.GetMySqlConnection())
@@ -57,6 +60,42 @@ namespace ECSDiscord.Services
 
                     TimeSpan t = DateTime.UtcNow - new DateTime(1970, 1, 1);
                     cmd.Parameters.AddWithValue("@time", (long)t.TotalSeconds);
+
+                    await cmd.ExecuteNonQueryAsync();
+                }
+            }
+
+            /// <summary>
+            /// Delete matching verification token
+            /// </summary>
+            public async Task DeleteVerificationCodeByTokenAsync(string token)
+            {
+                using (MySqlConnection con = _storageService.GetMySqlConnection())
+                using (MySqlCommand cmd = new MySqlCommand())
+                {
+                    con.Open();
+                    cmd.Connection = con;
+
+                    cmd.CommandText = $"DELETE FROM `{PendingVerificationsTable}` WHERE `token` = @token";
+                    cmd.Parameters.AddWithValue("@token", token);
+
+                    await cmd.ExecuteNonQueryAsync();
+                }
+            }
+
+            /// <summary>
+            /// Delete all verification tokens associated with a Discord ID
+            /// </summary>
+            public async Task DeleteVerificationCodeByDiscordIdAsync(ulong discordId)
+            {
+                using (MySqlConnection con = _storageService.GetMySqlConnection())
+                using (MySqlCommand cmd = new MySqlCommand())
+                {
+                    con.Open();
+                    cmd.Connection = con;
+
+                    cmd.CommandText = $"DELETE FROM `{PendingVerificationsTable}` WHERE `discordSnowflake` = @discordId";
+                    cmd.Parameters.AddWithValue("@discordId", discordId);
 
                     await cmd.ExecuteNonQueryAsync();
                 }
@@ -84,13 +123,13 @@ namespace ECSDiscord.Services
                     con.Open();
                     cmd.Connection = con;
 
-                    cmd.CommandText = $"SELECT `verifiedVuwUsername` FROM `users` WHERE `discordSnowflake` = @discordId;";
+                    cmd.CommandText = $"SELECT `verifiedVuwUsername` FROM `{UsersTable}` WHERE `discordSnowflake` = @discordId;";
                     cmd.Prepare();
                     cmd.Parameters.AddWithValue("@discordId", discordId);
 
                     using (var reader = await cmd.ExecuteReaderAsync())
                     {
-                        if(await reader.ReadAsync()) // Read one row
+                        if (await reader.ReadAsync()) // Read one row
                         {
                             return reader.GetString(0); // Get string in first column
                         }
@@ -118,8 +157,8 @@ namespace ECSDiscord.Services
             string database = _config["database:database"];
             string username = _config["database:username"];
             string password = _config["database:password"];
-    
-            if(!int.TryParse(_config["database:port"], out int port))
+
+            if (!int.TryParse(_config["database:port"], out int port))
             {
                 Log.Error("Invalid port number configured in database settings.");
                 throw new ArgumentException("Invalid port number configured in database settings.");
