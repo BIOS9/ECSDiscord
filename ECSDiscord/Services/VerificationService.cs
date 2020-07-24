@@ -52,8 +52,6 @@ namespace ECSDiscord.Services
         {
             Success,
             InvalidEmail,
-            AlreadyVerified,
-            UsernameTaken,
             Failure
         }
 
@@ -61,8 +59,6 @@ namespace ECSDiscord.Services
         {
             Success,
             InvalidToken,
-            AlreadyVerified,
-            UsernameTaken,
             Failure
         }
 
@@ -70,9 +66,6 @@ namespace ECSDiscord.Services
         {
             try
             {
-                if (await IsUserVerifiedAsync(user))
-                    return EmailResult.AlreadyVerified;
-
                 if (!IsEmailValid(email, out string username))
                     return EmailResult.InvalidEmail;
 
