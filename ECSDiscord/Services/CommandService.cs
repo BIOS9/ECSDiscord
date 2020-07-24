@@ -1,6 +1,7 @@
 ﻿using Discord.Commands;
 using Discord.WebSocket;
 using Microsoft.Extensions.Configuration;
+using Serilog;
 using System;
 using System.Threading.Tasks;
 
@@ -20,12 +21,14 @@ namespace ECSDiscord.Services
             IConfigurationRoot config,
             IServiceProvider provider)
         {
+            Log.Debug("Command service loading.");
             _discord = discord;
             _commands = commands;
             _config = config;
             _provider = provider;
 
             _discord.MessageReceived += OnMessageReceivedAsync;
+            Log.Debug("Command service loaded.");
         }
 
         private async Task OnMessageReceivedAsync(SocketMessage s)
@@ -46,18 +49,32 @@ namespace ECSDiscord.Services
                     switch (result.Error)
                     {
                         case CommandError.UnknownCommand:
+                            Log.Debug("User {discordUser} sent unknown command.", s.Author.Id);
                             await context.Channel.SendMessageAsync($"Sorry, that is an unknown command.\nTry `{_config["prefix"]}help` to see a list of commands.");
                             break;
                         case CommandError.BadArgCount:
+                            Log.Debug("User {discordUser} sent command with invalid number of arguments.", s.Author.Id);
                             await context.Channel.SendMessageAsync($"Sorry, you supplied an invalid number of arguments.\nTry `{_config["prefix"]}help <command>`");
                             break;
                         case CommandError.UnmetPrecondition:
                             if (result.ErrorReason.StartsWith("User requires guild permission"))
+                            {
+                                Log.Debug("User {discordUser} tried to execute command without the correct permissions.", s.Author.Id);
                                 await context.Channel.SendMessageAsync("Sorry, you don't have permission to run that command.");
+                            }
+                            else if (result.ErrorReason.StartsWith("Command must be used in a guild channel."))
+                            {
+                                Log.Debug("User {discordUser} tried to execute command that requires guild channel in private message.", s.Author.Id);
+                                await context.Channel.SendMessageAsync("Sorry, that command can only be run in a Discord Server channel.");
+                            }
                             else
+                            {
+                                Log.Warning("Error while executing command for user {discordId} {error}", s.Author.Id, result.ErrorReason);
                                 await context.Channel.SendMessageAsync("Sorry, something is preventing that command from being run.\nPlease ask an admin to check the logs.");
+                            }
                             break;
                         default:
+                            Log.Warning("Error while executing command for user {discordId} {error}", s.Author.Id, result.ErrorReason);
                             await context.Channel.SendMessageAsync("An error occured: " + result.ToString());
                             break;
                     }

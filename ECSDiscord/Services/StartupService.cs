@@ -22,10 +22,12 @@ namespace ECSDiscord.Services
             Discord.Commands.CommandService commands,
             IConfigurationRoot config)
         {
+            Log.Debug("Startup service loading.");
             _provider = provider;
             _config = config;
             _discord = discord;
             _commands = commands;
+            Log.Debug("Startup service loaded.");
         }
 
         /// <summary>

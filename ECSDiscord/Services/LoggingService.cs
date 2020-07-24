@@ -13,11 +13,13 @@ namespace ECSDiscord.Services
         // DiscordSocketClient and CommandService are injected automatically from the IServiceProvider
         public LoggingService(DiscordSocketClient discord, Discord.Commands.CommandService commands)
         {
+            Log.Debug("Logging service loading.");
             _discord = discord;
             _commands = commands;
 
             _discord.Log += OnLogAsync;
             _commands.Log += OnLogAsync;
+            Log.Debug("Logging service loaded (ironic).");
         }
 
         private Task OnLogAsync(LogMessage msg)

@@ -48,10 +48,12 @@ namespace ECSDiscord.Services
 
         public VerificationService(IConfigurationRoot config, DiscordSocketClient discord, StorageService storageService)
         {
+            Log.Debug("Verification service loading.");
             _config = config;
             _discord = discord;
             _storageService = storageService;
             loadConfig();
+            Log.Debug("Verification service loaded.");
         }
 
         public enum EmailResult
@@ -74,17 +76,17 @@ namespace ECSDiscord.Services
         {
             try
             {
+                Log.Debug("Starting verification for user: {user} {id}", user.Username, user.Id);
+
                 if (!IsEmailValid(email, out string username))
                 {
                     Log.Information("Invalid verification email address supplied by: {user} {id}", user.Username, user.Id);
                     return EmailResult.InvalidEmail;
                 }
 
-                Log.Debug("Starting verification for user: {user} {id}", user.Username, user.Id);
                 // Create persistent verification code
                 string verificationCode = await CreateVerificationCodeAsync(user.Id, username);
 
-                Log.Debug("Sending verification email to: {user} {id}", user.Username, user.Id);
                 SmtpClient client = new SmtpClient(_smtpHost, _smtpPort);
                 client.EnableSsl = _smtpUseSsl;
 
@@ -101,9 +103,9 @@ namespace ECSDiscord.Services
                 message.Subject = fillTemplate(_smtpSubjectTemplate, email, username, verificationCode, user, guild);
                 message.SubjectEncoding = Encoding.UTF8;
 
-                Log.Information("Sending verification email");
+                Log.Information("Sending verification email for {username} {id}", user.Username, user.Id);
                 await client.SendMailAsync(message);
-                Log.Debug("Verification email successfuly sent");
+                Log.Debug("Verification email successfuly sent for {id}", user.Id);
 
                 // Clean up
                 message.Dispose();
@@ -122,6 +124,8 @@ namespace ECSDiscord.Services
         {
             try
             {
+                Log.Debug("Finishing verification for {username} {id}", user.Username, user.Id);
+
                 var pendingVerification = await _storageService.Verification.GetPendingVerificationAsync(token.ToUpper());
                 if (user.Id == pendingVerification.DiscordId)
                 {
@@ -129,6 +133,7 @@ namespace ECSDiscord.Services
 
                     if (DateTime.Now - pendingVerification.CreationTime > TokenExpiryTime)
                     {
+                        Log.Information("User verification success for {username} {id}", user.Username, user.Id);
                         return VerificationResult.TokenExpired;
                     }
 
@@ -154,10 +159,14 @@ namespace ECSDiscord.Services
                     }
                     await guildUser.AddRoleAsync(role); // Give user verified role
 
+                    Log.Information("User verification success for {username} {id}", user.Username, user.Id);
                     return VerificationResult.Success;
                 }
                 else
+                {
+                    Log.Information("Verification failed, user IDs did not match for {username} {id} and pending verification {pendingId}", user.Username, user.Id, pendingVerification.DiscordId);
                     return VerificationResult.InvalidToken;
+                }
             }
             catch (StorageService.RecordNotFoundException ex)
             {
@@ -191,10 +200,10 @@ namespace ECSDiscord.Services
                     string token = "$" + Base32.ToBase32String(tokenBuffer);
 
                     await _storageService.Verification.AddPendingVerificationAsync(token, encryptedUsername, discordId);
-                    Log.Debug("Verification code for {id} added.", discordId);
+                    Log.Debug("Verification code for {id} added on attempt {attempt}", discordId, i);
                     return token;
                 }
-                catch (DuplicateRecordException ex)
+                catch (DuplicateRecordException)
                 {
                     Log.Debug("Duplicate verification token encountered in storage service.");
                 }
@@ -230,6 +239,7 @@ namespace ECSDiscord.Services
 
         public async Task<bool> IsUserVerifiedAsync(ulong discordId)
         {
+            Log.Debug("User verification check for {id}", discordId);
             return await _storageService.Users.GetEncryptedUsernameAsync(discordId) != null;
         }
 

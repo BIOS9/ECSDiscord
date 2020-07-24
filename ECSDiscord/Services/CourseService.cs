@@ -42,9 +42,11 @@ namespace ECSDiscord.Services
 
         public CourseService(IConfigurationRoot config, DiscordSocketClient discord)
         {
+            Log.Debug("Course service loading.");
             _config = config;
             _discord = discord;
             Task.Run(DownloadCourseList);
+            Log.Debug("Course service loaded.");
         }
 
         public IList<Course> GetCourses()

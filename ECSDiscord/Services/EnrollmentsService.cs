@@ -27,9 +27,11 @@ namespace ECSDiscord.Services
 
         public EnrollmentsService(DiscordSocketClient discord, CourseService courses, IConfigurationRoot config)
         {
+            Log.Debug("Enrollments service loading.");
             _discord = discord;
             _courses = courses;
             _config = config;
+            Log.Debug("Enrollments service loaded.");
         }
 
         public async Task<EnrollmentResult> EnrollUser(string course, SocketUser user)
