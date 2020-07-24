@@ -47,17 +47,13 @@ namespace ECSDiscord.Services
             {
                 public readonly string Token;
                 public readonly byte[] EncryptedUsername;
-                public readonly byte[] UsernameHash;
-                public readonly byte[] UsernameHashSalt;
                 public readonly ulong DiscordId;
                 public readonly DateTime CreationTime;
 
-                public PendingVerification(string token, byte[] encryptedUsername, byte[] usernameHash, byte[] usernameHashSalt, ulong discordId, DateTime creationTime)
+                public PendingVerification(string token, byte[] encryptedUsername, ulong discordId, DateTime creationTime)
                 {
                     Token = token;
                     EncryptedUsername = encryptedUsername;
-                    UsernameHash = usernameHash;
-                    UsernameHashSalt = usernameHashSalt;
                     DiscordId = discordId;
                     CreationTime = creationTime;
                 }
@@ -66,7 +62,7 @@ namespace ECSDiscord.Services
             /// <summary>
             /// Add pending verification token to storage.
             /// </summary>
-            public async Task AddPendingVerificationAsync(string token, byte[] encryptedUsername, byte[] usernameHash, byte[] usernameHashSalt, ulong discordId)
+            public async Task AddPendingVerificationAsync(string token, byte[] encryptedUsername, ulong discordId)
             {
                 using (MySqlConnection con = _storageService.GetMySqlConnection())
                 using (MySqlCommand cmd = new MySqlCommand())
@@ -75,14 +71,12 @@ namespace ECSDiscord.Services
                     cmd.Connection = con;
 
                     cmd.CommandText = $"INSERT INTO `{PendingVerificationsTable}` " +
-                        $"(`token`, `encryptedUsername`, `usernameHash`, `usernameHashSalt`, `discordSnowflake`, `creationTime`) " +
-                        $"VALUES (@token, @encryptedUsername, @usernameHash, @usernameHashSalt, @discordId, @time);";
+                        $"(`token`, `encryptedUsername`, `discordSnowflake`, `creationTime`) " +
+                        $"VALUES (@token, @encryptedUsername, @discordId, @time);";
                     cmd.Prepare();
 
                     cmd.Parameters.AddWithValue("@token", token);
                     cmd.Parameters.AddWithValue("@encryptedUsername", encryptedUsername);
-                    cmd.Parameters.AddWithValue("@usernameHash", usernameHash);
-                    cmd.Parameters.AddWithValue("@usernameHashSalt", usernameHashSalt);
                     cmd.Parameters.AddWithValue("@discordId", discordId);
 
                     TimeSpan t = DateTime.UtcNow - Epoch;
@@ -100,7 +94,7 @@ namespace ECSDiscord.Services
                     con.Open();
                     cmd.Connection = con;
 
-                    cmd.CommandText = $"SELECT `encryptedUsername`, `usernameHash`, `usernameHashSalt`, `discordSnowflake`, `creationTime` " +
+                    cmd.CommandText = $"SELECT `encryptedUsername`, `discordSnowflake`, `creationTime` " +
                         $"FROM `{PendingVerificationsTable}` WHERE `token` = @token;";
                     cmd.Parameters.AddWithValue("@token", token);
 
@@ -118,30 +112,10 @@ namespace ECSDiscord.Services
                                 encryptedUsername = ms.ToArray();
                             }
 
-                            byte[] usernameHash;
-                            using (MemoryStream ms = new MemoryStream())
-                            {
-                                byte[] buffer = new byte[EncryptedValueBufferSize];
-                                int readSize;
-                                while ((readSize = (int)reader.GetBytes(1, 0, buffer, 0, buffer.Length)) > 0)
-                                    await ms.WriteAsync(buffer, 0, readSize);
-                                usernameHash = ms.ToArray();
-                            }
+                            ulong discordId = reader.GetUInt64(1);
+                            DateTime creationTime = Epoch.AddSeconds(reader.GetInt64(2));
 
-                            byte[] usernameHashSalt;
-                            using (MemoryStream ms = new MemoryStream())
-                            {
-                                byte[] buffer = new byte[EncryptedValueBufferSize];
-                                int readSize;
-                                while ((readSize = (int)reader.GetBytes(2, 0, buffer, 0, buffer.Length)) > 0)
-                                    await ms.WriteAsync(buffer, 0, readSize);
-                                usernameHashSalt = ms.ToArray();
-                            }
-
-                            ulong discordId = reader.GetUInt64(3);
-                            DateTime creationTime = Epoch.AddSeconds(reader.GetInt64(4));
-
-                            return new PendingVerification(token, encryptedUsername, usernameHash, usernameHashSalt, discordId, creationTime);
+                            return new PendingVerification(token, encryptedUsername, discordId, creationTime);
                         }
 
                         throw new RecordNotFoundException($"No pending verification with token \"{token}\" was found.");
@@ -188,7 +162,7 @@ namespace ECSDiscord.Services
             /// <summary>
             /// Adds a historic record of username verification for an account.
             /// </summary>
-            public async Task AddHistoryAsync(byte[] encryptedUsername, byte[] usernameHash, byte[] usernameHashSalt, ulong discordId)
+            public async Task AddHistoryAsync(byte[] encryptedUsername, ulong discordId)
             {
                 using (MySqlConnection con = _storageService.GetMySqlConnection())
                 using (MySqlCommand cmd = new MySqlCommand())
@@ -197,14 +171,12 @@ namespace ECSDiscord.Services
                     cmd.Connection = con;
 
                     cmd.CommandText = $"INSERT INTO `{VerificationHistoryTable}` " +
-                        $"(`discordSnowflake`, `encryptedUsername`, `usernameHash`, `usernameHashSalt`, `verificationTime`) " +
-                        $"VALUES (@discordId, @encryptedUsername, @usernameHash, @usernameHashSalt, @time);";
+                        $"(`discordSnowflake`, `encryptedUsername`, `verificationTime`) " +
+                        $"VALUES (@discordId, @encryptedUsername, @time);";
                     cmd.Prepare();
 
                     cmd.Parameters.AddWithValue("@discordId", discordId);
                     cmd.Parameters.AddWithValue("@encryptedUsername", encryptedUsername);
-                    cmd.Parameters.AddWithValue("@usernameHash", usernameHash);
-                    cmd.Parameters.AddWithValue("@usernameHashSalt", usernameHashSalt);
 
                     TimeSpan t = DateTime.UtcNow - Epoch;
                     cmd.Parameters.AddWithValue("@time", (long)t.TotalSeconds);
