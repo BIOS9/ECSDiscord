@@ -5,9 +5,9 @@ using Serilog;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace ECSDiscord.Modules.Util
+namespace ECSDiscord.Util
 {
-    public static class Util
+    public static class DiscordUtil
     {
         /// <summary>
         /// Ensure command is only executed in allowed channels.

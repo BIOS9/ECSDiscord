@@ -67,6 +67,7 @@ namespace ECSDiscord
             provider.GetRequiredService<Services.EnrollmentsService>(); // Start enrollments service
             provider.GetRequiredService<Services.CourseService>(); // Start course service
             provider.GetRequiredService<Services.StorageService>(); // Start course service
+            provider.GetRequiredService<Services.VerificationService>(); // Start verification service
             await provider.GetRequiredService<Services.StartupService>().StartAsync(); // Run startup service
             await Task.Delay(-1); // Keep program from exiting
         }
@@ -92,6 +93,7 @@ namespace ECSDiscord
             .AddSingleton<Services.EnrollmentsService>()     // Add enrollmentsservice to the collection
             .AddSingleton<Services.CourseService>()          // Add courseservice to the collection
             .AddSingleton<Services.StorageService>()          // Add storageservice to the collection
+            .AddSingleton<Services.VerificationService>()       // Add verificationservice to the collection
             .AddSingleton(Configuration);           // Add the configuration to the collection
         }
 
