@@ -16,9 +16,14 @@ verification:
 	smtpFromName: null
 	smtpUseSsl: false
 	verifiedRoleId: null
-	
 forcedChannels:
 	help: null
 	enrollments: null
 secrets:
 	discordBotToken: null
+database:
+	server: null
+	port: null
+	database: null
+	username: null
+	password: null
