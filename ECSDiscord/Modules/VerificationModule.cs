@@ -26,6 +26,11 @@ namespace ECSDiscord.Modules
         public async Task VerifyAsync(string email)
         {
             await ReplyAsync("Processing...");
+            try
+            {
+                await Context.Message.DeleteAsync();
+            }
+            catch { }
 
             StringBuilder stringBuilder = new StringBuilder();
 
