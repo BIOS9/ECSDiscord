@@ -66,7 +66,7 @@ namespace ECSDiscord.Services
             /// <summary>
             /// Add pending verification token to storage.
             /// </summary>
-            public async Task AddCodeAsync(string token, byte[] encryptedUsername, byte[] usernameHash, byte[] usernameHashSalt, ulong discordId)
+            public async Task AddPendingVerificationAsync(string token, byte[] encryptedUsername, byte[] usernameHash, byte[] usernameHashSalt, ulong discordId)
             {
                 using (MySqlConnection con = _storageService.GetMySqlConnection())
                 using (MySqlCommand cmd = new MySqlCommand())
@@ -243,6 +243,10 @@ namespace ECSDiscord.Services
                     {
                         if (await reader.ReadAsync()) // Read one row
                         {
+
+                            if(await reader.IsDBNullAsync(0))
+                                return null;
+                            
                             using (MemoryStream ms = new MemoryStream())
                             {
                                 byte[] buffer = new byte[EncryptedValueBufferSize];
@@ -257,7 +261,7 @@ namespace ECSDiscord.Services
                 }
             }
 
-            public async Task SetVerifiedUsernameAsync(ulong discordId, byte[] encryptedUsername)
+            public async Task SetEncryptedUsernameAsync(ulong discordId, byte[] encryptedUsername)
             {
                 using (MySqlConnection con = _storageService.GetMySqlConnection())
                 {
