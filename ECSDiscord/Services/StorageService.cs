@@ -67,7 +67,7 @@ namespace ECSDiscord.Services
                 using (MySqlConnection con = _storageService.GetMySqlConnection())
                 using (MySqlCommand cmd = new MySqlCommand())
                 {
-                    con.Open();
+                    await con.OpenAsync();
                     cmd.Connection = con;
 
                     cmd.CommandText = $"INSERT INTO `{PendingVerificationsTable}` " +
@@ -91,7 +91,7 @@ namespace ECSDiscord.Services
                 using (MySqlConnection con = _storageService.GetMySqlConnection())
                 using (MySqlCommand cmd = new MySqlCommand())
                 {
-                    con.Open();
+                    await con.OpenAsync();
                     cmd.Connection = con;
 
                     cmd.CommandText = $"SELECT `encryptedUsername`, `discordSnowflake`, `creationTime` " +
@@ -131,7 +131,7 @@ namespace ECSDiscord.Services
                 using (MySqlConnection con = _storageService.GetMySqlConnection())
                 using (MySqlCommand cmd = new MySqlCommand())
                 {
-                    con.Open();
+                    await con.OpenAsync();
                     cmd.Connection = con;
 
                     cmd.CommandText = $"DELETE FROM `{PendingVerificationsTable}` WHERE `token` = @token;";
@@ -149,7 +149,7 @@ namespace ECSDiscord.Services
                 using (MySqlConnection con = _storageService.GetMySqlConnection())
                 using (MySqlCommand cmd = new MySqlCommand())
                 {
-                    con.Open();
+                    await con.OpenAsync();
                     cmd.Connection = con;
 
                     cmd.CommandText = $"DELETE FROM `{PendingVerificationsTable}` WHERE `discordSnowflake` = @discordId;";
@@ -167,7 +167,7 @@ namespace ECSDiscord.Services
                 using (MySqlConnection con = _storageService.GetMySqlConnection())
                 using (MySqlCommand cmd = new MySqlCommand())
                 {
-                    con.Open();
+                    await con.OpenAsync();
                     cmd.Connection = con;
 
                     cmd.CommandText = $"INSERT INTO `{VerificationHistoryTable}` " +
@@ -204,7 +204,7 @@ namespace ECSDiscord.Services
                 using (MySqlConnection con = _storageService.GetMySqlConnection())
                 using (MySqlCommand cmd = new MySqlCommand())
                 {
-                    con.Open();
+                    await con.OpenAsync();
                     cmd.Connection = con;
 
                     cmd.CommandText = $"SELECT `encryptedUsername` FROM `{UsersTable}` WHERE `discordSnowflake` = @discordId;";
@@ -240,7 +240,7 @@ namespace ECSDiscord.Services
                     await CreateUserIfNotExist(discordId, con);
                     using (MySqlCommand cmd = new MySqlCommand())
                     {
-                        con.Open();
+                        await con.OpenAsync();
                         cmd.Connection = con;
 
                         cmd.CommandText = $"UPDATE `{UsersTable}` SET `encryptedUsername` = @encryptedUsername WHERE `discordSnowflake` = @discordId;";
@@ -263,7 +263,7 @@ namespace ECSDiscord.Services
             {
                 using (MySqlCommand cmd = new MySqlCommand())
                 {
-                    con.Open();
+                    await con.OpenAsync();
                     cmd.Connection = con;
 
                     cmd.CommandText = $"INSERT INTO `{UsersTable}` (`discordSnowflake`) VALUES (@discordId);";
@@ -284,7 +284,9 @@ namespace ECSDiscord.Services
         {
             _config = config;
             loadConfig();
+            
             Verification = new VerificationStorage(this);
+            Users = new UserStorage(this);
         }
 
         private void loadConfig()
@@ -301,6 +303,24 @@ namespace ECSDiscord.Services
             }
 
             _mysqlConnectionString = $"SERVER={server};PORT={port};DATABASE={database};UID={username};PASSWORD={password};";
+        }
+
+        public async Task<bool> TestConnection()
+        {
+            try
+            {
+                using (MySqlConnection con = GetMySqlConnection())
+                {
+                    await con.OpenAsync();
+                    Log.Information("Connected to MySql version: {version}", con.ServerVersion);
+                }
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Failed to connect to MySql {message}", ex.Message);
+                return false;
+            }
         }
     }
 }
