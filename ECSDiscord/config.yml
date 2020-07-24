@@ -10,6 +10,7 @@ verification:
   usernameGroup: 1
   subjectTemplate: null
   bodyTemplate: null
+  bodyHtml: false
   smtpServer: null
   smtpPort: null
   smtpFromAddress: null

@@ -14,7 +14,7 @@ namespace ECSDiscord.Util
         /// </summary>
         public static bool CheckConfigChannel(this SocketCommandContext context, string category, IConfigurationRoot config)
         {
-            if ((context.User as IGuildUser).GuildPermissions.Administrator) // Allow administrators to use any command in any channel
+            if (context.IsPrivate || (context.User as IGuildUser).GuildPermissions.Administrator) // Allow administrators to use any command in any channel
                 return true;
 
             IConfigurationSection section = config.GetSection("forcedChannels").GetSection(category); // Get command category from config

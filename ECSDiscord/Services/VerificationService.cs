@@ -1,4 +1,5 @@
-﻿using Discord.WebSocket;
+﻿using Discord;
+using Discord.WebSocket;
 using ECSDiscord.Util;
 using Microsoft.Extensions.Configuration;
 using Serilog;
@@ -12,11 +13,15 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using static ECSDiscord.Services.StorageService;
 
 namespace ECSDiscord.Services
 {
     public class VerificationService
     {
+        public static readonly TimeSpan TokenExpiryTime = TimeSpan.FromDays(7);
+        private static readonly Regex CodePattern = new Regex("^\\$[A-Z0-9]+$");
+
         private const int RandomTokenLength = 5; // Length in bytes. Base32 encodes 5 bytes into 8 characters.
 
         private readonly DiscordSocketClient _discord;
@@ -33,11 +38,12 @@ namespace ECSDiscord.Services
             _smtpBodyTemplate,
             _publicKeyCertPath;
         private int _smtpPort;
-        private bool _smtpUseSsl;
+        private bool
+            _smtpUseSsl,
+            _bodyIsHtml;
         private X509Certificate2 _publicKeyCert;
-        private SocketGuild _guild;
-        private SocketRole _verifiedRole;
-        private RSACryptoServiceProvider _rsa;
+        private ulong _guildId;
+        private ulong _verifiedRoleId;
 
 
         public VerificationService(IConfigurationRoot config, DiscordSocketClient discord, StorageService storageService)
@@ -59,7 +65,9 @@ namespace ECSDiscord.Services
         {
             Success,
             InvalidToken,
-            Failure
+            Failure,
+            NotInServer,
+            TokenExpired
         }
 
         public async Task<EmailResult> StartVerificationAsync(string email, SocketUser user)
@@ -67,11 +75,16 @@ namespace ECSDiscord.Services
             try
             {
                 if (!IsEmailValid(email, out string username))
+                {
+                    Log.Information("Invalid verification email address supplied by: {user} {id}", user.Username, user.Id);
                     return EmailResult.InvalidEmail;
+                }
 
+                Log.Debug("Starting verification for user: {user} {id}", user.Username, user.Id);
                 // Create persistent verification code
                 string verificationCode = await CreateVerificationCodeAsync(user.Id, username);
 
+                Log.Debug("Sending verification email to: {user} {id}", user.Username, user.Id);
                 SmtpClient client = new SmtpClient(_smtpHost, _smtpPort);
                 client.EnableSsl = _smtpUseSsl;
 
@@ -80,10 +93,12 @@ namespace ECSDiscord.Services
                 MailAddress to = new MailAddress(email);
 
                 // Create message
+                SocketGuild guild = _discord.GetGuild(_guildId);
                 MailMessage message = new MailMessage(from, to);
-                message.Body = fillTemplate(_smtpBodyTemplate, email, username, verificationCode, user, _guild);
+                message.IsBodyHtml = _bodyIsHtml;
+                message.Body = fillTemplate(_smtpBodyTemplate, email, username, verificationCode, user, guild);
                 message.BodyEncoding = Encoding.UTF8;
-                message.Subject = fillTemplate(_smtpSubjectTemplate, email, username, verificationCode, user, _guild);
+                message.Subject = fillTemplate(_smtpSubjectTemplate, email, username, verificationCode, user, guild);
                 message.SubjectEncoding = Encoding.UTF8;
 
                 Log.Information("Sending verification email");
@@ -107,16 +122,38 @@ namespace ECSDiscord.Services
         {
             try
             {
-                var pendingVerification = await _storageService.Verification.GetPendingVerificationAsync(token);
+                var pendingVerification = await _storageService.Verification.GetPendingVerificationAsync(token.ToUpper());
                 if (user.Id == pendingVerification.DiscordId)
                 {
+                    await _storageService.Verification.DeleteCodeAsync(pendingVerification.DiscordId); // Delete all pending verification codes for current user
+
+                    if (DateTime.Now - pendingVerification.CreationTime > TokenExpiryTime)
+                    {
+                        return VerificationResult.TokenExpired;
+                    }
+
                     await _storageService.Verification.AddHistoryAsync( // Add verification history record
                         pendingVerification.EncryptedUsername,
                         pendingVerification.DiscordId);
                     await _storageService.Users.SetEncryptedUsernameAsync( // Set verified username for user
                         pendingVerification.DiscordId,
                         pendingVerification.EncryptedUsername);
-                    await _storageService.Verification.DeleteCodeAsync(pendingVerification.DiscordId); // Delete all pending verification codes for current user
+
+                    SocketGuild guild = _discord.GetGuild(_guildId);
+                    SocketRole role = guild.GetRole(_verifiedRoleId);
+                    if (role == null)
+                    {
+                        Log.Error("Failed to find verified Discord role!");
+                        throw new Exception("Verified role not found.");
+                    }
+                    IGuildUser guildUser = guild.GetUser(user.Id);
+                    if (guildUser == null)
+                    {
+                        Log.Warning("User {user} is not in server, but tried to verify.", user.Id);
+                        return VerificationResult.NotInServer;
+                    }
+                    await guildUser.AddRoleAsync(role); // Give user verified role
+
                     return VerificationResult.Success;
                 }
                 else
@@ -136,18 +173,38 @@ namespace ECSDiscord.Services
 
         private async Task<string> CreateVerificationCodeAsync(ulong discordId, string username)
         {
+            Log.Debug("Creating verification code for {id}", discordId);
             RandomNumberGenerator rng = RNGCryptoServiceProvider.Create();
 
             byte[] usernameBytes = Encoding.UTF8.GetBytes(username);
-            byte[] encryptedUsername = _publicKeyCert.GetRSAPublicKey().Encrypt(usernameBytes, RSAEncryptionPadding.OaepSHA256);
-            
+            byte[] encryptedUsername;
+            using (RSA rsa = _publicKeyCert.GetRSAPublicKey())
+                encryptedUsername = rsa.Encrypt(usernameBytes, RSAEncryptionPadding.OaepSHA256);
+
             byte[] tokenBuffer = new byte[RandomTokenLength];
-            rng.GetBytes(tokenBuffer);
-            string token = "test";// Base32.ToBase32String(tokenBuffer);
 
-            await _storageService.Verification.AddPendingVerificationAsync(token, encryptedUsername, discordId);
+            for (int i = 0; i < 10; ++i)
+            {
+                try
+                {
+                    rng.GetBytes(tokenBuffer);
+                    string token = "$" + Base32.ToBase32String(tokenBuffer);
 
-            return token;
+                    await _storageService.Verification.AddPendingVerificationAsync(token, encryptedUsername, discordId);
+                    Log.Debug("Verification code for {id} added.", discordId);
+                    return token;
+                }
+                catch (DuplicateRecordException ex)
+                {
+                    Log.Debug("Duplicate verification token encountered in storage service.");
+                }
+            }
+            throw new Exception("Failed to create verification token, tried 10 times.");
+        }
+
+        public static bool IsValidCode(string code)
+        {
+            return CodePattern.IsMatch(code.ToUpper());
         }
 
         /// <summary>
@@ -213,7 +270,7 @@ namespace ECSDiscord.Services
                 throw new ArgumentException("Invalid regex usernameGroup configured in verification settings.");
             }
 
-            _guild = _discord.GetGuild(ulong.Parse(_config["guildId"]));
+            _guildId = ulong.Parse(_config["guildId"]);
 
             _smtpHost = _config["verification:smtpServer"];
             if (!int.TryParse(_config["verification:smtpPort"], out _smtpPort))
@@ -232,21 +289,35 @@ namespace ECSDiscord.Services
             }
 
             _smtpSubjectTemplate = _config["verification:subjectTemplate"];
+            if (string.IsNullOrWhiteSpace(_smtpSubjectTemplate))
+            {
+                Log.Error("Verification email subject cannot be empty!");
+                throw new ArgumentException("Verification email subject cannot be empty!");
+            }
             _smtpBodyTemplate = _config["verification:bodyTemplate"];
+            if (string.IsNullOrWhiteSpace(_smtpBodyTemplate))
+            {
+                Log.Error("Verification email subject cannot be empty!");
+                throw new ArgumentException("Verification email subject cannot be empty!");
+            }
 
-            if (!ulong.TryParse(_config["verification:verifiedRoleId"], out ulong roleId))
+            if (!ulong.TryParse(_config["verification:verifiedRoleId"], out _verifiedRoleId))
             {
                 Log.Error("Invalid verifiedRoleId configured in verification settings.");
                 throw new ArgumentException("Invalid verifiedRoleId configured in verification settings.");
             }
-
-            _verifiedRole = _guild.GetRole(roleId);
 
             _publicKeyCertPath = _config["verification:publicKeyCertPath"];
             if (!File.Exists(_publicKeyCertPath))
             {
                 Log.Error("Could not find public key certificate file using the path specified in verification settings.");
                 throw new FileNotFoundException("Could not find public key certificate file using the path specified in verification settings.");
+            }
+
+            if (!bool.TryParse(_config["verification:bodyHtml"], out _bodyIsHtml))
+            {
+                Log.Error("Invalid bodyHtml boolean in verification settings.");
+                throw new ArgumentException("Invalid bodyHtml boolean in verification settings.");
             }
 
             try

@@ -64,25 +64,35 @@ namespace ECSDiscord.Services
             /// </summary>
             public async Task AddPendingVerificationAsync(string token, byte[] encryptedUsername, ulong discordId)
             {
-                using (MySqlConnection con = _storageService.GetMySqlConnection())
-                using (MySqlCommand cmd = new MySqlCommand())
+                try
                 {
-                    await con.OpenAsync();
-                    cmd.Connection = con;
+                    using (MySqlConnection con = _storageService.GetMySqlConnection())
+                    using (MySqlCommand cmd = new MySqlCommand())
+                    {
+                        await con.OpenAsync();
+                        cmd.Connection = con;
 
-                    cmd.CommandText = $"INSERT INTO `{PendingVerificationsTable}` " +
-                        $"(`token`, `encryptedUsername`, `discordSnowflake`, `creationTime`) " +
-                        $"VALUES (@token, @encryptedUsername, @discordId, @time);";
-                    cmd.Prepare();
+                        cmd.CommandText = $"INSERT INTO `{PendingVerificationsTable}` " +
+                            $"(`token`, `encryptedUsername`, `discordSnowflake`, `creationTime`) " +
+                            $"VALUES (@token, @encryptedUsername, @discordId, @time);";
+                        cmd.Prepare();
 
-                    cmd.Parameters.AddWithValue("@token", token);
-                    cmd.Parameters.AddWithValue("@encryptedUsername", encryptedUsername);
-                    cmd.Parameters.AddWithValue("@discordId", discordId);
+                        cmd.Parameters.AddWithValue("@token", token);
+                        cmd.Parameters.AddWithValue("@encryptedUsername", encryptedUsername);
+                        cmd.Parameters.AddWithValue("@discordId", discordId);
 
-                    TimeSpan t = DateTime.UtcNow - Epoch;
-                    cmd.Parameters.AddWithValue("@time", (long)t.TotalSeconds);
+                        TimeSpan t = DateTime.UtcNow - Epoch;
+                        cmd.Parameters.AddWithValue("@time", (long)t.TotalSeconds);
 
-                    await cmd.ExecuteNonQueryAsync();
+                        await cmd.ExecuteNonQueryAsync();
+                    }
+                }
+                catch (MySqlException ex)
+                {
+                    if (ex.Message.StartsWith("Duplicate entry"))
+                        throw new DuplicateRecordException("Duplicate verification code.");
+                    else
+                        throw ex;
                 }
             }
 
@@ -100,16 +110,17 @@ namespace ECSDiscord.Services
 
                     using (var reader = (MySqlDataReader)await cmd.ExecuteReaderAsync())
                     {
-                        if(await reader.ReadAsync())
+                        if (await reader.ReadAsync())
                         {
-                            byte[] encryptedUsername;
-                            using (MemoryStream ms = new MemoryStream())
+                            int length = (int)reader.GetBytes(0, 0, null, 0, 0);
+                            byte[] encryptedUsername = new byte[length];
+                            int index = 0;
+
+                            while (index < length)
                             {
-                                byte[] buffer = new byte[EncryptedValueBufferSize];
-                                int readSize;
-                                while ((readSize = (int)reader.GetBytes(0, 0, buffer, 0, buffer.Length)) > 0)
-                                    await ms.WriteAsync(buffer, 0, readSize);
-                                encryptedUsername = ms.ToArray();
+                                int bytesRead = (int)reader.GetBytes(0, index,
+                                                                encryptedUsername, index, length - index);
+                                index += bytesRead;
                             }
 
                             ulong discordId = reader.GetUInt64(1);
@@ -216,17 +227,21 @@ namespace ECSDiscord.Services
                         if (await reader.ReadAsync()) // Read one row
                         {
 
-                            if(await reader.IsDBNullAsync(0))
+                            if (await reader.IsDBNullAsync(0))
                                 return null;
-                            
-                            using (MemoryStream ms = new MemoryStream())
+
+                            int length = (int)reader.GetBytes(0, 0, null, 0, 0);
+                            byte[] encryptedUsername = new byte[length];
+                            int index = 0;
+
+                            while (index < length)
                             {
-                                byte[] buffer = new byte[EncryptedValueBufferSize];
-                                int readSize;
-                                while((readSize = (int)reader.GetBytes(0, 0, buffer, 0, buffer.Length)) > 0)
-                                    await ms.WriteAsync(buffer, 0, readSize);
-                                return ms.ToArray();
+                                int bytesRead = (int)reader.GetBytes(0, index,
+                                                                encryptedUsername, index, length - index);
+                                index += bytesRead;
                             }
+
+                            return encryptedUsername;
                         }
                         throw new RecordNotFoundException($"No user with discordId \"{discordId}\" was found.");
                     }
@@ -237,10 +252,10 @@ namespace ECSDiscord.Services
             {
                 using (MySqlConnection con = _storageService.GetMySqlConnection())
                 {
+                    await con.OpenAsync();
                     await CreateUserIfNotExist(discordId, con);
                     using (MySqlCommand cmd = new MySqlCommand())
                     {
-                        await con.OpenAsync();
                         cmd.Connection = con;
 
                         cmd.CommandText = $"UPDATE `{UsersTable}` SET `encryptedUsername` = @encryptedUsername WHERE `discordSnowflake` = @discordId;";
@@ -263,10 +278,9 @@ namespace ECSDiscord.Services
             {
                 using (MySqlCommand cmd = new MySqlCommand())
                 {
-                    await con.OpenAsync();
                     cmd.Connection = con;
 
-                    cmd.CommandText = $"INSERT INTO `{UsersTable}` (`discordSnowflake`) VALUES (@discordId);";
+                    cmd.CommandText = $"INSERT IGNORE INTO `{UsersTable}` (`discordSnowflake`) VALUES (@discordId);";
                     cmd.Prepare();
                     cmd.Parameters.AddWithValue("@discordId", discordId);
 
@@ -284,7 +298,7 @@ namespace ECSDiscord.Services
         {
             _config = config;
             loadConfig();
-            
+
             Verification = new VerificationStorage(this);
             Users = new UserStorage(this);
         }

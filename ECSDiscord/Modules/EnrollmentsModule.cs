@@ -58,7 +58,7 @@ namespace ECSDiscord.BotModules
                         break;
                     default:
                     case EnrollmentResult.Failure:
-                        stringBuilder.Append($":fire:  **{course}** - A server error occured. Please ask and admin to check the logs.\n");
+                        stringBuilder.Append($":fire:  **{course}** - A server error occured. Please ask an admin to check the logs.\n");
                         break;
                     case EnrollmentResult.Success:
                         stringBuilder.Append($":inbox_tray:  **{course}** - Added you to {course} successfully.\n");
@@ -108,7 +108,7 @@ namespace ECSDiscord.BotModules
                         break;
                     default:
                     case EnrollmentResult.Failure:
-                        stringBuilder.Append($":fire:  **{course}** - A server error occured. Please ask and admin to check the logs.\n");
+                        stringBuilder.Append($":fire:  **{course}** - A server error occured. Please ask an admin to check the logs.\n");
                         break;
                     case EnrollmentResult.Success:
                         stringBuilder.Append($":outbox_tray:  **{course}** - Removed you from {course} successfully.\n");
@@ -151,7 +151,7 @@ namespace ECSDiscord.BotModules
                         break;
                     default:
                     case EnrollmentResult.Failure:
-                        stringBuilder.Append($":fire:  **{course}** - A server error occured. Please ask and admin to check the logs.\n");
+                        stringBuilder.Append($":fire:  **{course}** - A server error occured. Please ask an admin to check the logs.\n");
                         break;
                     case EnrollmentResult.Success:
                         stringBuilder.Append($":outbox_tray:  **{course}** - Removed you from {course} successfully.\n");
@@ -199,7 +199,7 @@ namespace ECSDiscord.BotModules
                         break;
                     default:
                     case EnrollmentResult.Failure:
-                        stringBuilder.Append($":fire:  **{course}** - A server error occured. Please ask and admin to check the logs.\n");
+                        stringBuilder.Append($":fire:  **{course}** - A server error occured. Please ask an admin to check the logs.\n");
                         break;
                     case EnrollmentResult.Success:
                         string actionString = alreadyInCourse ? "Removed you from" : "Added you to";

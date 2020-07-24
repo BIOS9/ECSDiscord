@@ -24,7 +24,7 @@ namespace ECSDiscord
 
         public ECSDiscord()
         {
-            if(!File.Exists(ConfigurationFile)) // Check that config file exists
+            if (!File.Exists(ConfigurationFile)) // Check that config file exists
             {
                 Log.Fatal("Cannot find configuration file: \"{configurationFile}\" Exiting...", ConfigurationFile);
                 throw new FileNotFoundException("Cannot find config file.", ConfigurationFile);
@@ -38,7 +38,7 @@ namespace ECSDiscord
 
         private bool checkConfig()
         {
-            if(string.IsNullOrWhiteSpace(Configuration["guildId"]) || !ulong.TryParse(Configuration["guildId"], out _))
+            if (string.IsNullOrWhiteSpace(Configuration["guildId"]) || !ulong.TryParse(Configuration["guildId"], out _))
             {
                 Log.Error("Invalid guildId in config. Please configure the Discord guild ID of the server.");
                 return false;
@@ -69,7 +69,8 @@ namespace ECSDiscord
             provider.GetRequiredService<Services.StorageService>(); // Start course service
             provider.GetRequiredService<Services.VerificationService>(); // Start verification service
             await provider.GetRequiredService<Services.StartupService>().StartAsync(); // Run startup service
-            await Task.Delay(-1); // Keep program from exiting
+            if (await provider.GetRequiredService<Services.StorageService>().TestConnection()) // Test DB connection
+                await Task.Delay(-1); // Keep program from exiting
         }
 
         /// <summary>
@@ -84,7 +85,7 @@ namespace ECSDiscord
             }))
             .AddSingleton(new Discord.Commands.CommandService(new CommandServiceConfig
             {                                       // Add the command service to the collection
-                LogLevel = LogSeverity.Info,     // Tell the logger to give Verbose amount of info
+                LogLevel = LogSeverity.Verbose,     // Tell the logger to give Verbose amount of info
                 DefaultRunMode = RunMode.Async,     // Force all commands to run async by default
             }))
             .AddSingleton<Services.CommandService>()         // Add commandservice to the collection
