@@ -49,7 +49,13 @@ namespace ECSDiscord.Modules
                     case VerificationResult.Success:
                         stringBuilder.Append($":white_check_mark:  You are now verified!\n");
                         break;
-                }
+                    case VerificationResult.TokenExpired:
+                        stringBuilder.Append($":clock1:  That token has expired! Please verify again.\n");
+                        break;
+                    case VerificationResult.NotInServer:
+                        stringBuilder.Append($":warning:  You are not in the Discord server!\n");
+                        break;
+                }   
             }
             else
             {
