@@ -47,18 +47,30 @@ namespace ECSDiscord.Services
         {
             Success,
             InvalidEmail,
+            AlreadyVerified,
             Failure
         }
 
-        public async Task<EmailResult> SendVerificationEmail(string email, SocketUser user)
+        public enum VerificationResult
+        {
+            Success,
+            InvalidToken,
+            AlreadyVerified,
+            Failure
+        }
+
+        public async Task<EmailResult> StartVerificationAsync(string email, SocketUser user)
         {
             try
             {
+                if (await IsUserVerifiedAsync(user))
+                    return EmailResult.AlreadyVerified;
+
                 if (!IsEmailValid(email, out string username))
                     return EmailResult.InvalidEmail;
 
                 // Create persistent verification code
-                string verificationCode = await CreateVerificationCode(user.Id, username);
+                string verificationCode = await CreateVerificationCodeAsync(user.Id, username);
 
                 SmtpClient client = new SmtpClient(_smtpHost, _smtpPort);
                 client.EnableSsl = _smtpUseSsl;
@@ -91,7 +103,7 @@ namespace ECSDiscord.Services
             }
         }
 
-        public async Task<string> CreateVerificationCode(ulong discordId, string username)
+        private async Task<string> CreateVerificationCodeAsync(ulong discordId, string username)
         {
             RandomNumberGenerator rng = RNGCryptoServiceProvider.Create();
 
@@ -118,6 +130,16 @@ namespace ECSDiscord.Services
 
             username = match.Groups[_emailUsernameGroup].Value;
             return true;
+        }
+
+        public async Task<bool> IsUserVerifiedAsync(SocketUser user)
+        {
+            return await IsUserVerifiedAsync(user.Id);
+        }
+
+        public async Task<bool> IsUserVerifiedAsync(ulong discordId)
+        {
+            return !string.IsNullOrWhiteSpace(await _storageService.Users.GetVerifiedUsernameAsync(discordId));
         }
 
         /// <summary>
