@@ -13,17 +13,24 @@ namespace UserDataViewer
         private RNGCryptoServiceProvider _rng = new RNGCryptoServiceProvider();
         private ECDiffieHellman _ec = ECDiffieHellman.Create(ECCurve.NamedCurves.nistP256);
         private byte[] _sharedKey;
+        private bool _used = false;
 
         public string PublicString { get; private set; }
 
         public CertificateSharingService()
         {
-            PublicString = Convert.ToBase64String(_ec.PublicKey.ToByteArray());
+            string text = Convert.ToBase64String(_ec.PublicKey.ToByteArray());
+
+            const int chunkSize = 64;
+            string wrappedText = Enumerable.Range(0, text.Length / chunkSize)
+                .Select(i => text.Substring(i * chunkSize, chunkSize)).Aggregate((a, b) => $"{a}\n{b}");
+            wrappedText += "\n" + text.Substring((text.Length / chunkSize) * chunkSize);
+            PublicString = $"-----BEGIN PUBLIC KEY-----\n{wrappedText}\n-----END PUBLIC KEY-----";
         }
 
         public void GenerateKey(string partnerPublicString)
         {
-            byte[] partnerPublicKey = Convert.FromBase64String(partnerPublicString);
+            byte[] partnerPublicKey = Convert.FromBase64String(partnerPublicString.Replace("-----BEGIN PUBLIC KEY-----", "").Replace("-----END PUBLIC KEY-----", "").Replace("\n", ""));
             _sharedKey = _ec.DeriveKeyMaterial(ECDiffieHellmanCngPublicKey.FromByteArray(partnerPublicKey, CngKeyBlobFormat.EccPublicBlob));
         }
 
