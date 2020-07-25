@@ -4,7 +4,9 @@ using ECSDiscord.Util;
 using Microsoft.Extensions.Configuration;
 using Serilog;
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.Mail;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
@@ -12,6 +14,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using static ECSDiscord.Services.StorageService;
+using static ECSDiscord.Services.StorageService.VerificationStorage;
 
 namespace ECSDiscord.Services
 {
@@ -51,23 +54,30 @@ namespace ECSDiscord.Services
             _discord = discord;
             _storageService = storageService;
             _discord.UserJoined += _discord_UserJoined;
+            _discord.GuildMemberUpdated += _discord_GuildMemberUpdated;
             loadConfig();
             Log.Debug("Verification service loaded.");
+        }
+
+        private async Task _discord_GuildMemberUpdated(SocketGuildUser arg1, SocketGuildUser arg2)
+        {
+            try
+            {
+                Log.Debug("Guild member updated event called for {user}", arg2.Id);
+                await ApplyUserVerificationAsync(arg2);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Error updating verification role for updated user {user} {message}", arg2.Id, ex.Message);
+            }
         }
 
         private async Task _discord_UserJoined(SocketGuildUser user)
         {
             try
             {
-                Log.Debug("Checking new user {user} verificaton status.", user.Id);
-                if (await IsUserVerifiedAsync(user))
-                {
-                    Log.Information("Giving verified role to user {user}", user.Id);
-                    SocketGuild guild = _discord.GetGuild(_guildId);
-                    SocketRole role = guild.GetRole(_verifiedRoleId);
-                    await user.AddRoleAsync(role);
-                    Log.Debug("Successfully gave verified role new user {user}.", user.Id);
-                }
+                Log.Debug("Guild user joined event called for {user}", user.Id);
+                await ApplyUserVerificationAsync(user);
             }
             catch(Exception ex)
             {
@@ -164,19 +174,13 @@ namespace ECSDiscord.Services
                         pendingVerification.EncryptedUsername);
 
                     SocketGuild guild = _discord.GetGuild(_guildId);
-                    SocketRole role = guild.GetRole(_verifiedRoleId);
-                    if (role == null)
-                    {
-                        Log.Error("Failed to find verified Discord role!");
-                        throw new Exception("Verified role not found.");
-                    }
                     IGuildUser guildUser = guild.GetUser(user.Id);
                     if (guildUser == null)
                     {
                         Log.Warning("User {user} is not in server, but tried to verify.", user.Id);
                         return VerificationResult.NotInServer;
                     }
-                    await guildUser.AddRoleAsync(role); // Give user verified role
+                    await ApplyUserVerificationAsync(user);
 
                     Log.Information("User verification success for {username} {id}", user.Username, user.Id);
                     return VerificationResult.Success;
@@ -269,6 +273,46 @@ namespace ECSDiscord.Services
             }
         }
 
+        public async Task<bool> ApplyUserVerificationAsync(SocketUser user, bool allowUnverification = true)
+        {
+            Log.Debug("Checking user {user} verificaton status.", user.Id);
+
+            SocketGuild guild = _discord.GetGuild(_guildId);
+            SocketGuildUser guildUser = guild.GetUser(user.Id);
+            SocketRole verifiedRole = guild.GetRole(_verifiedRoleId);
+            if (verifiedRole == null)
+            {
+                Log.Error("Failed to find verified Discord role!");
+                throw new Exception("Verified role not found.");
+            }
+            if (guildUser == null)
+            {
+                Log.Warning("Cannot update verification status for user. User is not in guild. {user}", user.Id);
+                return false;
+            }
+
+            Dictionary<ulong, OverrideType> verificationOverrides = await _storageService.Verification.GetAllVerificationOverrides();
+
+            if (await IsUserVerifiedAsync(user) || verificationOverrides.ContainsKey(user.Id) || guildUser.Roles.Any(x => verificationOverrides.ContainsKey(x.Id)))
+            {
+                if (guildUser.Roles.Any(x => x.Id == _verifiedRoleId))
+                    return true;
+                Log.Information("Giving verified role to user {user}", user.Id);
+                await guildUser.AddRoleAsync(verifiedRole);
+                Log.Debug("Successfully gave verified role user {user}.", user.Id);
+                return true;
+            }
+            else
+            {
+                if (!guildUser.Roles.Any(x => x.Id == _verifiedRoleId))
+                    return false;
+
+                Log.Information("Removing verified role from user {user}", user.Id);
+                await guildUser.RemoveRoleAsync(verifiedRole);
+                Log.Debug("Successfully removed verified role from user {user}.", user.Id);
+                return false;
+            }
+        }
 
         /// <summary>
         /// Fills context details into a template string.

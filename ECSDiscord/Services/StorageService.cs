@@ -34,6 +34,7 @@ namespace ECSDiscord.Services
         {
             private const string PendingVerificationsTable = "pendingVerifications";
             private const string VerificationHistoryTable = "verificationHistory";
+            private const string VerificationOverrideTable = "verificationOverrides";
             private static readonly TimeSpan PendingVerificationDeletionTime = TimeSpan.FromDays(14);
 
             private StorageService _storageService;
@@ -58,6 +59,12 @@ namespace ECSDiscord.Services
                     DiscordId = discordId;
                     CreationTime = creationTime;
                 }
+            }
+
+            public enum OverrideType
+            {
+                USER,
+                ROLE
             }
 
             /// <summary>
@@ -210,6 +217,61 @@ namespace ECSDiscord.Services
                     rowsAffected = await cmd.ExecuteNonQueryAsync();
                 }
                 Log.Debug("Successfuly added verification history record to database using Discord ID {discordId}. Rows affected: {rowsAffected}", discordId, rowsAffected);
+            }
+
+            public async Task AddVerificationOverride(ulong discordId, OverrideType type)
+            {
+                Log.Debug("Adding verification override record to database for Discord ID {discordId}", discordId);
+                int rowsAffected = 0;
+                using (MySqlConnection con = _storageService.GetMySqlConnection())
+                using (MySqlCommand cmd = new MySqlCommand())
+                {
+                    await con.OpenAsync();
+                    cmd.Connection = con;
+
+                    cmd.CommandText = $"INSERT INTO `{VerificationOverrideTable}` " +
+                        $"(`discordSnowflake`, `objectType`) " +
+                        $"VALUES (@discordId, @type);";
+                    cmd.Prepare();
+
+                    cmd.Parameters.AddWithValue("@discordId", discordId);
+                    cmd.Parameters.AddWithValue("@type", type.ToString());
+
+                    rowsAffected = await cmd.ExecuteNonQueryAsync();
+                }
+                Log.Debug("Successfuly added verification override record to database using Discord ID {discordId}. Rows affected: {rowsAffected}", discordId, rowsAffected);
+            }
+
+            public async Task<Dictionary<ulong, OverrideType>> GetAllVerificationOverrides()
+            {
+                Log.Debug("Getting verification override records from database.");
+                Dictionary<ulong, OverrideType> overrides = new Dictionary<ulong, OverrideType>();
+                using (MySqlConnection con = _storageService.GetMySqlConnection())
+                using (MySqlCommand cmd = new MySqlCommand())
+                {
+                    await con.OpenAsync();
+                    cmd.Connection = con;
+
+                    cmd.CommandText = $"SELECT `discordSnowflake`, `objectType`" +
+                        $"FROM `{VerificationOverrideTable}`;";
+
+                    using (var reader = (MySqlDataReader)await cmd.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            try
+                            {
+                                overrides.Add(reader.GetUInt64(0), (OverrideType)Enum.Parse(typeof(OverrideType), reader.GetString(1)));
+                            }
+                            catch (Exception ex)
+                            {
+                                Log.Error(ex, "Failed to parse verification override from database. {message}", ex.Message);
+                            }
+                        }
+                    }
+                }
+                Log.Debug("Successfuly got verification override records from database.");
+                return overrides;
             }
 
             public async Task Cleanup()
@@ -377,7 +439,7 @@ namespace ECSDiscord.Services
                 await Users.Cleanup();
                 Log.Debug("Database cleanup finished.");
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Log.Error(ex, "Error while running database cleanup: {message}", ex.Message);
             }
@@ -387,7 +449,7 @@ namespace ECSDiscord.Services
         {
             await Task.Delay(TimeSpan.FromMinutes(5));
             Log.Debug("Storage cleanup service started.");
-            while(true)
+            while (true)
             {
                 await Cleanup();
                 await Task.Delay(CleanupPeriod);
