@@ -82,7 +82,6 @@ namespace ECSDiscord.Modules
             {
                 await ReplyAsync(":x:  User verification override not found.");
             }
-
         }
     }
 }

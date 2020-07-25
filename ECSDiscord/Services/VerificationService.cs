@@ -56,8 +56,14 @@ namespace ECSDiscord.Services
             _discord.UserJoined += _discord_UserJoined;
             _discord.GuildMemberUpdated += _discord_GuildMemberUpdated;
             _discord.GuildAvailable += _discord_GuildAvailable;
+            _discord.RoleDeleted += _discord_RoleDeleted;
             loadConfig();
             Log.Debug("Verification service loaded.");
+        }
+
+        private async Task _discord_RoleDeleted(SocketRole arg)
+        {
+            await RemoveRoleVerificationOverrideAsync(arg);
         }
 
         private async Task _discord_GuildAvailable(SocketGuild arg)
@@ -346,6 +352,7 @@ namespace ECSDiscord.Services
             SocketGuild guild = _discord.GetGuild(_guildId);
             foreach (SocketGuildUser user in guild.Users)
             {
+                await Task.Delay(200);
                 try
                 {
                     await ApplyUserVerificationAsync(user, allowUnverification);
@@ -355,6 +362,7 @@ namespace ECSDiscord.Services
                     Log.Error(ex, "Failed to apply user verification for {user} {message}", user.Id, ex.Message);
                 }
             }
+            Log.Information("Mass verification check finished.");
         }
 
         public async Task AddUserVerificationOverride(SocketUser user)
