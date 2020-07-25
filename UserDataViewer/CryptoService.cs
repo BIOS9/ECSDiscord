@@ -21,9 +21,9 @@ namespace UserDataViewer
                 return rsa.Decrypt(encrypted, RSAEncryptionPadding.OaepSHA256);
         }
 
-        public string DecryptUsername(byte[] encryptedUsername)
+        public string DecryptText(byte[] encryptedText)
         {
-            return Encoding.UTF8.GetString(Decrypt(encryptedUsername));
+            return Encoding.UTF8.GetString(Decrypt(encryptedText));
         }
     }
 }
