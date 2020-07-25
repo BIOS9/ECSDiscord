@@ -2,6 +2,7 @@
 using Discord.Commands;
 using Discord.WebSocket;
 using ECSDiscord.Services;
+using ECSDiscord.Util;
 using Microsoft.Extensions.Configuration;
 using System.Collections.Generic;
 using System.Text;
@@ -109,7 +110,7 @@ namespace ECSDiscord.Modules
                 sb.Append(role == null ? "Unknown" : role.Name);
                 sb.Append("\n");
             });
-            await ReplyAsync(sb.ToString().Trim() + "```");
+            await ReplyAsync(sb.ToString().Trim().SanitizeMentions() + "```");
         }
 
         [Command("ListForcedUserVerifications")]
@@ -132,7 +133,7 @@ namespace ECSDiscord.Modules
                 sb.Append(user == null ? "Unknown" : $"{user.Username}#{user.Discriminator}");
                 sb.Append("\n");
             });
-            await ReplyAsync(sb.ToString().Trim() + "```");
+            await ReplyAsync(sb.ToString().Trim().SanitizeMentions() + "```");
         }
 
         [Command("ListForcedVerifications")]
@@ -176,7 +177,7 @@ namespace ECSDiscord.Modules
                 });
                 sb.Append("```");
             }
-            await ReplyAsync(sb.ToString());
+            await ReplyAsync(sb.ToString().SanitizeMentions());
         }
     }
 }
