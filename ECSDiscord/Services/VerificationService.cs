@@ -55,8 +55,14 @@ namespace ECSDiscord.Services
             _storageService = storageService;
             _discord.UserJoined += _discord_UserJoined;
             _discord.GuildMemberUpdated += _discord_GuildMemberUpdated;
+            _discord.GuildAvailable += _discord_GuildAvailable;
             loadConfig();
             Log.Debug("Verification service loaded.");
+        }
+
+        private async Task _discord_GuildAvailable(SocketGuild arg)
+        {
+            await ApplyAllUserVerificationAsync();
         }
 
         private async Task _discord_GuildMemberUpdated(SocketGuildUser arg1, SocketGuildUser arg2)
@@ -302,7 +308,7 @@ namespace ECSDiscord.Services
                 Log.Debug("Successfully gave verified role user {user}.", user.Id);
                 return true;
             }
-            else
+            else if(allowUnverification)
             {
                 if (!guildUser.Roles.Any(x => x.Id == _verifiedRoleId))
                     return false;
@@ -312,6 +318,87 @@ namespace ECSDiscord.Services
                 Log.Debug("Successfully removed verified role from user {user}.", user.Id);
                 return false;
             }
+            else
+            {
+                return true; // User remains verified
+            }
+        }
+
+        public async Task ApplyRoleVerificationAsync(SocketRole role, bool allowUnverification = true)
+        {
+            Log.Information("Running role verification check {role}", role.Id);
+            foreach (SocketGuildUser user in role.Members)
+            {
+                try
+                {
+                    await ApplyUserVerificationAsync(user, allowUnverification);
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex, "Failed to apply user verification for {user} {message}", user.Id, ex.Message);
+                }
+            }
+        }
+
+        public async Task ApplyAllUserVerificationAsync(bool allowUnverification = true)
+        {
+            Log.Information("Running mass verification check.");
+            SocketGuild guild = _discord.GetGuild(_guildId);
+            foreach (SocketGuildUser user in guild.Users)
+            {
+                try
+                {
+                    await ApplyUserVerificationAsync(user, allowUnverification);
+                }
+                catch(Exception ex)
+                {
+                    Log.Error(ex, "Failed to apply user verification for {user} {message}", user.Id, ex.Message);
+                }
+            }
+        }
+
+        public async Task AddUserVerificationOverride(SocketUser user)
+        {
+            SocketGuild guild = _discord.GetGuild(_guildId);
+            if(guild.GetUser(user.Id) == null)
+            {
+                Log.Warning("Cannot add verification override for user. User is not in guild. {user}", user.Id);
+                throw new ArgumentException("Cannot add verification override for user. User is not in guild.");
+            }
+            await _storageService.Verification.AddVerificationOverride(user.Id, OverrideType.USER);
+            await ApplyUserVerificationAsync(user);
+        }
+
+        public async Task AddRoleVerificationOverride(SocketRole role)
+        {
+            SocketGuild guild = _discord.GetGuild(_guildId);
+            if (guild.GetRole(role.Id) == null)
+            {
+                Log.Warning("Cannot add verification override for role. Role does not exist. {role}", role.Id);
+                throw new ArgumentException("Cannot add verification override for role. Role does not exist.");
+            }
+            await _storageService.Verification.AddVerificationOverride(role.Id, OverrideType.ROLE);
+            await ApplyRoleVerificationAsync(role);
+        }
+
+        public async Task<bool> RemoveUserVerificationOverrideAsync(SocketUser user)
+        {
+            if (await _storageService.Verification.DeleteVerificationOverrideAsync(user.Id))
+            {
+                await ApplyUserVerificationAsync(user);
+                return true;
+            }
+            return false;
+        }
+
+        public async Task<bool> RemoveRoleVerificationOverrideAsync(SocketRole role)
+        {
+            if (await _storageService.Verification.DeleteVerificationOverrideAsync(role.Id))
+            {
+                await ApplyRoleVerificationAsync(role);
+                return true;
+            }
+            return false;
         }
 
         /// <summary>

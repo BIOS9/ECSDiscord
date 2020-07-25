@@ -229,7 +229,7 @@ namespace ECSDiscord.Services
                     await con.OpenAsync();
                     cmd.Connection = con;
 
-                    cmd.CommandText = $"INSERT INTO `{VerificationOverrideTable}` " +
+                    cmd.CommandText = $"INSERT IGNORE INTO `{VerificationOverrideTable}` " +
                         $"(`discordSnowflake`, `objectType`) " +
                         $"VALUES (@discordId, @type);";
                     cmd.Prepare();
@@ -241,6 +241,27 @@ namespace ECSDiscord.Services
                 }
                 Log.Debug("Successfuly added verification override record to database using Discord ID {discordId}. Rows affected: {rowsAffected}", discordId, rowsAffected);
             }
+
+            public async Task<bool> DeleteVerificationOverrideAsync(ulong discordId)
+            {
+                Log.Debug("Deleting verification override records from database using Discord ID {discordId}", discordId);
+                int rowsAffected = 0;
+                using (MySqlConnection con = _storageService.GetMySqlConnection())
+                using (MySqlCommand cmd = new MySqlCommand())
+                {
+                    await con.OpenAsync();
+                    cmd.Connection = con;
+
+                    cmd.CommandText = $"DELETE FROM `{VerificationOverrideTable}` WHERE `discordSnowflake` = @discordId;";
+                    cmd.Parameters.AddWithValue("@discordId", discordId);
+
+                    rowsAffected = await cmd.ExecuteNonQueryAsync();
+                }
+                Log.Debug("Successfuly deleted verification override record from database using Discord ID {discordId}. Rows affected: {rowsAffected}", discordId, rowsAffected);
+
+                return rowsAffected >= 1;
+            }
+
 
             public async Task<Dictionary<ulong, OverrideType>> GetAllVerificationOverrides()
             {
