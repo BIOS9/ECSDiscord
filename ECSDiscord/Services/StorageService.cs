@@ -14,7 +14,7 @@ namespace ECSDiscord.Services
         private readonly IConfigurationRoot _config;
         private string _mysqlConnectionString;
         private static readonly DateTime Epoch = new DateTime(1970, 1, 1);
-        private const int EncryptedValueBufferSize = 1024;
+        private static readonly TimeSpan CleanupPeriod = TimeSpan.FromDays(1);
 
         public class DuplicateRecordException : Exception
         {
@@ -34,6 +34,7 @@ namespace ECSDiscord.Services
         {
             private const string PendingVerificationsTable = "pendingVerifications";
             private const string VerificationHistoryTable = "verificationHistory";
+            private static readonly TimeSpan PendingVerificationDeletionTime = TimeSpan.FromDays(14);
 
             private StorageService _storageService;
 
@@ -210,6 +211,26 @@ namespace ECSDiscord.Services
                 }
                 Log.Debug("Successfuly added verification history record to database using Discord ID {discordId}. Rows affected: {rowsAffected}", discordId, rowsAffected);
             }
+
+            public async Task Cleanup()
+            {
+                Log.Debug("Deleting old pending verification records from database.");
+                int rowsAffected = 0;
+                using (MySqlConnection con = _storageService.GetMySqlConnection())
+                using (MySqlCommand cmd = new MySqlCommand())
+                {
+                    await con.OpenAsync();
+                    cmd.Connection = con;
+
+                    TimeSpan t = DateTime.UtcNow - Epoch - PendingVerificationDeletionTime;
+
+                    cmd.CommandText = $"DELETE FROM `{PendingVerificationsTable}` WHERE `creationTime` < @time;";
+                    cmd.Parameters.AddWithValue("@time", t.TotalSeconds);
+
+                    rowsAffected = await cmd.ExecuteNonQueryAsync();
+                }
+                Log.Debug("Successfuly deleted old pending verification records from database. Rows affected: {rowsAffected}", rowsAffected);
+            }
         }
 
 
@@ -315,6 +336,11 @@ namespace ECSDiscord.Services
                 else
                     Log.Information("New Discord user created {discordUser}.", discordId);
             }
+
+            public async Task Cleanup()
+            {
+
+            }
         }
 
         protected MySqlConnection GetMySqlConnection()
@@ -342,6 +368,32 @@ namespace ECSDiscord.Services
             }
         }
 
+        public async Task Cleanup()
+        {
+            try
+            {
+                Log.Information("Database cleanup executed.");
+                await Verification.Cleanup();
+                await Users.Cleanup();
+                Log.Debug("Database cleanup finished.");
+            }
+            catch(Exception ex)
+            {
+                Log.Error(ex, "Error while running database cleanup: {message}", ex.Message);
+            }
+        }
+
+        private async void startCleanupService()
+        {
+            await Task.Delay(TimeSpan.FromMinutes(5));
+            Log.Debug("Storage cleanup service started.");
+            while(true)
+            {
+                await Cleanup();
+                await Task.Delay(CleanupPeriod);
+            }
+        }
+
         public StorageService(IConfigurationRoot config)
         {
             Log.Debug("Storage service loading.");
@@ -350,6 +402,7 @@ namespace ECSDiscord.Services
 
             Verification = new VerificationStorage(this);
             Users = new UserStorage(this);
+            startCleanupService();
             Log.Debug("Storage service loaded.");
         }
 
