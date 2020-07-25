@@ -295,6 +295,33 @@ namespace ECSDiscord.Services
                 return overrides;
             }
 
+            public async Task<List<ulong>> GetAllVerificationOverrides(OverrideType type)
+            {
+                Log.Debug("Getting verification override records from database.");
+                List<ulong> overrides = new List<ulong>();
+                using (MySqlConnection con = _storageService.GetMySqlConnection())
+                using (MySqlCommand cmd = new MySqlCommand())
+                {
+                    await con.OpenAsync();
+                    cmd.Connection = con;
+
+                    cmd.CommandText = $"SELECT `discordSnowflake`" +
+                        $"FROM `{VerificationOverrideTable}` WHERE `objectType` = @type;";
+
+                    cmd.Parameters.AddWithValue("@type", type.ToString());
+
+                    using (var reader = (MySqlDataReader)await cmd.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            overrides.Add(reader.GetUInt64(0));
+                        }
+                    }
+                }
+                Log.Debug("Successfuly got verification override records from database.");
+                return overrides;
+            }
+
             public async Task Cleanup()
             {
                 Log.Debug("Deleting old pending verification records from database.");

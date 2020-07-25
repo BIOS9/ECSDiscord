@@ -70,7 +70,7 @@ namespace ECSDiscord.Modules
                         stringBuilder.Append($":fire:  A server error occured. Please ask an admin to check the logs.\n");
                         break;
                     case EmailResult.Success:
-                        stringBuilder.Append($":white_check_mark:  Verification email sent!\nPlease check your email for further instructions.\n");
+                        stringBuilder.Append($":white_check_mark:  Verification email sent!\nPlease check your email for further instructions.\n\nIf you do not receive the email **PLEASE CHECK YOUR SPAM**");
                         break;
                 }
             }
