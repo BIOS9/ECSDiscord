@@ -5,6 +5,8 @@ courseChannelPermissionsDenied: 1024
 joinedUserPermissionsAllowed: 1024
 joinedUserPermissionsDenied: 0
 autoDeleteOnNoUsers: false
+dmUsersOnJoin: false
+joinDmTemplate: null
 verification:
   emailPattern: "^([a-z0-9]{1,30})@(ecs\\.|my)?(vuw|wgtn)\\.ac\\.nz$"
   usernameGroup: 1

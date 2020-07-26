@@ -15,6 +15,11 @@ namespace ECSDiscord.Services
         private readonly Discord.Commands.CommandService _commands;
         private readonly IConfigurationRoot _config;
 
+        private bool _dmOnJoin;
+        private string
+            _joinDmTemplate,
+            _prefix;
+
         // DiscordSocketClient, CommandService, and IConfigurationRoot are injected automatically from the IServiceProvider
         public StartupService(
             IServiceProvider provider,
@@ -27,7 +32,26 @@ namespace ECSDiscord.Services
             _config = config;
             _discord = discord;
             _commands = commands;
+            _discord.UserJoined += _discord_UserJoined;
+            loadConfig();
             Log.Debug("Startup service loaded.");
+        }
+
+        private async Task _discord_UserJoined(SocketGuildUser arg)
+        {
+            try
+            {
+                Log.Debug("User joined {user}. DM on join is set to {dmOnJoin}", arg.Id, _dmOnJoin);
+                if (_dmOnJoin)
+                {
+                    Log.Debug("Sending join DM to {user}", arg.Id);
+                    await arg.SendMessageAsync(fillJoinDmTemplate(_joinDmTemplate));
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Failed to message user {user} on join {message}", arg.Id, ex.Message);
+            }
         }
 
         /// <summary>
@@ -53,17 +77,38 @@ namespace ECSDiscord.Services
 
         private async Task _discord_GuildAvailable(SocketGuild arg)
         {
-            if(!ulong.TryParse(_config["guildId"], out ulong guildId))
+            if (!ulong.TryParse(_config["guildId"], out ulong guildId))
             {
                 Log.Warning("guildId in configuration is invalid. Expected unsigned long integer, got: {id}", _config["guildId"]);
                 return;
             }
 
-            if(arg.Id != guildId)
+            if (arg.Id != guildId)
             {
                 Log.Warning("Leaving guild {guild} Config guildId does not match.", arg.Name);
                 await arg.LeaveAsync();
             }
+        }
+
+        private string fillJoinDmTemplate(string template)
+        {
+            return template.Replace("{prefix}", _prefix).Trim();
+        }
+
+        private void loadConfig()
+        {
+            if (!bool.TryParse(_config["dmUsersOnJoin"], out _dmOnJoin))
+            {
+                Log.Error("Invalid boolean value for dmUsersOnJoin in config.");
+                throw new ArgumentException("Invalid boolean value for dmUsersOnJoin in config.");
+            }
+            _joinDmTemplate = _config["joinDmTemplate"];
+            if (string.IsNullOrWhiteSpace(_joinDmTemplate) && _dmOnJoin)
+            {
+                _dmOnJoin = false;
+                Log.Warning("DM on join is enabled, but the DM template is empty. DM on join is now disabled.");
+            }
+            _prefix = _config["prefix"];
         }
     }
 }
