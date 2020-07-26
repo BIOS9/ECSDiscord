@@ -40,8 +40,6 @@ namespace ECSDiscord.BotModules
                 return;
             }
 
-            await checkUpdating();
-
             await ReplyAsync("Processing...");
             // Add user to courses
             StringBuilder stringBuilder = new StringBuilder();
@@ -90,8 +88,6 @@ namespace ECSDiscord.BotModules
                 return;
             }
 
-            await checkUpdating();
-
             await ReplyAsync("Processing...");
             // Add user to courses
             StringBuilder stringBuilder = new StringBuilder();
@@ -132,8 +128,6 @@ namespace ECSDiscord.BotModules
                 await ReplyAsync("You are not in any courses.");
                 return;
             }
-
-            await checkUpdating();
 
             await ReplyAsync("Processing...");
             // Add user to courses
@@ -176,8 +170,6 @@ namespace ECSDiscord.BotModules
                 await ReplyAsync(errorMessage.SanitizeMentions());
                 return;
             }
-
-            await checkUpdating();
 
             await ReplyAsync("Processing...");
 
@@ -264,15 +256,6 @@ namespace ECSDiscord.BotModules
             errorMessage = string.Empty;
             formattedCourses = distinctCourses;
             return true;
-        }
-
-        /// <summary>
-        /// Checks if the course service is currently updating and informs the user.
-        /// </summary>
-        private async Task checkUpdating()
-        {
-            if (_courses.UpdatingCourses)
-                await ReplyAsync("Courses are currently being updated.\nYour request will be processed shortly.");
         }
     }
 }

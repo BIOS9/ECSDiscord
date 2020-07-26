@@ -34,17 +34,30 @@ namespace ECSDiscord.Services
 
         private readonly IConfigurationRoot _config;
         private readonly DiscordSocketClient _discord;
-        private SemaphoreSlim _writeLock = new SemaphoreSlim(1);
-        public bool UpdatingCourses => _writeLock.CurrentCount == 0;
+        private readonly StorageService _storage;
+        private ulong _guildId;
+
         private Dictionary<string, Course> _courses = new Dictionary<string, Course>();
 
-        public CourseService(IConfigurationRoot config, DiscordSocketClient discord)
+        public CourseService(IConfigurationRoot config, DiscordSocketClient discord, StorageService storage)
         {
             Log.Debug("Course service loading.");
             _config = config;
             _discord = discord;
+            _storage = storage;
+            _discord.ChannelDestroyed += _discord_ChannelDestroyed;
+            loadConfig();
             Task.Run(DownloadCourseList);
             Log.Debug("Course service loaded.");
+        }
+
+        private async Task _discord_ChannelDestroyed(SocketChannel arg)
+        {
+            if(await _storage.Courses.DoesCategoryExist(arg.Id))
+            {
+                Log.Information("Deleting category because Discord category was deleted {categoryId}", arg.Id);
+                await RemoveCourseCategory(arg.Id);
+            }
         }
 
         public IList<Course> GetCourses()
@@ -107,6 +120,30 @@ namespace ECSDiscord.Services
                 .FirstOrDefault(x => x.Name.Equals(course, StringComparison.OrdinalIgnoreCase));
         }
 
+        public async Task CreateCourseCategory(SocketCategoryChannel existingCategory, Regex autoImportPattern, int autoImportPriority)
+        {
+            Log.Information("Creating course category for existing category {categoryId} {categoryName}", existingCategory.Id, existingCategory.Name);
+            await _storage.Courses.CreateCategory(existingCategory.Id, autoImportPriority.ToString(), autoImportPriority);
+        }
+
+        public async Task CreateCourseCategory(string name, Regex autoImportPattern, int autoImportPriority)
+        {
+            Log.Information("Creating course category {categoryName}", name);
+            RestCategoryChannel category = await _discord.GetGuild(_guildId).CreateCategoryChannelAsync(name);
+            await _storage.Courses.CreateCategory(category.Id, autoImportPriority.ToString(), autoImportPriority);
+        }
+
+        public async Task RemoveCourseCategory(ulong discordId)
+        {
+            Log.Information("Deleting course category {id}", discordId);
+            SocketCategoryChannel category = _discord.GetGuild(_guildId).GetCategoryChannel(discordId);
+            if(category != null)
+            {
+                await category.DeleteAsync();
+            }
+            await _storage.Courses.DeleteCategory(discordId);
+        }
+
         /// <summary>
         /// Makes course of various different formats into the format ABCD-123
         /// </summary>
@@ -139,7 +176,6 @@ namespace ECSDiscord.Services
         {
             try
             {
-                await _writeLock.WaitAsync();
                 Log.Information("Course download started");
                 const string webListUrl = "https://service-web.wgtn.ac.nz/dotnet2/catprint.aspx?d=all";
                 string[] urls = new string[]
@@ -183,10 +219,11 @@ namespace ECSDiscord.Services
                 Log.Error(ex, "Course download failed: {message}. No changes made.", ex.Message);
                 return false;
             }
-            finally
-            {
-                _writeLock.Release();
-            }
+        }
+
+        private void loadConfig()
+        {
+            _guildId = ulong.Parse(_config["guildId"]);
         }
     }
 }

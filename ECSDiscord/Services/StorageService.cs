@@ -453,6 +453,90 @@ namespace ECSDiscord.Services
             }
         }
 
+
+        public CourseStorage Courses { get; private set; }
+        public class CourseStorage
+        {
+            private const string CategoryTable = "courseCategories";
+
+            private StorageService _storageService;
+
+            public CourseStorage(StorageService storageService)
+            {
+                _storageService = storageService;
+            }
+
+            public async Task CreateCategory(ulong discordId, string autoImportPattern, int autoImportPriority)
+            {
+                Log.Debug("Adding course category to database for {id}", discordId);
+                int rowsAffected = 0;
+                using (MySqlConnection con = _storageService.GetMySqlConnection())
+                using (MySqlCommand cmd = new MySqlCommand())
+                {
+                    await con.OpenAsync();
+                    cmd.Connection = con;
+
+                    cmd.CommandText = $"INSERT INTO `{CategoryTable}` " +
+                        $"(`discordSnowflake`, `autoImportPattern`, `autoImportPriority`) " +
+                        $"VALUES (@discordId, @autoImportPattern, @autoImportPriority);";
+                    cmd.Prepare();
+
+                    cmd.Parameters.AddWithValue("@discordId", discordId);
+                    cmd.Parameters.AddWithValue("@autoImportPattern", autoImportPattern);
+                    cmd.Parameters.AddWithValue("@autoImportPriority", autoImportPriority);
+
+                    rowsAffected = await cmd.ExecuteNonQueryAsync();
+                    Log.Debug("Successfully added course category to database for {id}. Rows affected: {rowsAffected}", discordId, rowsAffected);
+                }
+            }
+
+            public async Task DeleteCategory(ulong discordId)
+            {
+                Log.Debug("Deleting course category from database for {id}", discordId);
+                int rowsAffected = 0;
+                using (MySqlConnection con = _storageService.GetMySqlConnection())
+                using (MySqlCommand cmd = new MySqlCommand())
+                {
+                    await con.OpenAsync();
+                    cmd.Connection = con;
+
+                    cmd.CommandText = $"DELETE FROM `{CategoryTable}` WHERE `discordSnowflake` = @discordId;";
+                    cmd.Parameters.AddWithValue("@discordId", discordId);
+                    cmd.Prepare();
+
+                    rowsAffected = await cmd.ExecuteNonQueryAsync();
+                    Log.Debug("Successfully deleted course category from database for {id}. Rows affected: {rowsAffected}", discordId, rowsAffected);
+                }
+            }
+
+            public async Task<bool> DoesCategoryExist(ulong discordId)
+            {
+                Log.Debug("Checking existance of course category from database for {id}", discordId);
+
+                using (MySqlConnection con = _storageService.GetMySqlConnection())
+                using (MySqlCommand cmd = new MySqlCommand())
+                {
+                    await con.OpenAsync();
+                    cmd.Connection = con;
+
+                    cmd.CommandText = $"SELECT * FROM `{CategoryTable}` WHERE `discordSnowflake` = @discordId;";
+                    cmd.Parameters.AddWithValue("@discordId", discordId);
+                    cmd.Prepare();
+
+                    using (var reader = await cmd.ExecuteReaderAsync())
+                    {
+                        return await reader.ReadAsync();
+                    }
+                }
+            }
+
+            public async Task Cleanup()
+            {
+
+            }
+        }
+
+
         protected MySqlConnection GetMySqlConnection()
         {
             return new MySqlConnection(_mysqlConnectionString);
@@ -485,6 +569,7 @@ namespace ECSDiscord.Services
                 Log.Information("Database cleanup executed.");
                 await Verification.Cleanup();
                 await Users.Cleanup();
+                await Courses.Cleanup();
                 Log.Debug("Database cleanup finished.");
             }
             catch (Exception ex)
@@ -512,6 +597,7 @@ namespace ECSDiscord.Services
 
             Verification = new VerificationStorage(this);
             Users = new UserStorage(this);
+            Courses = new CourseStorage(this);
             startCleanupService();
             Log.Debug("Storage service loaded.");
         }

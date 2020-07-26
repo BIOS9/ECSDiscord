@@ -6,6 +6,7 @@ using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace ECSDiscord.Services
@@ -15,6 +16,8 @@ namespace ECSDiscord.Services
         private readonly DiscordSocketClient _discord;
         private readonly CourseService _courses;
         private readonly IConfigurationRoot _config;
+
+        private ulong _guildId;
 
         public enum EnrollmentResult
         {
@@ -31,6 +34,7 @@ namespace ECSDiscord.Services
             _discord = discord;
             _courses = courses;
             _config = config;
+            loadConfig();
             Log.Debug("Enrollments service loaded.");
         }
 
@@ -114,6 +118,11 @@ namespace ECSDiscord.Services
             }
             course = null;
             return false;
+        }
+
+        private void loadConfig()
+        {
+            _guildId = ulong.Parse(_config["guildId"]);
         }
     }
 }
