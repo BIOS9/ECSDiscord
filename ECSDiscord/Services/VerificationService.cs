@@ -41,7 +41,8 @@ namespace ECSDiscord.Services
         private int _smtpPort;
         private bool
             _smtpUseSsl,
-            _bodyIsHtml;
+            _bodyIsHtml,
+            _skipBots;
         private X509Certificate2 _publicKeyCert;
         private ulong _guildId;
         private ulong 
@@ -291,6 +292,12 @@ namespace ECSDiscord.Services
         {
             Log.Debug("Checking user {user} verificaton status.", user.Id);
 
+            if(_skipBots)
+            {
+                Log.Debug("Skipping bot user {user}", user.Id);
+                return true;
+            }
+
             SocketGuild guild = _discord.GetGuild(_guildId);
             SocketGuildUser guildUser = guild.GetUser(user.Id);
             SocketRole verifiedRole = guild.GetRole(_verifiedRoleId);
@@ -485,6 +492,12 @@ namespace ECSDiscord.Services
             {
                 Log.Error("Invalid smtpUseSsl configured in verification settings.");
                 throw new ArgumentException("Invalid smtpUseSsl configured in verification settings.");
+            }
+
+            if (!bool.TryParse(_config["verification:skipBots"], out _skipBots))
+            {
+                Log.Error("Invalid skipBots configured in verification settings.");
+                throw new ArgumentException("Invalid skipBots configured in verification settings.");
             }
 
             _smtpSubjectTemplate = _config["verification:subjectTemplate"];

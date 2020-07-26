@@ -24,6 +24,7 @@ verification:
   verifiedRoleId: null
   unverifiedRoleId: null
   publicKeyCertPath: pub.crt
+  skipBots: true
 forcedChannels:
   help: null
   enrollments: null
