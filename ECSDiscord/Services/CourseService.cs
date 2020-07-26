@@ -81,13 +81,13 @@ namespace ECSDiscord.Services
                 x.Topic = _courses[course].Description;
             });
 
-            if (!uint.TryParse(_config["courseChannelPermissionsAllowed"], out uint allowedPermissions))
+            if (!uint.TryParse(_config["courses:courseChannelPermissionsAllowed"], out uint allowedPermissions))
             {
                 Log.Error("Invalid courseChannelPermissionsAllowed permissions value in config. https://discordapi.com/permissions.html");
                 return null;
             }
 
-            if (!uint.TryParse(_config["courseChannelPermissionsDenied"], out uint deniedPermissions))
+            if (!uint.TryParse(_config["courses:courseChannelPermissionsDenied"], out uint deniedPermissions))
             {
                 Log.Error("Invalid courseChannelPermissionsDenied permissions value in config. https://discordapi.com/permissions.html");
                 return null;
@@ -169,7 +169,7 @@ namespace ECSDiscord.Services
 
                         if (CourseRegex.IsMatch(courseCode))
                         {
-                            if (!bool.TryParse(_config["autoDeleteOnNoUsers"], out bool autoDelete)) // Get autoDelete config setting
+                            if (!bool.TryParse(_config["courses:autoDeleteOnNoUsers"], out bool autoDelete)) // Get autoDelete config setting
                                 throw new Exception("Failed to read autoDeleteOnNoUsers value from config. Expected true/false boolean.");
                             if (!courses.TryAdd(courseCode, new Course(courseCode, courseDescription.Trim(), autoDelete)))
                                 Log.Debug("Duplicate course from download: {course}", courseCode);

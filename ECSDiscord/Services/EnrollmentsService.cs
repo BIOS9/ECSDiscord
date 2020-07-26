@@ -48,12 +48,12 @@ namespace ECSDiscord.Services
                 if (channel.GetPermissionOverwrite(user).HasValue)
                     return EnrollmentResult.AlreadyJoined;
 
-                if (!uint.TryParse(_config["joinedUserPermissionsAllowed"], out uint allowedPermissions))
+                if (!uint.TryParse(_config["courses:joinedUserPermissionsAllowed"], out uint allowedPermissions))
                 {
                     Log.Error("Invalid joinedUserPermissionsAllowed value in config. Please configure a 32 bit integer flag permissions value. https://discordapi.com/permissions.html");
                     return EnrollmentResult.Failure;
                 }
-                if (!uint.TryParse(_config["joinedUserPermissionsDenied"], out uint deniedPermissions))
+                if (!uint.TryParse(_config["courses:joinedUserPermissionsDenied"], out uint deniedPermissions))
                 {
                     Log.Error("Invalid joinedUserPermissionsDenied value in config. Please configure a 32 bit integer flag permissions value. https://discordapi.com/permissions.html");
                     return EnrollmentResult.Failure;
