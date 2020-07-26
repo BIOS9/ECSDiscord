@@ -84,12 +84,6 @@ namespace ECSDiscord.Services
 
                 await channel.RemovePermissionOverwriteAsync(user);
 
-                
-                if (courseObject.AutoDelete && !channel.PermissionOverwrites.Any(x => x.TargetType == PermissionTarget.User && x.TargetId != guild.EveryoneRole.Id))
-                {
-                    Log.Information("Deleting course channel that has no users {channel}", course);
-                    await channel.DeleteAsync();
-                }
                 return EnrollmentResult.Success;
             }
             catch (Exception ex)

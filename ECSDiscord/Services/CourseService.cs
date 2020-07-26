@@ -19,13 +19,11 @@ namespace ECSDiscord.Services
         {
             public readonly string Code;
             public readonly string Description;
-            public readonly bool AutoDelete;
 
-            public Course(string code, string description, bool autoDelete = false)
+            public Course(string code, string description)
             {
                 Code = code;
                 Description = description;
-                AutoDelete = autoDelete;
             }
         }
 
@@ -169,9 +167,7 @@ namespace ECSDiscord.Services
 
                         if (CourseRegex.IsMatch(courseCode))
                         {
-                            if (!bool.TryParse(_config["courses:autoDeleteOnNoUsers"], out bool autoDelete)) // Get autoDelete config setting
-                                throw new Exception("Failed to read autoDeleteOnNoUsers value from config. Expected true/false boolean.");
-                            if (!courses.TryAdd(courseCode, new Course(courseCode, courseDescription.Trim(), autoDelete)))
+                            if (!courses.TryAdd(courseCode, new Course(courseCode, courseDescription.Trim())))
                                 Log.Debug("Duplicate course from download: {course}", courseCode);
                         }
                         else
