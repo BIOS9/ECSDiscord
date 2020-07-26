@@ -1,12 +1,15 @@
 ﻿prefix: +
 guildId: null
-courseChannelPermissionsAllowed: 0
-courseChannelPermissionsDenied: 1024
-joinedUserPermissionsAllowed: 1024
-joinedUserPermissionsDenied: 0
-autoDeleteOnNoUsers: false
 dmUsersOnJoin: false
 joinDmTemplate: null
+courses:
+  defaultChannelPermissions:
+    allowed:
+      joined: 1024
+    denied:
+      unverified: 1024
+      everyone: 1024
+  autoDeleteOnNoUsers: false
 verification:
   emailPattern: "^([a-z0-9]{1,30})@(ecs\\.|my)?(vuw|wgtn)\\.ac\\.nz$"
   usernameGroup: 1
@@ -19,6 +22,7 @@ verification:
   smtpFromName: null
   smtpUseSsl: false
   verifiedRoleId: null
+  unverifiedRoleId: null
   publicKeyCertPath: pub.crt
 forcedChannels:
   help: null
