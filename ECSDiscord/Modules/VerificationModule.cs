@@ -1,6 +1,7 @@
 ﻿using Discord.Commands;
 using ECSDiscord.Services;
 using ECSDiscord.Util;
+using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -12,11 +13,23 @@ namespace ECSDiscord.Modules
     [Name("Verification")]
     public class VerificationModule : ModuleBase<SocketCommandContext>
     {
+        private readonly IConfigurationRoot _config;
         private VerificationService _verification;
 
-        public VerificationModule(VerificationService verification)
+        public VerificationModule(VerificationService verification, IConfigurationRoot config)
         {
             _verification = verification;
+            _config = config;
+        }
+
+        [Command("verify")]
+        [Summary("Connect your uni username with your ECS discord account.")]
+        [Remarks("Supply your uni email address to verify.")]
+        public async Task VerifyAsync()
+        {
+            await ReplyAsync($":warning:  Invalid email address.\n" +
+                $"Please provide your uni email address e.g.\n" +
+                $"```{_config["prefix"]}verify username@myvuw.ac.nz```");
         }
 
 
