@@ -57,7 +57,8 @@ namespace ECSDiscord.Modules
                 $"Use a value less than 0 disable auto import\n" +
                 $"Examples:\n```{prefix}createcategory 100-Level [a-z]{{4}}-1\\d\\d 1```" +
                 $"```{prefix}createcategory 733285993481896008 [a-z]{{4}}-2\\d\\d 2```" +
-                $"```{prefix}createcategory \"Text Channels\"```");
+                $"```{prefix}createcategory \"Text Channels\"```\n\n" +
+                $"To delete a category, just delete the Discord category.");
         }
 
         [Command("createcategory")]
