@@ -56,7 +56,7 @@ namespace ECSDiscord.Services
             if(await _storage.Courses.DoesCategoryExist(arg.Id))
             {
                 Log.Information("Deleting category because Discord category was deleted {categoryId}", arg.Id);
-                await RemoveCourseCategory(arg.Id);
+                await RemoveCourseCategoryAsync(arg.Id);
             }
         }
 
@@ -75,7 +75,7 @@ namespace ECSDiscord.Services
             return _courses.ContainsKey(course);
         }
 
-        public async Task<IGuildChannel> GetOrCreateChannel(string course)
+        public async Task<IGuildChannel> GetOrCreateChannelAsync(string course)
         {
             if (!_courses.ContainsKey(course))
                 return null;
@@ -120,20 +120,20 @@ namespace ECSDiscord.Services
                 .FirstOrDefault(x => x.Name.Equals(course, StringComparison.OrdinalIgnoreCase));
         }
 
-        public async Task CreateCourseCategory(SocketCategoryChannel existingCategory, Regex autoImportPattern, int autoImportPriority)
+        public async Task CreateCourseCategoryAsync(SocketCategoryChannel existingCategory, Regex autoImportPattern, int autoImportPriority)
         {
             Log.Information("Creating course category for existing category {categoryId} {categoryName}", existingCategory.Id, existingCategory.Name);
             await _storage.Courses.CreateCategory(existingCategory.Id, autoImportPriority.ToString(), autoImportPriority);
         }
 
-        public async Task CreateCourseCategory(string name, Regex autoImportPattern, int autoImportPriority)
+        public async Task CreateCourseCategoryAsync(string name, Regex autoImportPattern, int autoImportPriority)
         {
             Log.Information("Creating course category {categoryName}", name);
             RestCategoryChannel category = await _discord.GetGuild(_guildId).CreateCategoryChannelAsync(name);
             await _storage.Courses.CreateCategory(category.Id, autoImportPriority.ToString(), autoImportPriority);
         }
 
-        public async Task RemoveCourseCategory(ulong discordId)
+        public async Task RemoveCourseCategoryAsync(ulong discordId)
         {
             Log.Information("Deleting course category {id}", discordId);
             SocketCategoryChannel category = _discord.GetGuild(_guildId).GetCategoryChannel(discordId);
@@ -142,6 +142,11 @@ namespace ECSDiscord.Services
                 await category.DeleteAsync();
             }
             await _storage.Courses.DeleteCategory(discordId);
+        }
+
+        public async Task CreateCourseAsync(string name)
+        {
+
         }
 
         /// <summary>

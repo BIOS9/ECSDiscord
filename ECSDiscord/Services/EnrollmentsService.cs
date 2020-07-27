@@ -48,7 +48,7 @@ namespace ECSDiscord.Services
                 if (!IsCourseValid(course, out _))
                     return EnrollmentResult.CourseNotExist;
 
-                IGuildChannel channel = await _courses.GetOrCreateChannel(course);
+                IGuildChannel channel = await _courses.GetOrCreateChannelAsync(course);
                 if (channel.GetPermissionOverwrite(user).HasValue)
                     return EnrollmentResult.AlreadyJoined;
 

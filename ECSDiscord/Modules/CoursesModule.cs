@@ -13,7 +13,7 @@ using Discord.WebSocket;
 
 namespace ECSDiscord.Modules
 {
-    [Name("Courses")]
+    [Name("Course Administration")]
     public class CoursesModule : ModuleBase<SocketCommandContext>
     {
         private readonly Discord.Commands.CommandService _service;
@@ -99,12 +99,12 @@ namespace ECSDiscord.Modules
                 .FirstOrDefault(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
             if (category != null)
             {
-                await _courses.CreateCourseCategory(category, pattern, autoImportPriority);
+                await _courses.CreateCourseCategoryAsync(category, pattern, autoImportPriority);
                 await ReplyAsync(":white_check_mark:  Successfully added existing category.");
             }
             else
             {
-                await _courses.CreateCourseCategory(name, pattern, autoImportPriority);
+                await _courses.CreateCourseCategoryAsync(name, pattern, autoImportPriority);
                 await ReplyAsync(":white_check_mark:  Successfully created new category.");
             }
         }
@@ -133,7 +133,7 @@ namespace ECSDiscord.Modules
                 return;
             }
 
-            await _courses.CreateCourseCategory(cateogry, pattern, autoImportPriority);
+            await _courses.CreateCourseCategoryAsync(cateogry, pattern, autoImportPriority);
             await ReplyAsync(":white_check_mark:  Successfuly added existing category.");
         }
     }
