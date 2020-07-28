@@ -635,7 +635,7 @@ namespace ECSDiscord.Services
                     await con.OpenAsync();
                     cmd.Connection = con;
 
-                    cmd.CommandText = $"INSERT INTO `{CourseTable}` " +
+                    cmd.CommandText = $"INSERT IGNORE INTO `{CourseTable}` " +
                         $"(`name`, `discordChannelSnowflake`) " +
                         $"VALUES (@name, @discordId);";
                     cmd.Prepare();
