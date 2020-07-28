@@ -348,6 +348,7 @@ namespace ECSDiscord.Services
         public class UserStorage
         {
             private const string UsersTable = "users";
+            private const string UserCoursesTable = "userCourses";
             private StorageService _storageService;
 
             public UserStorage(StorageService storageService)
@@ -405,7 +406,7 @@ namespace ECSDiscord.Services
                 using (MySqlConnection con = _storageService.GetMySqlConnection())
                 {
                     await con.OpenAsync();
-                    await CreateUserIfNotExist(discordId, con);
+                    await CreateUserIfNotExistAsync(discordId, con);
                     using (MySqlCommand cmd = new MySqlCommand())
                     {
                         cmd.Connection = con;
@@ -421,13 +422,105 @@ namespace ECSDiscord.Services
                 Log.Debug("Successfully set encrypted username for Discord ID {discordId}. Rows affected: {rowsAffected}", discordId, rowsAffected);
             }
 
-            public async Task CreateUserIfNotExist(ulong discordId)
+            public async Task EnrollUserAsync(ulong discordId, string courseName)
             {
+                Log.Debug("Adding enrollment record into database for user {user} into course {course}", discordId, courseName);
+                int rowsAffected = 0;
                 using (MySqlConnection con = _storageService.GetMySqlConnection())
-                    await CreateUserIfNotExist(discordId, con);
+                {
+                    await con.OpenAsync();
+                    await CreateUserIfNotExistAsync(discordId, con);
+                    using (MySqlCommand cmd = new MySqlCommand())
+                    {
+                        cmd.Connection = con;
+
+                        cmd.CommandText = $"INSERT IGNORE INTO `{UserCoursesTable}` (`userDiscordSnowflake`, `courseName`) VALUES (@userId, @courseName);";
+                        cmd.Prepare();
+                        cmd.Parameters.AddWithValue("@userId", discordId);
+                        cmd.Parameters.AddWithValue("@courseName", courseName);
+
+                        rowsAffected = await cmd.ExecuteNonQueryAsync();
+                    }
+                }
+                Log.Debug("Successfully added enrollment record for user {discordId} course {course}. Rows affected: {rowsAffected}", discordId, courseName, rowsAffected);
             }
 
-            public async Task CreateUserIfNotExist(ulong discordId, MySqlConnection con)
+            public async Task DisenrollUserAsync(ulong discordId, string courseName)
+            {
+                Log.Debug("Deleting enrollment record into database for user {user} into course {course}", discordId, courseName);
+                int rowsAffected = 0;
+                using (MySqlConnection con = _storageService.GetMySqlConnection())
+                {
+                    await con.OpenAsync();
+                    await CreateUserIfNotExistAsync(discordId, con);
+                    using (MySqlCommand cmd = new MySqlCommand())
+                    {
+                        cmd.Connection = con;
+
+                        cmd.CommandText = $"DELETE FROM `{UserCoursesTable}` WHERE `userDiscordSnowflake` = @userId AND `courseName` = @courseName;";
+                        cmd.Prepare();
+                        cmd.Parameters.AddWithValue("@userId", discordId);
+                        cmd.Parameters.AddWithValue("@courseName", courseName);
+
+                        rowsAffected = await cmd.ExecuteNonQueryAsync();
+                    }
+                }
+                Log.Debug("Successfully deleted enrollment record for user {discordId} course {course}. Rows affected: {rowsAffected}", discordId, courseName, rowsAffected);
+            }
+
+            public async Task<bool> IsUserInCourseAsync(ulong discordId, string courseName)
+            {
+                Log.Debug("Checking enrollment record from database for user {user} course {course}", discordId, courseName);
+                using (MySqlConnection con = _storageService.GetMySqlConnection())
+                using (MySqlCommand cmd = new MySqlCommand())
+                {
+                    await con.OpenAsync();
+                    cmd.Connection = con;
+
+                    cmd.CommandText = $"SELECT * FROM `{UserCoursesTable}` WHERE `userDiscordSnowflake` = @userId AND `courseName` = @courseName;";
+                    cmd.Prepare();
+                    cmd.Parameters.AddWithValue("@userId", discordId);
+                    cmd.Parameters.AddWithValue("@courseName", courseName);
+
+                    using (var reader = (MySqlDataReader)await cmd.ExecuteReaderAsync())
+                    {
+                        return await reader.ReadAsync();
+                    }
+                }
+            }
+
+            public async Task<List<string>> GetUserCoursesAsync(ulong discordId)
+            {
+                Log.Debug("Getting courses from database for user {user}", discordId);
+                using (MySqlConnection con = _storageService.GetMySqlConnection())
+                using (MySqlCommand cmd = new MySqlCommand())
+                {
+                    await con.OpenAsync();
+                    cmd.Connection = con;
+
+                    cmd.CommandText = $"SELECT `courseName` FROM `{UserCoursesTable}` WHERE `userDiscordSnowflake` = @userId;";
+                    cmd.Prepare();
+                    cmd.Parameters.AddWithValue("@userId", discordId);
+
+                    using (var reader = (MySqlDataReader)await cmd.ExecuteReaderAsync())
+                    {
+                        List<string> courses = new List<string>();
+                        while(await reader.ReadAsync())
+                        {
+                            courses.Add(reader.GetString(0));
+                        }
+                        return courses;
+                    }
+                }
+            }
+
+            public async Task CreateUserIfNotExistAsync(ulong discordId)
+            {
+                using (MySqlConnection con = _storageService.GetMySqlConnection())
+                    await CreateUserIfNotExistAsync(discordId, con);
+            }
+
+            public async Task CreateUserIfNotExistAsync(ulong discordId, MySqlConnection con)
             {
                 Log.Debug("Creating Discord user if not exist {discordId}", discordId);
                 int rowsAffected = 0;
@@ -458,6 +551,8 @@ namespace ECSDiscord.Services
         public class CourseStorage
         {
             private const string CategoryTable = "courseCategories";
+            private const string CourseTable = "courses";
+            private const string UserCoursesTable = "userCourses";
 
             private StorageService _storageService;
 
@@ -466,7 +561,7 @@ namespace ECSDiscord.Services
                 _storageService = storageService;
             }
 
-            public async Task CreateCategory(ulong discordId, string autoImportPattern, int autoImportPriority)
+            public async Task CreateCategoryAsync(ulong discordId, string autoImportPattern, int autoImportPriority)
             {
                 Log.Debug("Adding course category to database for {id}", discordId);
                 int rowsAffected = 0;
@@ -490,7 +585,7 @@ namespace ECSDiscord.Services
                 }
             }
 
-            public async Task DeleteCategory(ulong discordId)
+            public async Task DeleteCategoryAsync(ulong discordId)
             {
                 Log.Debug("Deleting course category from database for {id}", discordId);
                 int rowsAffected = 0;
@@ -509,7 +604,7 @@ namespace ECSDiscord.Services
                 }
             }
 
-            public async Task<bool> DoesCategoryExist(ulong discordId)
+            public async Task<bool> DoesCategoryExistAsync(ulong discordId)
             {
                 Log.Debug("Checking existance of course category from database for {id}", discordId);
 
@@ -526,6 +621,184 @@ namespace ECSDiscord.Services
                     using (var reader = await cmd.ExecuteReaderAsync())
                     {
                         return await reader.ReadAsync();
+                    }
+                }
+            }
+
+            public async Task CreateCourseAsync(string name, ulong discordId)
+            {
+                Log.Debug("Adding course to database for {name} {discordId}", name, discordId);
+                int rowsAffected = 0;
+                using (MySqlConnection con = _storageService.GetMySqlConnection())
+                using (MySqlCommand cmd = new MySqlCommand())
+                {
+                    await con.OpenAsync();
+                    cmd.Connection = con;
+
+                    cmd.CommandText = $"INSERT INTO `{CourseTable}` " +
+                        $"(`name`, `discordChannelSnowflake`) " +
+                        $"VALUES (@name, @discordId);";
+                    cmd.Prepare();
+
+                    cmd.Parameters.AddWithValue("@name", name);
+                    cmd.Parameters.AddWithValue("@discordId", discordId);
+
+                    rowsAffected = await cmd.ExecuteNonQueryAsync();
+                    Log.Debug("Successfully added course to database for {name} {discordId}. Rows affected: {rowsAffected}", name, discordId, rowsAffected);
+                }
+            }
+
+            public async Task DeleteCourseAsync(string name)
+            {
+                Log.Debug("Deleting course from database for {name}", name);
+                int rowsAffected = 0;
+                using (MySqlConnection con = _storageService.GetMySqlConnection())
+                using (MySqlCommand cmd = new MySqlCommand())
+                {
+                    await con.OpenAsync();
+                    cmd.Connection = con;
+
+                    cmd.CommandText = $"DELETE FROM `{CourseTable}` WHERE `name` = @name;";
+                    cmd.Parameters.AddWithValue("@name", name);
+                    cmd.Prepare();
+
+                    rowsAffected = await cmd.ExecuteNonQueryAsync();
+                    Log.Debug("Successfully deleted course from database for {name}. Rows affected: {rowsAffected}", name, rowsAffected);
+                }
+            }
+
+            public async Task DeleteCourseAsync(ulong discordId)
+            {
+                Log.Debug("Deleting course from database for {id}", discordId);
+                int rowsAffected = 0;
+                using (MySqlConnection con = _storageService.GetMySqlConnection())
+                using (MySqlCommand cmd = new MySqlCommand())
+                {
+                    await con.OpenAsync();
+                    cmd.Connection = con;
+
+                    cmd.CommandText = $"DELETE FROM `{CourseTable}` WHERE `discordChannelSnowflake` = @discordId;";
+                    cmd.Parameters.AddWithValue("@discordId", discordId);
+                    cmd.Prepare();
+
+                    rowsAffected = await cmd.ExecuteNonQueryAsync();
+                    Log.Debug("Successfully deleted course from database for {id}. Rows affected: {rowsAffected}", discordId, rowsAffected);
+                }
+            }
+
+            public async Task<bool> DoesCourseExistAsync(string name)
+            {
+                Log.Debug("Checking existance of course from database for {name}", name);
+
+                using (MySqlConnection con = _storageService.GetMySqlConnection())
+                using (MySqlCommand cmd = new MySqlCommand())
+                {
+                    await con.OpenAsync();
+                    cmd.Connection = con;
+
+                    cmd.CommandText = $"SELECT * FROM `{CourseTable}` WHERE `name` = @name;";
+                    cmd.Parameters.AddWithValue("@name", name);
+                    cmd.Prepare();
+
+                    using (var reader = await cmd.ExecuteReaderAsync())
+                    {
+                        return await reader.ReadAsync();
+                    }
+                }
+            }
+
+            public async Task<bool> DoesCourseExistAsync(ulong discordId)
+            {
+                Log.Debug("Checking existance of course from database for {id}", discordId);
+
+                using (MySqlConnection con = _storageService.GetMySqlConnection())
+                using (MySqlCommand cmd = new MySqlCommand())
+                {
+                    await con.OpenAsync();
+                    cmd.Connection = con;
+
+                    cmd.CommandText = $"SELECT * FROM `{CourseTable}` WHERE `discordSnowflake` = @discordId;";
+                    cmd.Parameters.AddWithValue("@discordId", discordId);
+                    cmd.Prepare();
+
+                    using (var reader = await cmd.ExecuteReaderAsync())
+                    {
+                        return await reader.ReadAsync();
+                    }
+                }
+            }
+
+            public async Task<ulong> GetCourseDiscordIdAsync(string name)
+            {
+                Log.Debug("Getting Discord ID of course from database for {name}", name);
+
+                using (MySqlConnection con = _storageService.GetMySqlConnection())
+                using (MySqlCommand cmd = new MySqlCommand())
+                {
+                    await con.OpenAsync();
+                    cmd.Connection = con;
+
+                    cmd.CommandText = $"SELECT `discordChannelSnowflake` FROM `{CourseTable}` WHERE `name` = @name;";
+                    cmd.Parameters.AddWithValue("@name", name);
+                    cmd.Prepare();
+
+                    using (var reader = (MySqlDataReader)await cmd.ExecuteReaderAsync())
+                    {
+                        if (await reader.ReadAsync())
+                        {
+                            return reader.GetUInt64(0);
+                        }
+                        return 0;
+                    }
+                }
+            }
+
+            public async Task<Dictionary<string, ulong>> GetAllCoursesAsync()
+            {
+                Log.Debug("Getting all courses from database for");
+
+                using (MySqlConnection con = _storageService.GetMySqlConnection())
+                using (MySqlCommand cmd = new MySqlCommand())
+                {
+                    await con.OpenAsync();
+                    cmd.Connection = con;
+
+                    cmd.CommandText = $"SELECT * FROM `{CourseTable}`;";
+                    cmd.Prepare();
+
+                    using (var reader = (MySqlDataReader)await cmd.ExecuteReaderAsync())
+                    {
+                        Dictionary<string, ulong> courses = new Dictionary<string, ulong>();
+                        while (await reader.ReadAsync())
+                        {
+                            courses.Add(reader.GetString(0), reader.GetUInt64(1));
+                        }
+                        return courses;
+                    }
+                }
+            }
+
+            public async Task<List<ulong>> GetCourseUsersAsync(string courseName)
+            {
+                Log.Debug("Getting users from database for course {course}", courseName);
+                using (MySqlConnection con = _storageService.GetMySqlConnection())
+                using (MySqlCommand cmd = new MySqlCommand())
+                {
+                    await con.OpenAsync();
+                    cmd.Connection = con;
+
+                    cmd.CommandText = $"SELECT `userDiscordSnowflake` FROM `{UserCoursesTable}` WHERE `courseName` = @course;";
+                    cmd.Prepare();
+                    cmd.Parameters.AddWithValue("@course", courseName);
+
+                    using (var reader = (MySqlDataReader)await cmd.ExecuteReaderAsync())
+                    {
+                        List<ulong> users = new List<ulong>();
+                        while (await reader.ReadAsync())
+                        {
+                            users.Add(reader.GetUInt64(0));
+                        }
+                        return users;
                     }
                 }
             }

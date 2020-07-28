@@ -15,6 +15,7 @@ namespace ECSDiscord.Services
     {
         private readonly DiscordSocketClient _discord;
         private readonly CourseService _courses;
+        private readonly StorageService _storage;
         private readonly IConfigurationRoot _config;
 
         private ulong _guildId;
@@ -28,28 +29,36 @@ namespace ECSDiscord.Services
             Failure
         }
 
-        public EnrollmentsService(DiscordSocketClient discord, CourseService courses, IConfigurationRoot config)
+        public EnrollmentsService(DiscordSocketClient discord, CourseService courses, StorageService storage, IConfigurationRoot config)
         {
             Log.Debug("Enrollments service loading.");
             _discord = discord;
             _courses = courses;
             _config = config;
+            _storage = storage;
             loadConfig();
             Log.Debug("Enrollments service loaded.");
         }
 
-        public async Task<EnrollmentResult> EnrollUser(string course, SocketUser user)
+        public async Task<EnrollmentResult> EnrollUser(string courseName, SocketUser user)
         {
             try
             {
                 SocketGuild guild = _discord.GetGuild(ulong.Parse(_config["guildId"]));
                 await _discord.DownloadUsersAsync(new List<IGuild> { guild });
 
-                if (!IsCourseValid(course, out _))
+                CourseService.Course course = await IsCourseValidAsync(courseName);
+                if (course == null)
                     return EnrollmentResult.CourseNotExist;
 
-                IGuildChannel channel = await _courses.GetOrCreateChannelAsync(course);
-                if (channel.GetPermissionOverwrite(user).HasValue)
+                IGuildChannel channel = guild.GetChannel(course.DiscordId);
+                if(channel == null)
+                {
+                    Log.Error("Channel for course {course} does not exist. {discordId}", course.Code, course.DiscordId);
+                    return EnrollmentResult.Failure;
+                }
+
+                if (await _storage.Users.IsUserInCourseAsync(user.Id, course.Code))
                     return EnrollmentResult.AlreadyJoined;
 
                 if (!uint.TryParse(_config["courses:joinedUserPermissionsAllowed"], out uint allowedPermissions))
@@ -62,62 +71,75 @@ namespace ECSDiscord.Services
                     Log.Error("Invalid joinedUserPermissionsDenied value in config. Please configure a 32 bit integer flag permissions value. https://discordapi.com/permissions.html");
                     return EnrollmentResult.Failure;
                 }
-                await channel.AddPermissionOverwriteAsync(user, new OverwritePermissions(allowedPermissions, deniedPermissions));
+
+                await _storage.Users.EnrollUserAsync(user.Id, course.Code);
+                //await channel.AddPermissionOverwriteAsync(user, new OverwritePermissions(allowedPermissions, deniedPermissions));
+                await applyChannelPermissionsAsync(channel);
                 return EnrollmentResult.Success;
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "Failed to enrol user in course {course} {message}", course, ex.Message);
+                Log.Error(ex, "Failed to enrol user in course {course} {message}", courseName, ex.Message);
                 return EnrollmentResult.Failure;
             }
         }
 
-        public async Task<EnrollmentResult> DisenrollUser(string course, SocketUser user)
+        public async Task<EnrollmentResult> DisenrollUser(string courseName, SocketUser user)
         {
             try
             {
                 SocketGuild guild = _discord.GetGuild(ulong.Parse(_config["guildId"]));
                 await _discord.DownloadUsersAsync(new List<IGuild> { guild });
 
-                if (!IsCourseValid(course, out CourseService.Course courseObject))
+                CourseService.Course course = await IsCourseValidAsync(courseName);
+                if (course == null)
                     return EnrollmentResult.CourseNotExist;
 
-                IGuildChannel channel = _courses.GetChannel(course);
-                if (channel == null || !channel.GetPermissionOverwrite(user).HasValue)
+                if(!await _storage.Users.IsUserInCourseAsync(user.Id, course.Code))
                     return EnrollmentResult.AlreadyLeft;
 
-                await channel.RemovePermissionOverwriteAsync(user);
+                IGuildChannel channel = guild.GetChannel(course.DiscordId);
+                if (channel == null)
+                {
+                    Log.Error("Course channel does not exist {course}", course.Code);
+                    return EnrollmentResult.Failure;
+                }
 
+                await _storage.Users.DisenrollUserAsync(user.Id, course.Code);
+
+                //await channel.RemovePermissionOverwriteAsync(user);
+                await applyChannelPermissionsAsync(channel);
                 return EnrollmentResult.Success;
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "Failed to disenroll user from course {course} {message}", course, ex.Message);
+                Log.Error(ex, "Failed to disenroll user from course {course} {message}", courseName, ex.Message);
                 return EnrollmentResult.Failure;
             }
         }
 
-        public List<string> GetUserCourses(SocketUser user)
+        public async Task<List<string>> GetUserCourses(SocketUser user)
         {
-            SocketGuild guild = _discord.GetGuild(ulong.Parse(_config["guildId"]));
-            return guild.TextChannels.Where(x => IsCourseValid(x.Name, out _) && x.PermissionOverwrites.Any(p => p.TargetId == user.Id)).Select(x => _courses.NormaliseCourseName(x.Name)).ToList();
+            return await _storage.Users.GetUserCoursesAsync(user.Id);
         }
 
-        public bool IsCourseValid(string name, out CourseService.Course course)
+        public async Task<CourseService.Course> IsCourseValidAsync(string name)
         {
-            if (_courses.CourseExists(name))
+            if (await _courses.CourseExists(name))
             {
-                course = _courses.GetCourse(name);
-                return true;
+                return await _courses.GetCourse(name);
             }
             string normalisedName = _courses.NormaliseCourseName(name);
-            if (_courses.CourseExists(normalisedName))
+            if (await _courses.CourseExists(normalisedName))
             {
-                course = _courses.GetCourse(normalisedName);
-                return true;
+                return await _courses.GetCourse(normalisedName);
             }
-            course = null;
-            return false;
+            return null;
+        }
+
+        private async Task applyChannelPermissionsAsync(IGuildChannel channel)
+        {
+            
         }
 
         private void loadConfig()

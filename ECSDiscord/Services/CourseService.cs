@@ -18,9 +18,21 @@ namespace ECSDiscord.Services
         public class Course
         {
             public readonly string Code;
+            public readonly ulong DiscordId;
+
+            public Course(string code, ulong discordId)
+            {
+                Code = code;
+                DiscordId = discordId;
+            }
+        }
+
+        private class CachedCourse
+        {
+            public readonly string Code;
             public readonly string Description;
 
-            public Course(string code, string description)
+            public CachedCourse(string code, string description)
             {
                 Code = code;
                 Description = description;
@@ -37,7 +49,7 @@ namespace ECSDiscord.Services
         private readonly StorageService _storage;
         private ulong _guildId;
 
-        private Dictionary<string, Course> _courses = new Dictionary<string, Course>();
+        private Dictionary<string, CachedCourse> _cachedCourses = new Dictionary<string, CachedCourse>();
 
         public CourseService(IConfigurationRoot config, DiscordSocketClient discord, StorageService storage)
         {
@@ -53,84 +65,45 @@ namespace ECSDiscord.Services
 
         private async Task _discord_ChannelDestroyed(SocketChannel arg)
         {
-            if(await _storage.Courses.DoesCategoryExist(arg.Id))
+            if(await _storage.Courses.DoesCategoryExistAsync(arg.Id))
             {
                 Log.Information("Deleting category because Discord category was deleted {categoryId}", arg.Id);
                 await RemoveCourseCategoryAsync(arg.Id);
             }
-        }
 
-        public IList<Course> GetCourses()
-        {
-            return _courses.Values.ToList();
-        }
-
-        public Course GetCourse(string course)
-        {
-            return _courses[course];
-        }
-
-        public bool CourseExists(string course)
-        {
-            return _courses.ContainsKey(course);
-        }
-
-        public async Task<IGuildChannel> GetOrCreateChannelAsync(string course)
-        {
-            if (!_courses.ContainsKey(course))
-                return null;
-
-            SocketGuild guild = _discord.GetGuild(ulong.Parse(_config["guildId"]));
-
-            IGuildChannel channel = GetChannel(course);
-
-            if (channel != null)
-                return channel;
-
-            RestTextChannel c = await guild.CreateTextChannelAsync(course, x =>
+            if(await _storage.Courses.DoesCourseExistAsync(arg.Id))
             {
-                x.Topic = _courses[course].Description;
-            });
-
-            if (!uint.TryParse(_config["courses:courseChannelPermissionsAllowed"], out uint allowedPermissions))
-            {
-                Log.Error("Invalid courseChannelPermissionsAllowed permissions value in config. https://discordapi.com/permissions.html");
-                return null;
+                Log.Information("Deleting course because Discord course channel was deleted {categoryId}", arg.Id);
+                await RemoveCourseAsync(arg.Id);
             }
-
-            if (!uint.TryParse(_config["courses:courseChannelPermissionsDenied"], out uint deniedPermissions))
-            {
-                Log.Error("Invalid courseChannelPermissionsDenied permissions value in config. https://discordapi.com/permissions.html");
-                return null;
-            }
-
-            await c.AddPermissionOverwriteAsync(guild.EveryoneRole, new OverwritePermissions(allowedPermissions, deniedPermissions));
-            return c;
         }
 
-        public IGuildChannel GetChannel(string course)
+        public async Task<IList<Course>> GetCourses()
         {
-            if (!_courses.ContainsKey(course))
-                return null;
+            return (await _storage.Courses.GetAllCoursesAsync()).Select(x => new Course(x.Key, x.Value)).ToList();
+        }
 
-            SocketGuild guild = _discord.GetGuild(ulong.Parse(_config["guildId"]));
+        public async Task<Course> GetCourse(string course)
+        {
+            return new Course(course, await _storage.Courses.GetCourseDiscordIdAsync(course));
+        }
 
-            return guild.TextChannels
-                .DefaultIfEmpty(null)
-                .FirstOrDefault(x => x.Name.Equals(course, StringComparison.OrdinalIgnoreCase));
+        public async Task<bool> CourseExists(string course)
+        {
+            return await _storage.Courses.DoesCourseExistAsync(course);
         }
 
         public async Task CreateCourseCategoryAsync(SocketCategoryChannel existingCategory, Regex autoImportPattern, int autoImportPriority)
         {
             Log.Information("Creating course category for existing category {categoryId} {categoryName}", existingCategory.Id, existingCategory.Name);
-            await _storage.Courses.CreateCategory(existingCategory.Id, autoImportPriority.ToString(), autoImportPriority);
+            await _storage.Courses.CreateCategoryAsync(existingCategory.Id, autoImportPriority.ToString(), autoImportPriority);
         }
 
         public async Task CreateCourseCategoryAsync(string name, Regex autoImportPattern, int autoImportPriority)
         {
             Log.Information("Creating course category {categoryName}", name);
             RestCategoryChannel category = await _discord.GetGuild(_guildId).CreateCategoryChannelAsync(name);
-            await _storage.Courses.CreateCategory(category.Id, autoImportPriority.ToString(), autoImportPriority);
+            await _storage.Courses.CreateCategoryAsync(category.Id, autoImportPriority.ToString(), autoImportPriority);
         }
 
         public async Task RemoveCourseCategoryAsync(ulong discordId)
@@ -141,12 +114,38 @@ namespace ECSDiscord.Services
             {
                 await category.DeleteAsync();
             }
-            await _storage.Courses.DeleteCategory(discordId);
+            await _storage.Courses.DeleteCategoryAsync(discordId);
         }
 
         public async Task CreateCourseAsync(string name)
         {
+            Log.Information("Creating course {name}", name);
+            SocketGuild guild = _discord.GetGuild(_guildId);
+            RestTextChannel channel = await guild.CreateTextChannelAsync(name);
+            await _storage.Courses.CreateCourseAsync(NormaliseCourseName(name), channel.Id);
+            await OrganiseCoursePosition(channel);
+        }
 
+        public async Task CreateCourseAsync(string name, IGuildChannel channel)
+        {
+            Log.Information("Creating course {name} with existing channel {channel}", name, channel.Id);
+            await _storage.Courses.CreateCourseAsync(NormaliseCourseName(name), channel.Id);
+            await OrganiseCoursePosition(channel);
+        }
+
+        public async Task RemoveCourseAsync(string name)
+        {
+            await _storage.Courses.DeleteCourseAsync(NormaliseCourseName(name));
+        }
+
+        public async Task RemoveCourseAsync(ulong discordId)
+        {
+            await _storage.Courses.DeleteCourseAsync(discordId);
+        }
+
+        public async Task OrganiseCoursePosition(IGuildChannel channel)
+        {
+            
         }
 
         /// <summary>
@@ -181,7 +180,7 @@ namespace ECSDiscord.Services
         {
             try
             {
-                Log.Information("Course download started");
+                Log.Information("Course cache download started");
                 const string webListUrl = "https://service-web.wgtn.ac.nz/dotnet2/catprint.aspx?d=all";
                 string[] urls = new string[]
                 {
@@ -189,7 +188,7 @@ namespace ECSDiscord.Services
                 webListUrl + "&t=p" + DateTime.Now.Year
                 };
 
-                Dictionary<string, Course> courses = new Dictionary<string, Course>();
+                Dictionary<string, CachedCourse> courses = new Dictionary<string, CachedCourse>();
 
                 foreach (string url in urls)
                 {
@@ -208,20 +207,20 @@ namespace ECSDiscord.Services
 
                         if (CourseRegex.IsMatch(courseCode))
                         {
-                            if (!courses.TryAdd(courseCode, new Course(courseCode, courseDescription.Trim())))
+                            if (!courses.TryAdd(courseCode, new CachedCourse(courseCode, courseDescription.Trim())))
                                 Log.Debug("Duplicate course from download: {course}", courseCode);
                         }
                         else
                             Log.Warning("Invalid course code from web download: {course}", courseCode);
                     }
                 }
-                Log.Information("Course download finished");
-                _courses = courses; // Atomic update of courses
+                Log.Information("Course cache download finished");
+                _cachedCourses = courses; // Atomic update of courses
                 return true;
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "Course download failed: {message}. No changes made.", ex.Message);
+                Log.Error(ex, "Course cache download failed: {message}. No changes made.", ex.Message);
                 return false;
             }
         }

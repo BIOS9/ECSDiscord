@@ -122,7 +122,7 @@ namespace ECSDiscord.BotModules
         {
             if (!Context.CheckConfigChannel("enrollments", _config)) return;
 
-            List<string> courses = _enrollments.GetUserCourses(Context.User);
+            List<string> courses = await _enrollments.GetUserCourses(Context.User);
             if (courses.Count == 0)
             {
                 await ReplyAsync("You are not in any courses.");
@@ -173,7 +173,7 @@ namespace ECSDiscord.BotModules
 
             await ReplyAsync("Processing...");
 
-            List<string> existingCourses = _enrollments.GetUserCourses(Context.User); // List of courses the user is already in, probably should've used a set for that
+            List<string> existingCourses = await _enrollments.GetUserCourses(Context.User); // List of courses the user is already in, probably should've used a set for that
 
             // Add user to courses
             StringBuilder stringBuilder = new StringBuilder();
@@ -211,12 +211,12 @@ namespace ECSDiscord.BotModules
         {
             if (!Context.CheckConfigChannel("enrollments", _config)) return; // Ensure command is only executed in allowed channels
 
-            List<string> courses = _enrollments.GetUserCourses(Context.User);
+            List<string> courses = await _enrollments.GetUserCourses(Context.User);
             if (courses.Count == 0)
                 await ReplyAsync("You are not in any courses.");
             else
                 await ReplyAsync("You are in the following courses:\n" + 
-                    _enrollments.GetUserCourses(Context.User)
+                    (await _enrollments.GetUserCourses(Context.User))
                     .Select(x => $"`{x.ToUpper()}`")
                     .Aggregate((x, y) => $"{x}, {y}")
                     .SanitizeMentions());
