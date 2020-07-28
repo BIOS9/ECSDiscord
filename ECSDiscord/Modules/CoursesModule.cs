@@ -251,7 +251,7 @@ namespace ECSDiscord.Modules
             }
             
             if(channels.Count > 0)
-            await ReplyAsync($":white_check_mark:  Successfuly imported {channels.Count} course.");
+            await ReplyAsync($":white_check_mark:  Successfuly imported {channels.Count} courses.");
             else
                 await ReplyAsync($":warning:  No courses imported. Is your RegEx valid?");
         }
