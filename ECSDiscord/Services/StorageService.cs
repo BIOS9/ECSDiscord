@@ -717,7 +717,7 @@ namespace ECSDiscord.Services
                     await con.OpenAsync();
                     cmd.Connection = con;
 
-                    cmd.CommandText = $"SELECT * FROM `{CourseTable}` WHERE `discordSnowflake` = @discordId;";
+                    cmd.CommandText = $"SELECT * FROM `{CourseTable}` WHERE `discordChannelSnowflake` = @discordId;";
                     cmd.Parameters.AddWithValue("@discordId", discordId);
                     cmd.Prepare();
 

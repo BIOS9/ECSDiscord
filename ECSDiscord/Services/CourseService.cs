@@ -85,12 +85,12 @@ namespace ECSDiscord.Services
 
         public async Task<Course> GetCourse(string course)
         {
-            return new Course(course, await _storage.Courses.GetCourseDiscordIdAsync(course));
+            return new Course(course, await _storage.Courses.GetCourseDiscordIdAsync(NormaliseCourseName(course)));
         }
 
         public async Task<bool> CourseExists(string course)
         {
-            return await _storage.Courses.DoesCourseExistAsync(course);
+            return await _storage.Courses.DoesCourseExistAsync(NormaliseCourseName(course));
         }
 
         public async Task CreateCourseCategoryAsync(SocketCategoryChannel existingCategory, Regex autoImportPattern, int autoImportPriority)
@@ -126,10 +126,10 @@ namespace ECSDiscord.Services
             await OrganiseCoursePosition(channel);
         }
 
-        public async Task CreateCourseAsync(string name, IGuildChannel channel)
+        public async Task CreateCourseAsync(IGuildChannel channel)
         {
-            Log.Information("Creating course {name} with existing channel {channel}", name, channel.Id);
-            await _storage.Courses.CreateCourseAsync(NormaliseCourseName(name), channel.Id);
+            Log.Information("Creating course {name} with existing channel {channel}", channel.Name, channel.Id);
+            await _storage.Courses.CreateCourseAsync(NormaliseCourseName(channel.Name), channel.Id);
             await OrganiseCoursePosition(channel);
         }
 

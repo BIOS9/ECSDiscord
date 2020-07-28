@@ -136,5 +136,87 @@ namespace ECSDiscord.Modules
             await _courses.CreateCourseCategoryAsync(cateogry, pattern, autoImportPriority);
             await ReplyAsync(":white_check_mark:  Successfuly added existing category.");
         }
+
+        [Command("createcourse")]
+        [Alias("addcourse")]
+        [Summary("Adds an existing channel as a course.")]
+        [RequireUserPermission(GuildPermission.Administrator)]
+        public async Task CreateCourseAsync(IGuildChannel channel)
+        {
+            if (channel == null)
+            {
+                await ReplyAsync(":warning:  Invalid channel.");
+                return;
+            }
+
+            if (await _courses.CourseExists(channel.Name))
+            {
+                await ReplyAsync(":warning:  Course already exists.");
+                return;
+            }
+
+            await _courses.CreateCourseAsync(channel);
+            await ReplyAsync(":white_check_mark:  Successfuly added existing channel as course.");
+        }
+
+        [Command("createcourse")]
+        [Alias("addcourse")]
+        [Summary("Adds a new course.")]
+        [RequireUserPermission(GuildPermission.Administrator)]
+        public async Task CreateCourseAsync(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                await ReplyAsync(":warning:  Invalid course name.");
+                return;
+            }
+
+            if(await _courses.CourseExists(name))
+            {
+                await ReplyAsync(":warning:  Course already exists.");
+                return;
+            }
+
+            await _courses.CreateCourseAsync(name);
+            await ReplyAsync(":white_check_mark:  Successfuly added course.");
+        }
+
+        [Command("unlinkcourse")]
+        [Alias("deletecourse", "removecourse")]
+        [Summary("Unlinks a Discord channel from a course.")]
+        [RequireUserPermission(GuildPermission.Administrator)]
+        public async Task UnlinkCourseAsync(string name)
+        {
+            if (!await _courses.CourseExists(name))
+            {
+                await ReplyAsync(":warning:  Course does not exist.");
+                return;
+            }
+
+            await _courses.RemoveCourseAsync(name);
+            await ReplyAsync(":white_check_mark:  Successfuly unlinked course.");
+        }
+
+        [Command("unlinkcourse")]
+        [Alias("deletecourse", "removecourse")]
+        [Summary("Unlinks a Discord channel from a course.")]
+        [RequireUserPermission(GuildPermission.Administrator)]
+        public async Task UnlinkCourseAsync(IGuildChannel channel)
+        {
+            if(channel == null)
+            {
+                await ReplyAsync(":warning:  Invalid channel.");
+                return;
+            }
+
+            if (!await _courses.CourseExists(channel.Name))
+            {
+                await ReplyAsync(":warning:  Course does not exist.");
+                return;
+            }
+
+            await _courses.RemoveCourseAsync(channel.Name);
+            await ReplyAsync(":white_check_mark:  Successfuly unlinked course.");
+        }
     }
 }
