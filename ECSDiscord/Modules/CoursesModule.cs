@@ -257,6 +257,55 @@ namespace ECSDiscord.Modules
                 await ReplyAsync($":warning:  No courses imported. Is your RegEx valid?");
         }
 
+        [Command("massupdatepermissions")]
+        [Alias("masspermissions", "massperms", "massupdateperms")]
+        [Summary("Updates the permissions on course channels using a RegEx.")]
+        [RequireUserPermission(GuildPermission.Administrator)]
+        public async Task MassUpdatePermissionsAsync(string regex)
+        {
+            await ReplyAsync("Processing...");
+            Regex pattern;
+            try
+            {
+                pattern = new Regex(regex, RegexOptions.IgnoreCase);
+            }
+            catch
+            {
+                await ReplyAsync(":warning:  Invalid RegEx.");
+                return;
+            }
+
+
+            List<SocketGuildChannel> channels = Context.Guild.Channels.Where(x => pattern.IsMatch(x.Name)).ToList();
+            int count = 0;
+            foreach (SocketGuildChannel channel in channels)
+            {
+                if (await _courses.ApplyChannelPermissionsAsync(channel))
+                    ++count;
+            }
+
+            await ReplyAsync($":white_check_mark:  Updated permissions on {count} channels.");
+        }
+
+        [Command("updatepermissions")]
+        [Alias("permissions", "perms", "updateperms")]
+        [Summary("Updates the permissions on a course channel.")]
+        [RequireUserPermission(GuildPermission.Administrator)]
+        public async Task UpdatePermissionsAsync(IGuildChannel channel)
+        {
+            await ReplyAsync("Processing...");
+
+            if (channel == null)
+            {
+                await ReplyAsync(":warning:  Invalid channel.");
+                return;
+            }
+
+            await _courses.ApplyChannelPermissionsAsync(channel);
+
+            await ReplyAsync($":white_check_mark:  Updated permissions for {MentionUtils.MentionChannel(channel.Id)}.");
+        }
+
         [Command("allcourses")]
         [Alias("listall", "listallcourses")]
         [Summary("Lists all available courses.")]
@@ -267,7 +316,7 @@ namespace ECSDiscord.Modules
             await ReplyAsync("Processing...");
 
             IList<CourseService.Course> courses = await _courses.GetCourses();
-            if(courses.Count == 0)
+            if (courses.Count == 0)
             {
                 await ReplyAsync("There are no courses.");
                 return;
