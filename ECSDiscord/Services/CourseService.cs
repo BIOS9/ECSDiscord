@@ -151,6 +151,12 @@ namespace ECSDiscord.Services
                 return;
             }
 
+            if (_discord.GetGuild(_guildId).GetVoiceChannel(channel.Id) != null)
+            {
+                Log.Debug("Skipping creating course using voice channel {channelid} {channelName}", channel.Id, channel.Name);
+                return;
+            }
+
             Log.Information("Creating course {name} with existing channel {channel}", channel.Name, channel.Id);
             await _storage.Courses.CreateCourseAsync(NormaliseCourseName(channel.Name), channel.Id);
             await OrganiseCoursePosition(channel);
@@ -174,6 +180,12 @@ namespace ECSDiscord.Services
             if(_discord.GetGuild(_guildId).GetCategoryChannel(channel.Id) != null)
             {
                 Log.Debug("Skipping organising category {channelid} {channelName}", channel.Id, channel.Name);
+                return;
+            }
+
+            if (_discord.GetGuild(_guildId).GetVoiceChannel(channel.Id) != null)
+            {
+                Log.Debug("Skipping creating course using voice channel {channelid} {channelName}", channel.Id, channel.Name);
                 return;
             }
 
