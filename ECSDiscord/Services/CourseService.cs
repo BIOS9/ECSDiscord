@@ -169,14 +169,14 @@ namespace ECSDiscord.Services
             
         }
 
-        public async Task ApplyChannelPermissionsAsync(IGuildChannel channel)
+        public async Task<bool> ApplyChannelPermissionsAsync(IGuildChannel channel)
         {
             Log.Debug("Applying channel permissions for {channelid} {channelName}", channel.Id, channel.Name);
             string courseName = await _storage.Courses.GetCourseNameAsync(channel.Id);
             if (string.IsNullOrWhiteSpace(courseName))
             {
                 Log.Warning("Attempted to apply permissions on channel {channelId} {channelName} for unknown course.", channel.Id, channel.Name);
-                return;
+                return false;
             }
 
             SocketGuild guild = _discord.GetGuild(_guildId);
@@ -187,13 +187,13 @@ namespace ECSDiscord.Services
             if(verifiedRole == null)
             {
                 Log.Error("Invalid verified role ID configured in settings. Role not found.");
-                return;
+                return false;
             }
 
             if (unverifiedRole == null)
             {
                 Log.Error("Invalid unverified role ID configured in settings. Role not found.");
-                return;
+                return false;
             }
 
             OverwritePermissions? everyonePerms = channel.GetPermissionOverwrite(guild.EveryoneRole);
@@ -279,6 +279,8 @@ namespace ECSDiscord.Services
                 await channel.AddPermissionOverwriteAsync(user, new OverwritePermissions(_joinedAllowPerms, _joinedDenyPerms));
                 Log.Debug("Adding permission for {user} to {channelid} {channelName}", user.Id, channel.Id, channel.Name);
             }
+
+            return true;
         }
 
         /// <summary>
