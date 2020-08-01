@@ -224,7 +224,7 @@ namespace ECSDiscord.BotModules
             else
                 await ReplyAsync("You are in the following courses:\n" + 
                     (await _enrollments.GetUserCourses(Context.User))
-                    .Select(x => $"`{x.ToUpper()}`")
+                    .Select(x => $"`{x}`")
                     .Aggregate((x, y) => $"{x}, {y}")
                     .SanitizeMentions());
         }
