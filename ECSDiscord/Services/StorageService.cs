@@ -561,6 +561,20 @@ namespace ECSDiscord.Services
                 _storageService = storageService;
             }
 
+            public class Category
+            {
+                public readonly ulong DiscordId;
+                public readonly string AutoImportPattern;
+                public readonly int AutoImportPriority;
+
+                public Category(ulong discordId, string autoImportPattern, int autoImportPriority)
+                {
+                    DiscordId = discordId;
+                    AutoImportPattern = autoImportPattern;
+                    AutoImportPriority = autoImportPriority;
+                }
+            }
+
             public async Task CreateCategoryAsync(ulong discordId, string autoImportPattern, int autoImportPriority)
             {
                 Log.Debug("Adding course category to database for {id}", discordId);
@@ -621,6 +635,31 @@ namespace ECSDiscord.Services
                     using (var reader = await cmd.ExecuteReaderAsync())
                     {
                         return await reader.ReadAsync();
+                    }
+                }
+            }
+
+            public async Task<IList<Category>> GetCategoriesAsync()
+            {
+                Log.Debug("Getting all categories from database.");
+
+                using (MySqlConnection con = _storageService.GetMySqlConnection())
+                using (MySqlCommand cmd = new MySqlCommand())
+                {
+                    await con.OpenAsync();
+                    cmd.Connection = con;
+
+                    cmd.CommandText = $"SELECT `discordSnowflake`,`autoImportPattern`,`autoImportPriority` FROM `{CategoryTable}`;";
+                    cmd.Prepare();
+
+                    using (var reader = (MySqlDataReader)await cmd.ExecuteReaderAsync())
+                    {
+                        List<Category> categories = new List<Category>();
+                        while(await reader.ReadAsync())
+                        {
+                            categories.Add(new Category(reader.GetUInt64(0), reader.GetString(1), reader.GetInt32(2)));
+                        }
+                        return categories;
                     }
                 }
             }

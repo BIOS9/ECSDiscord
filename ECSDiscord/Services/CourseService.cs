@@ -109,14 +109,14 @@ namespace ECSDiscord.Services
         public async Task CreateCourseCategoryAsync(SocketCategoryChannel existingCategory, Regex autoImportPattern, int autoImportPriority)
         {
             Log.Information("Creating course category for existing category {categoryId} {categoryName}", existingCategory.Id, existingCategory.Name);
-            await _storage.Courses.CreateCategoryAsync(existingCategory.Id, autoImportPriority.ToString(), autoImportPriority);
+            await _storage.Courses.CreateCategoryAsync(existingCategory.Id, autoImportPattern.ToString(), autoImportPriority);
         }
 
         public async Task CreateCourseCategoryAsync(string name, Regex autoImportPattern, int autoImportPriority)
         {
             Log.Information("Creating course category {categoryName}", name);
             RestCategoryChannel category = await _discord.GetGuild(_guildId).CreateCategoryChannelAsync(name);
-            await _storage.Courses.CreateCategoryAsync(category.Id, autoImportPriority.ToString(), autoImportPriority);
+            await _storage.Courses.CreateCategoryAsync(category.Id, autoImportPattern.ToString(), autoImportPriority);
         }
 
         public async Task RemoveCourseCategoryAsync(ulong discordId)
@@ -166,7 +166,41 @@ namespace ECSDiscord.Services
 
         public async Task OrganiseCoursePosition(IGuildChannel channel)
         {
-            
+            Log.Debug("Organising course position for {channelid} {channelName}", channel.Id, channel.Name);
+
+            if(_discord.GetGuild(_guildId).GetCategoryChannel(channel.Id) != null)
+            {
+                Log.Debug("Skipping organising category {channelid} {channelName}", channel.Id, channel.Name);
+                return;
+            }
+
+            IList<StorageService.CourseStorage.Category> categories = await _storage.Courses.GetCategoriesAsync();
+            categories = categories.Where(x => x.AutoImportPriority >= 0).OrderByDescending(x => x.AutoImportPriority).ToList();
+            Log.Debug("Found {count} enabled auto import categories.", categories.Count);
+
+            foreach(var category in categories)
+            {
+                Regex pattern;
+                try
+                {
+                    pattern = new Regex(category.AutoImportPattern, RegexOptions.IgnoreCase);
+                }
+                catch(Exception ex)
+                {
+                    Log.Error(ex, "Invalid auto import RegEx for category {category}", category.DiscordId);
+                    continue;
+                }
+
+                if(pattern.IsMatch(channel.Name))
+                {
+                    Log.Debug("Setting course position to category {category} for {channelid} {channelName}", category.DiscordId, channel.Id, channel.Name);
+                    await channel.ModifyAsync(x =>
+                    {
+                        x.CategoryId = category.DiscordId;
+                    });
+                    break;
+                }
+            }
         }
 
         public async Task<bool> ApplyChannelPermissionsAsync(IGuildChannel channel)

@@ -306,6 +306,55 @@ namespace ECSDiscord.Modules
             await ReplyAsync($":white_check_mark:  Updated permissions for {MentionUtils.MentionChannel(channel.Id)}.");
         }
 
+        [Command("organisechannel")]
+        [Alias("organise", "layout")]
+        [Summary("Moves channel based on category auto import rules.")]
+        [RequireUserPermission(GuildPermission.Administrator)]
+        public async Task OrganiseChannelAsync(IGuildChannel channel)
+        {
+            await ReplyAsync("Processing...");
+
+            if (channel == null)
+            {
+                await ReplyAsync(":warning:  Invalid channel.");
+                return;
+            }
+
+            await _courses.OrganiseCoursePosition(channel);
+
+            await ReplyAsync($":white_check_mark:  Organised {MentionUtils.MentionChannel(channel.Id)}.");
+        }
+
+        [Command("massorganisechannels")]
+        [Alias("massorganise", "masslayout")]
+        [Summary("Moves multiple channels based on category auto import rules.")]
+        [RequireUserPermission(GuildPermission.Administrator)]
+        public async Task MassOrganiseChannelAsync(string regex)
+        {
+            await ReplyAsync("Processing...");
+
+            Regex pattern;
+            try
+            {
+                pattern = new Regex(regex, RegexOptions.IgnoreCase);
+            }
+            catch
+            {
+                await ReplyAsync(":warning:  Invalid RegEx.");
+                return;
+            }
+
+
+            List<SocketGuildChannel> channels = Context.Guild.Channels.Where(x => pattern.IsMatch(x.Name)).ToList();
+            foreach (SocketGuildChannel channel in channels)
+            {
+                await Task.Delay(100); // Helps prevent API throttling
+                await _courses.OrganiseCoursePosition(channel);
+            }
+
+            await ReplyAsync($":white_check_mark:  Organised {channels.Count} channels.");
+        }
+
         [Command("allcourses")]
         [Alias("listall", "listallcourses")]
         [Summary("Lists all available courses.")]
