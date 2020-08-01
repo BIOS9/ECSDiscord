@@ -753,6 +753,31 @@ namespace ECSDiscord.Services
                 }
             }
 
+            public async Task<string> GetCourseNameAsync(ulong discordId)
+            {
+                Log.Debug("Getting name of course from database for channel {discordChannel}", discordId);
+
+                using (MySqlConnection con = _storageService.GetMySqlConnection())
+                using (MySqlCommand cmd = new MySqlCommand())
+                {
+                    await con.OpenAsync();
+                    cmd.Connection = con;
+
+                    cmd.CommandText = $"SELECT `name` FROM `{CourseTable}` WHERE `discordChannelSnowflake` = @discordId;";
+                    cmd.Parameters.AddWithValue("@discordId", discordId);
+                    cmd.Prepare();
+
+                    using (var reader = (MySqlDataReader)await cmd.ExecuteReaderAsync())
+                    {
+                        if (await reader.ReadAsync())
+                        {
+                            return reader.GetString(0);
+                        }
+                        return string.Empty;
+                    }
+                }
+            }
+
             public async Task<Dictionary<string, ulong>> GetAllCoursesAsync()
             {
                 Log.Debug("Getting all courses from database for");

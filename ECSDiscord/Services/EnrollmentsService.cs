@@ -80,20 +80,8 @@ namespace ECSDiscord.Services
                 if (await _storage.Users.IsUserInCourseAsync(user.Id, course.Code))
                     return EnrollmentResult.AlreadyJoined;
 
-                if (!uint.TryParse(_config["courses:joinedUserPermissionsAllowed"], out uint allowedPermissions))
-                {
-                    Log.Error("Invalid joinedUserPermissionsAllowed value in config. Please configure a 32 bit integer flag permissions value. https://discordapi.com/permissions.html");
-                    return EnrollmentResult.Failure;
-                }
-                if (!uint.TryParse(_config["courses:joinedUserPermissionsDenied"], out uint deniedPermissions))
-                {
-                    Log.Error("Invalid joinedUserPermissionsDenied value in config. Please configure a 32 bit integer flag permissions value. https://discordapi.com/permissions.html");
-                    return EnrollmentResult.Failure;
-                }
-
                 await _storage.Users.EnrollUserAsync(user.Id, course.Code);
-                //await channel.AddPermissionOverwriteAsync(user, new OverwritePermissions(allowedPermissions, deniedPermissions));
-                await applyChannelPermissionsAsync(channel);
+                await _courses.ApplyChannelPermissionsAsync(channel);
                 return EnrollmentResult.Success;
             }
             catch (Exception ex)
@@ -125,9 +113,7 @@ namespace ECSDiscord.Services
                 }
 
                 await _storage.Users.DisenrollUserAsync(user.Id, course.Code);
-
-                //await channel.RemovePermissionOverwriteAsync(user);
-                await applyChannelPermissionsAsync(channel);
+                await _courses.ApplyChannelPermissionsAsync(channel);
                 return EnrollmentResult.Success;
             }
             catch (Exception ex)
@@ -159,11 +145,6 @@ namespace ECSDiscord.Services
                 return await _courses.GetCourse(normalisedName);
             }
             return null;
-        }
-
-        private async Task applyChannelPermissionsAsync(IGuildChannel channel)
-        {
-            
         }
 
         private void loadConfig()

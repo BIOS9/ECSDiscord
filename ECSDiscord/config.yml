@@ -5,10 +5,15 @@ joinDmTemplate: null
 courses:
   defaultChannelPermissions:
     allowed:
+      everyone: 0
       joined: 1024
+      verified: 0
+      unverified: 0
     denied:
-      unverified: 1024
       everyone: 1024
+      joined: 0
+      verified: 0
+      unverified: 1024
   requireVerificationToJoin: false
 verification:
   emailPattern: "^([a-z0-9]{1,30})@(ecs\\.|my)?(vuw|wgtn)\\.ac\\.nz$"

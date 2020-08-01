@@ -49,6 +49,19 @@ namespace ECSDiscord.Services
         private readonly StorageService _storage;
         private ulong _guildId;
 
+        // Permissions
+        private ulong
+            _verifiedRoleId,
+            _unverifiedRoleId,
+            _verifiedAllowPerms,
+            _verifiedDenyPerms,
+            _unverifiedAllowPerms,
+            _unverifiedDenyPerms,
+            _everyoneAllowPerms,
+            _everyoneDenyPerms,
+            _joinedAllowPerms,
+            _joinedDenyPerms;
+
         private Dictionary<string, CachedCourse> _cachedCourses = new Dictionary<string, CachedCourse>();
 
         public CourseService(IConfigurationRoot config, DiscordSocketClient discord, StorageService storage)
@@ -130,6 +143,7 @@ namespace ECSDiscord.Services
             });
             await _storage.Courses.CreateCourseAsync(courseName, channel.Id);
             await OrganiseCoursePosition(channel);
+            await ApplyChannelPermissionsAsync(channel);
         }
 
         public async Task CreateCourseAsync(IGuildChannel channel)
@@ -137,6 +151,7 @@ namespace ECSDiscord.Services
             Log.Information("Creating course {name} with existing channel {channel}", channel.Name, channel.Id);
             await _storage.Courses.CreateCourseAsync(NormaliseCourseName(channel.Name), channel.Id);
             await OrganiseCoursePosition(channel);
+            await ApplyChannelPermissionsAsync(channel);
         }
 
         public async Task RemoveCourseAsync(string name)
@@ -152,6 +167,118 @@ namespace ECSDiscord.Services
         public async Task OrganiseCoursePosition(IGuildChannel channel)
         {
             
+        }
+
+        public async Task ApplyChannelPermissionsAsync(IGuildChannel channel)
+        {
+            Log.Debug("Applying channel permissions for {channelid} {channelName}", channel.Id, channel.Name);
+            string courseName = await _storage.Courses.GetCourseNameAsync(channel.Id);
+            if (string.IsNullOrWhiteSpace(courseName))
+            {
+                Log.Warning("Attempted to apply permissions on channel {channelId} {channelName} for unknown course.", channel.Id, channel.Name);
+                return;
+            }
+
+            SocketGuild guild = _discord.GetGuild(_guildId);
+
+            SocketRole verifiedRole = guild.GetRole(_verifiedRoleId);
+            SocketRole unverifiedRole = guild.GetRole(_unverifiedRoleId);
+
+            if(verifiedRole == null)
+            {
+                Log.Error("Invalid verified role ID configured in settings. Role not found.");
+                return;
+            }
+
+            if (unverifiedRole == null)
+            {
+                Log.Error("Invalid unverified role ID configured in settings. Role not found.");
+                return;
+            }
+
+            OverwritePermissions? everyonePerms = channel.GetPermissionOverwrite(guild.EveryoneRole);
+            if (!everyonePerms.HasValue ||
+                everyonePerms?.AllowValue != _everyoneAllowPerms &&
+                everyonePerms?.DenyValue != _everyoneDenyPerms)
+            {
+                Log.Debug("Setting @everyone permissions for channel {channelId} {channelName}", channel.Id, channel.Name);
+                await channel.AddPermissionOverwriteAsync(guild.EveryoneRole, new OverwritePermissions(_everyoneAllowPerms, _everyoneDenyPerms));
+            }
+
+            OverwritePermissions? verifiedPerms = channel.GetPermissionOverwrite(verifiedRole);
+            if (!verifiedPerms.HasValue ||
+                verifiedPerms?.AllowValue != _verifiedAllowPerms &&
+                verifiedPerms?.DenyValue != _verifiedDenyPerms)
+            {
+                Log.Debug("Setting verified role permissions for channel {channelId} {channelName}", channel.Id, channel.Name);
+                await channel.AddPermissionOverwriteAsync(verifiedRole, new OverwritePermissions(_verifiedAllowPerms, _verifiedDenyPerms));
+            }
+
+            OverwritePermissions? unverifiedPerms = channel.GetPermissionOverwrite(unverifiedRole);
+            if (!unverifiedPerms.HasValue ||
+                unverifiedPerms?.AllowValue != _unverifiedAllowPerms &&
+                unverifiedPerms?.DenyValue != _unverifiedDenyPerms)
+            {
+                Log.Debug("Setting unverified role permissions for channel {channelId} {channelName}", channel.Id, channel.Name);
+                await channel.AddPermissionOverwriteAsync(unverifiedRole, new OverwritePermissions(_unverifiedAllowPerms, _unverifiedDenyPerms));
+            }
+
+            HashSet<ulong> courseMemberIds = new HashSet<ulong>(await _storage.Courses.GetCourseUsersAsync(courseName));
+            HashSet<ulong> joinedMembers = new HashSet<ulong>();
+            HashSet<ulong> extraMembers = new HashSet<ulong>();
+
+            // Add missing permissions
+            foreach (Overwrite overwrite in channel.PermissionOverwrites)
+            {
+                if (overwrite.TargetType == PermissionTarget.User)
+                {
+                    joinedMembers.Add(overwrite.TargetId);
+                    extraMembers.Add(overwrite.TargetId);
+
+                    try
+                    {
+                        if (overwrite.Permissions.AllowValue != _joinedAllowPerms || overwrite.Permissions.DenyValue != _joinedDenyPerms)
+                        {
+                            SocketUser user = _discord.GetUser(overwrite.TargetId);
+                            if (user == null)
+                                continue;
+                            Log.Information("Updating permission mismatch on channel {channemName} {channelId} for {user} {userId}", channel.Name, channel.Id, user.Username, user.Id);
+                            await channel.AddPermissionOverwriteAsync(user, new OverwritePermissions(_joinedAllowPerms, _joinedDenyPerms));
+                            await Task.Delay(100); // Help prevent API throttling
+                        }
+                    }
+                    catch(Exception ex)
+                    {
+                        Log.Error(ex, "Failed to update permission mismatch for channel {channelName} {channelid}", channel.Name, channel.Id);
+                    }
+                }
+            }
+
+            extraMembers.ExceptWith(courseMemberIds);
+            courseMemberIds.ExceptWith(joinedMembers);
+
+            Log.Debug("Found {count} new permissions for {channelid} {channelName}", courseMemberIds.Count, channel.Id, channel.Name);
+            Log.Debug("Found {count} old permissions for {channelid} {channelName}", extraMembers.Count, channel.Id, channel.Name);
+
+            foreach(ulong extraMember in extraMembers)
+            {
+                await Task.Delay(100); // To help reduce API throttling
+                SocketUser user = _discord.GetUser(extraMember);
+                if (user == null)
+                    continue;
+                await channel.RemovePermissionOverwriteAsync(user);
+                Log.Debug("Removing permission for {user} from {channelid} {channelName}", user.Id, channel.Id, channel.Name);
+            }
+
+            foreach (ulong joinedMember in courseMemberIds)
+            {
+                await Task.Delay(100); // To help reduce API throttling
+                SocketUser user = _discord.GetUser(joinedMember);
+                if (user == null)
+                    continue;
+                await channel.AddPermissionOverwriteAsync(user, new OverwritePermissions(_joinedAllowPerms, _joinedDenyPerms));
+                Log.Debug("Adding permission for {user} to {channelid} {channelName}", user.Id, channel.Id, channel.Name);
+            }
         }
 
         /// <summary>
@@ -234,6 +361,38 @@ namespace ECSDiscord.Services
         private void loadConfig()
         {
             _guildId = ulong.Parse(_config["guildId"]);
+
+            if (!ulong.TryParse(_config["verification:verifiedRoleId"], out _verifiedRoleId))
+            {
+                Log.Error("Invalid verifiedRoleId configured in verification settings.");
+                throw new ArgumentException("Invalid verifiedRoleId configured in verification settings.");
+            }
+
+            if (!ulong.TryParse(_config["verification:unverifiedRoleId"], out _unverifiedRoleId))
+            {
+                Log.Error("Invalid unverifiedRoleId configured in verification settings.");
+                throw new ArgumentException("Invalid unverifiedRoleId configured in verification settings.");
+            }
+
+            try
+            {
+                _everyoneAllowPerms = ulong.Parse(_config["courses:defaultChannelPermissions:allowed:everyone"]);
+                _everyoneDenyPerms = ulong.Parse(_config["courses:defaultChannelPermissions:denied:everyone"]);
+
+                _joinedAllowPerms = ulong.Parse(_config["courses:defaultChannelPermissions:allowed:joined"]);
+                _joinedDenyPerms = ulong.Parse(_config["courses:defaultChannelPermissions:denied:joined"]);
+
+                _verifiedAllowPerms = ulong.Parse(_config["courses:defaultChannelPermissions:allowed:verified"]);
+                _verifiedDenyPerms = ulong.Parse(_config["courses:defaultChannelPermissions:denied:verified"]);
+
+                _unverifiedAllowPerms = ulong.Parse(_config["courses:defaultChannelPermissions:allowed:unverified"]);
+                _unverifiedDenyPerms = ulong.Parse(_config["courses:defaultChannelPermissions:denied:unverified"]);
+            }
+            catch(Exception ex)
+            {
+                Log.Error("Failed to load defaultCoursePermissions from config. Please use a valid Discord permission value. See https://discordapi.com/permissions.html");
+                throw ex;
+            }
         }
     }
 }
