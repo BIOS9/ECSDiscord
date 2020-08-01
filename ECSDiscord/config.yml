@@ -8,12 +8,10 @@ courses:
       everyone: 0
       joined: 1024
       verified: 0
-      unverified: 0
     denied:
       everyone: 1024
       joined: 0
       verified: 0
-      unverified: 1024
   requireVerificationToJoin: false
 verification:
   emailPattern: "^([a-z0-9]{1,30})@(ecs\\.|my)?(vuw|wgtn)\\.ac\\.nz$"
@@ -27,7 +25,6 @@ verification:
   smtpFromName: null
   smtpUseSsl: false
   verifiedRoleId: null
-  unverifiedRoleId: null
   publicKeyCertPath: pub.crt
   skipBots: true
 forcedChannels:

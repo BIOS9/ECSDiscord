@@ -52,11 +52,8 @@ namespace ECSDiscord.Services
         // Permissions
         private ulong
             _verifiedRoleId,
-            _unverifiedRoleId,
             _verifiedAllowPerms,
             _verifiedDenyPerms,
-            _unverifiedAllowPerms,
-            _unverifiedDenyPerms,
             _everyoneAllowPerms,
             _everyoneDenyPerms,
             _joinedAllowPerms,
@@ -216,7 +213,6 @@ namespace ECSDiscord.Services
             SocketGuild guild = _discord.GetGuild(_guildId);
 
             SocketRole verifiedRole = guild.GetRole(_verifiedRoleId);
-            SocketRole unverifiedRole = guild.GetRole(_unverifiedRoleId);
 
             if(verifiedRole == null)
             {
@@ -224,15 +220,10 @@ namespace ECSDiscord.Services
                 return false;
             }
 
-            if (unverifiedRole == null)
-            {
-                Log.Error("Invalid unverified role ID configured in settings. Role not found.");
-                return false;
-            }
-
+            Log.Debug("Everyone allow perms: {allow} Deny: {deny}", _everyoneAllowPerms, _everyoneDenyPerms);
             OverwritePermissions? everyonePerms = channel.GetPermissionOverwrite(guild.EveryoneRole);
             if (!everyonePerms.HasValue ||
-                everyonePerms?.AllowValue != _everyoneAllowPerms &&
+                everyonePerms?.AllowValue != _everyoneAllowPerms ||
                 everyonePerms?.DenyValue != _everyoneDenyPerms)
             {
                 Log.Debug("Setting @everyone permissions for channel {channelId} {channelName}", channel.Id, channel.Name);
@@ -241,20 +232,11 @@ namespace ECSDiscord.Services
 
             OverwritePermissions? verifiedPerms = channel.GetPermissionOverwrite(verifiedRole);
             if (!verifiedPerms.HasValue ||
-                verifiedPerms?.AllowValue != _verifiedAllowPerms &&
+                verifiedPerms?.AllowValue != _verifiedAllowPerms ||
                 verifiedPerms?.DenyValue != _verifiedDenyPerms)
             {
                 Log.Debug("Setting verified role permissions for channel {channelId} {channelName}", channel.Id, channel.Name);
                 await channel.AddPermissionOverwriteAsync(verifiedRole, new OverwritePermissions(_verifiedAllowPerms, _verifiedDenyPerms));
-            }
-
-            OverwritePermissions? unverifiedPerms = channel.GetPermissionOverwrite(unverifiedRole);
-            if (!unverifiedPerms.HasValue ||
-                unverifiedPerms?.AllowValue != _unverifiedAllowPerms &&
-                unverifiedPerms?.DenyValue != _unverifiedDenyPerms)
-            {
-                Log.Debug("Setting unverified role permissions for channel {channelId} {channelName}", channel.Id, channel.Name);
-                await channel.AddPermissionOverwriteAsync(unverifiedRole, new OverwritePermissions(_unverifiedAllowPerms, _unverifiedDenyPerms));
             }
 
             HashSet<ulong> courseMemberIds = new HashSet<ulong>(await _storage.Courses.GetCourseUsersAsync(courseName));
@@ -404,12 +386,6 @@ namespace ECSDiscord.Services
                 throw new ArgumentException("Invalid verifiedRoleId configured in verification settings.");
             }
 
-            if (!ulong.TryParse(_config["verification:unverifiedRoleId"], out _unverifiedRoleId))
-            {
-                Log.Error("Invalid unverifiedRoleId configured in verification settings.");
-                throw new ArgumentException("Invalid unverifiedRoleId configured in verification settings.");
-            }
-
             try
             {
                 _everyoneAllowPerms = ulong.Parse(_config["courses:defaultChannelPermissions:allowed:everyone"]);
@@ -420,9 +396,6 @@ namespace ECSDiscord.Services
 
                 _verifiedAllowPerms = ulong.Parse(_config["courses:defaultChannelPermissions:allowed:verified"]);
                 _verifiedDenyPerms = ulong.Parse(_config["courses:defaultChannelPermissions:denied:verified"]);
-
-                _unverifiedAllowPerms = ulong.Parse(_config["courses:defaultChannelPermissions:allowed:unverified"]);
-                _unverifiedDenyPerms = ulong.Parse(_config["courses:defaultChannelPermissions:denied:unverified"]);
             }
             catch(Exception ex)
             {

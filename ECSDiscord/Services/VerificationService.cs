@@ -45,9 +45,8 @@ namespace ECSDiscord.Services
             _skipBots;
         private X509Certificate2 _publicKeyCert;
         private ulong _guildId;
-        private ulong 
-            _verifiedRoleId,
-            _unverifiedRoleId;
+        private ulong
+            _verifiedRoleId;
 
 
         public VerificationService(IConfigurationRoot config, DiscordSocketClient discord, StorageService storageService)
@@ -301,17 +300,11 @@ namespace ECSDiscord.Services
             SocketGuild guild = _discord.GetGuild(_guildId);
             SocketGuildUser guildUser = guild.GetUser(user.Id);
             SocketRole verifiedRole = guild.GetRole(_verifiedRoleId);
-            SocketRole unverifiedRole = guild.GetRole(_unverifiedRoleId);
 
             if (verifiedRole == null)
             {
                 Log.Error("Failed to find verified Discord role!");
                 throw new Exception("Verified role not found.");
-            }
-            if (unverifiedRole == null)
-            {
-                Log.Error("Failed to find unverified Discord role!");
-                throw new Exception("Unverified role not found.");
             }
             if (guildUser == null)
             {
@@ -329,24 +322,10 @@ namespace ECSDiscord.Services
                     await guildUser.AddRoleAsync(verifiedRole);
                     Log.Debug("Successfully gave verified to user {user}.", user.Id);
                 }
-
-                if (guildUser.Roles.Any(x => x.Id == _unverifiedRoleId))
-                {
-                    Log.Information("Removing unverified role for user {user}", user.Id);
-                    await guildUser.RemoveRoleAsync(unverifiedRole);
-                    Log.Debug("Successfully removed unverified role for user {user}.", user.Id);
-                }
                 return true;
             }
             else if(allowUnverification)
             {
-                if (!guildUser.Roles.Any(x => x.Id == _unverifiedRoleId))
-                {
-                    Log.Information("Giving unverified role to user {user}", user.Id);
-                    await guildUser.AddRoleAsync(unverifiedRole);
-                    Log.Debug("Successfully gave unverified role to user {user}.", user.Id);
-                }
-
                 if (guildUser.Roles.Any(x => x.Id == _verifiedRoleId))
                 {
                     Log.Information("Removing verified role for user {user}", user.Id);
@@ -517,12 +496,6 @@ namespace ECSDiscord.Services
             {
                 Log.Error("Invalid verifiedRoleId configured in verification settings.");
                 throw new ArgumentException("Invalid verifiedRoleId configured in verification settings.");
-            }
-
-            if (!ulong.TryParse(_config["verification:unverifiedRoleId"], out _unverifiedRoleId))
-            {
-                Log.Error("Invalid unverifiedRoleId configured in verification settings.");
-                throw new ArgumentException("Invalid unverifiedRoleId configured in verification settings.");
             }
 
             _publicKeyCertPath = _config["verification:publicKeyCertPath"];
