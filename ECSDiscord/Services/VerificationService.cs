@@ -292,7 +292,7 @@ namespace ECSDiscord.Services
         {
             Log.Debug("Checking user {user} verificaton status.", user.Id);
 
-            if(_skipBots)
+            if(_skipBots && user.IsBot)
             {
                 Log.Debug("Skipping bot user {user}", user.Id);
                 return true;
