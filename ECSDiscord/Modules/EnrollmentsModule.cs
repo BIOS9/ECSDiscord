@@ -13,7 +13,6 @@ using Discord.WebSocket;
 namespace ECSDiscord.BotModules
 {
     [Name("Enrollments")]
-    [RequireContext(ContextType.Guild)]
     public class EnrollmentsModule : ModuleBase<SocketCommandContext>
     {
         private readonly IConfigurationRoot _config;
