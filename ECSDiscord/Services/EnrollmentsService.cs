@@ -19,6 +19,7 @@ namespace ECSDiscord.Services
         private readonly IConfigurationRoot _config;
 
         private ulong _guildId;
+        private bool _requireVerificationToJoin;
 
         public enum EnrollmentResult
         {
@@ -26,6 +27,7 @@ namespace ECSDiscord.Services
             CourseNotExist,
             AlreadyJoined,
             AlreadyLeft,
+            Unverified,
             Failure
         }
 
@@ -44,6 +46,23 @@ namespace ECSDiscord.Services
         {
             try
             {
+                if (_requireVerificationToJoin)
+                {
+                    try
+                    {
+                        if(await _storage.Users.GetEncryptedUsernameAsync(user.Id) == null)
+                        {
+                            Log.Information("Unverified user {user} tried to join a course.", user.Id);
+                            return EnrollmentResult.Unverified;
+                        }
+                    }
+                    catch (StorageService.RecordNotFoundException)
+                    {
+                        Log.Information("Unverified user {user} tried to join a course.", user.Id);
+                        return EnrollmentResult.Unverified;
+                    }
+                }
+
                 SocketGuild guild = _discord.GetGuild(ulong.Parse(_config["guildId"]));
                 await _discord.DownloadUsersAsync(new List<IGuild> { guild });
 
@@ -150,6 +169,11 @@ namespace ECSDiscord.Services
         private void loadConfig()
         {
             _guildId = ulong.Parse(_config["guildId"]);
+            if(!bool.TryParse(_config["courses:requireVerificationToJoin"], out _requireVerificationToJoin))
+            {
+                Log.Error("Invalid boolean for requireVerificationToJoin setting.");
+                throw new Exception("Invalid boolean for requireVerificationToJoin setting.");
+            }
         }
     }
 }

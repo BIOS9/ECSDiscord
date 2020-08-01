@@ -62,6 +62,9 @@ namespace ECSDiscord.BotModules
                     case EnrollmentResult.Success:
                         stringBuilder.Append($":inbox_tray:  **{course}** - Added you to {course} successfully.\n");
                         break;
+                    case EnrollmentResult.Unverified:
+                        stringBuilder.Append($":warning:  **{course}** - Sorry you must be verified before you can join any courses.\n");
+                        break;
                 }
             }
 
@@ -198,6 +201,9 @@ namespace ECSDiscord.BotModules
                         string actionString = alreadyInCourse ? "Removed you from" : "Added you to";
                         string iconString = alreadyInCourse ? ":outbox_tray:" : ":inbox_tray:";
                         stringBuilder.Append($"{iconString}  **{course}** - {actionString} {course} successfully.\n");
+                        break;
+                    case EnrollmentResult.Unverified:
+                        stringBuilder.Append($":warning:  **{course}** - Sorry you must be verified before you can join any courses.\n");
                         break;
                 }
             }

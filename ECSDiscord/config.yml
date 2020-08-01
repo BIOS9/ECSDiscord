@@ -9,6 +9,7 @@ courses:
     denied:
       unverified: 1024
       everyone: 1024
+  requireVerificationToJoin: false
 verification:
   emailPattern: "^([a-z0-9]{1,30})@(ecs\\.|my)?(vuw|wgtn)\\.ac\\.nz$"
   usernameGroup: 1
