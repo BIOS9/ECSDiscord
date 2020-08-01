@@ -7,6 +7,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using static ECSDiscord.Services.EnrollmentsService;
+using Discord;
+using Discord.WebSocket;
 
 namespace ECSDiscord.BotModules
 {
@@ -213,13 +215,42 @@ namespace ECSDiscord.BotModules
 
             List<string> courses = await _enrollments.GetUserCourses(Context.User);
             if (courses.Count == 0)
-                await ReplyAsync("You are not in any courses.");
+                await ReplyAsync($"You are not in any courses. Use `{_config["prefix"]}allcourses` to view a list of all courses.");
             else
                 await ReplyAsync("You are in the following courses:\n" + 
                     (await _enrollments.GetUserCourses(Context.User))
                     .Select(x => $"`{x.ToUpper()}`")
                     .Aggregate((x, y) => $"{x}, {y}")
                     .SanitizeMentions());
+        }
+
+        [Command("members")]
+        [Alias("coursemembers")]
+        [Summary("Lists the members in a course.")]
+        [RequireUserPermission(GuildPermission.Administrator)]
+        public async Task MembersAsync(string courseName)
+        {
+            await ReplyAsync("Processing...");
+            if (!await _courses.CourseExists(courseName))
+            {
+                await ReplyAsync(":warning:  Course does not exist.");
+                return;
+            }
+
+            IList<SocketUser> users = await _enrollments.GetCourseMembers(courseName);
+            if(users == null || users.Count == 0)
+            {
+                await ReplyAsync("There are no users in that course.");
+                return;
+            }
+
+            StringBuilder builder = new StringBuilder(_courses.NormaliseCourseName(courseName) + " has the following members:```");
+            foreach(SocketUser user in users)
+            {
+                builder.Append("\n");
+                builder.Append($"{user.Username}#{user.Discriminator}  -  {user.Id}");
+            }
+            await ReplyAsync(builder.ToString().SanitizeMentions() + "```");
         }
 
         private bool checkCourses(string[] courses, bool ignoreDuplicates, out string errorMessage, out ISet<string> formattedCourses)

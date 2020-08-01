@@ -123,6 +123,11 @@ namespace ECSDiscord.Services
             return await _storage.Users.GetUserCoursesAsync(user.Id);
         }
 
+        public async Task<IList<SocketUser>> GetCourseMembers(string course)
+        {
+            return (await _storage.Courses.GetCourseUsersAsync(_courses.NormaliseCourseName(course))).Select(x => _discord.GetUser(x)).ToList();
+        }
+
         public async Task<CourseService.Course> IsCourseValidAsync(string name)
         {
             if (await _courses.CourseExists(name))

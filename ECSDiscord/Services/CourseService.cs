@@ -119,10 +119,16 @@ namespace ECSDiscord.Services
 
         public async Task CreateCourseAsync(string name)
         {
-            Log.Information("Creating course {name}", name);
+            string courseName = NormaliseCourseName(name);
+            Log.Information("Creating course {name}", courseName);
             SocketGuild guild = _discord.GetGuild(_guildId);
-            RestTextChannel channel = await guild.CreateTextChannelAsync(name);
-            await _storage.Courses.CreateCourseAsync(NormaliseCourseName(name), channel.Id);
+            RestTextChannel channel = await guild.CreateTextChannelAsync(courseName, (a) => {
+                if(_cachedCourses.ContainsKey(courseName))
+                {
+                    a.Topic = _cachedCourses[courseName].Description;
+                }
+            });
+            await _storage.Courses.CreateCourseAsync(courseName, channel.Id);
             await OrganiseCoursePosition(channel);
         }
 

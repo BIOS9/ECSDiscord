@@ -10,6 +10,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Linq;
 using Discord.WebSocket;
+using ECSDiscord.Util;
 
 namespace ECSDiscord.Modules
 {
@@ -166,22 +167,22 @@ namespace ECSDiscord.Modules
         [Alias("addcourse")]
         [Summary("Adds a new course.")]
         [RequireUserPermission(GuildPermission.Administrator)]
-        public async Task CreateCourseAsync(string name)
+        public async Task CreateCourseAsync(string courseName)
         {
             await ReplyAsync("Processing...");
-            if (string.IsNullOrWhiteSpace(name))
+            if (string.IsNullOrWhiteSpace(courseName))
             {
                 await ReplyAsync(":warning:  Invalid course name.");
                 return;
             }
 
-            if(await _courses.CourseExists(name))
+            if (await _courses.CourseExists(courseName))
             {
                 await ReplyAsync(":warning:  Course already exists.");
                 return;
             }
 
-            await _courses.CreateCourseAsync(name);
+            await _courses.CreateCourseAsync(courseName);
             await ReplyAsync(":white_check_mark:  Successfuly added course.");
         }
 
@@ -189,16 +190,16 @@ namespace ECSDiscord.Modules
         [Alias("deletecourse", "removecourse")]
         [Summary("Unlinks a Discord channel from a course.")]
         [RequireUserPermission(GuildPermission.Administrator)]
-        public async Task UnlinkCourseAsync(string name)
+        public async Task UnlinkCourseAsync(string courseName)
         {
             await ReplyAsync("Processing...");
-            if (!await _courses.CourseExists(name))
+            if (!await _courses.CourseExists(courseName))
             {
                 await ReplyAsync(":warning:  Course does not exist.");
                 return;
             }
 
-            await _courses.RemoveCourseAsync(name);
+            await _courses.RemoveCourseAsync(courseName);
             await ReplyAsync(":white_check_mark:  Successfuly unlinked course.");
         }
 
@@ -249,11 +250,37 @@ namespace ECSDiscord.Modules
             {
                 await _courses.CreateCourseAsync(channel);
             }
-            
-            if(channels.Count > 0)
-            await ReplyAsync($":white_check_mark:  Successfuly imported {channels.Count} courses.");
+
+            if (channels.Count > 0)
+                await ReplyAsync($":white_check_mark:  Successfuly imported {channels.Count} courses.");
             else
                 await ReplyAsync($":warning:  No courses imported. Is your RegEx valid?");
+        }
+
+        [Command("allcourses")]
+        [Alias("listall", "listallcourses")]
+        [Summary("Lists all available courses.")]
+        public async Task AllCoursesAsync()
+        {
+            if (!Context.CheckConfigChannel("enrollments", _config)) return;
+
+            await ReplyAsync("Processing...");
+
+            IList<CourseService.Course> courses = await _courses.GetCourses();
+            if(courses.Count == 0)
+            {
+                await ReplyAsync("There are no courses.");
+                return;
+            }
+
+            StringBuilder builder = new StringBuilder("Here are the courses you can join: ```");
+            foreach (CourseService.Course course in courses)
+            {
+                builder.Append("\n");
+                builder.Append($"{course.Code}");
+            }
+
+            await ReplyAsync(builder.ToString().SanitizeMentions() + "```");
         }
     }
 }
