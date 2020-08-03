@@ -6,7 +6,9 @@ using Microsoft.Extensions.Configuration;
 using Serilog;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Net;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -363,25 +365,39 @@ namespace ECSDiscord.Services
                 {
                     Log.Debug("Downloading courses from: {url}", url);
                     HtmlWeb web = new HtmlWeb();
-                    HtmlDocument document = await web.LoadFromWebAsync(url);
-
-                    HtmlNode[] nodes = document.DocumentNode.SelectNodes("//p[@class='courseid']").ToArray();
-                    foreach (HtmlNode item in nodes)
+                    HtmlDocument document = new HtmlDocument();
+                    
+                    using (WebClient wc = new WebClient())
                     {
-                        string courseCode = NormaliseCourseName(item.SelectSingleNode(".//span[1]").InnerText);
-                        string courseDescription = item.SelectSingleNode(".//span[2]//span[1]").InnerText;
-
-                        if (courseDescription.StartsWith("– ")) // Remove weird dash thing from start
-                            courseDescription = courseDescription.Remove(0, 2);
-
-                        if (CourseRegex.IsMatch(courseCode))
+                        byte[] data = await wc.DownloadDataTaskAsync(url);
+                        using (MemoryStream ms = new MemoryStream(data))
                         {
-                            if (!courses.TryAdd(courseCode, new CachedCourse(courseCode, courseDescription.Trim())))
-                                Log.Debug("Duplicate course from download: {course}", courseCode);
+                            document.Load(ms);
+
+                            HtmlNode[] nodes = document.DocumentNode.SelectNodes("//p[@class='courseid']").ToArray();
+                            foreach (HtmlNode item in nodes)
+                            {
+                                string courseCode = NormaliseCourseName(item.SelectSingleNode(".//span[1]").InnerText);
+                                string courseDescription = item.SelectSingleNode(".//span[2]//span[1]").InnerText;
+
+                                if (courseDescription.StartsWith("– ")) // Remove weird dash thing from start
+                                    courseDescription = courseDescription.Remove(0, 2);
+
+                                if (CourseRegex.IsMatch(courseCode))
+                                {
+                                    if (!courses.TryAdd(courseCode, new CachedCourse(courseCode, courseDescription.Trim())))
+                                        Log.Debug("Duplicate course from download: {course}", courseCode);
+                                }
+                                else
+                                    Log.Warning("Invalid course code from web download: {course}", courseCode);
+                            }
                         }
-                        else
-                            Log.Warning("Invalid course code from web download: {course}", courseCode);
                     }
+
+                    // HTML Agility pack being weird and not freeing memory.
+                    document = null;
+                    web = null;
+                    GC.Collect();
                 }
                 Log.Information("Course cache download finished");
                 _cachedCourses = courses; // Atomic update of courses
