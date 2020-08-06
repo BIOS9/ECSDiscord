@@ -9,7 +9,7 @@ namespace UserDataViewer
 {
     class UserDataViewer
     {
-        private const string ServerHost = "ecsdiscord.nightfish.co";
+        private const string ServerHost = "localhost";//"ecsdiscord.nightfish.co";
         private const int ServerPort = 12036;
 
         private CertificateService _certificateService = new CertificateService();
@@ -321,7 +321,7 @@ namespace UserDataViewer
                 connection.OpenConnection();
                 while (true)
                 {
-                    writeColor("Please enter the Discord ID of a user to view their username: (Empty value to cancel)", ConsoleColor.Yellow);
+                    writeColor("Please enter the Discord ID of a user to view their username: (Empty value to cancel)", ConsoleColor.White);
                     string discordIdStr = Console.ReadLine();
                     ulong discordId;
                     if(!ulong.TryParse(discordIdStr, out discordId))

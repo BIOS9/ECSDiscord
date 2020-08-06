@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
+using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 
@@ -54,7 +55,7 @@ namespace UserDataViewer
                 new LocalCertificateSelectionCallback(selectLocalCertificate),
                 EncryptionPolicy.RequireEncryption);
             Console.WriteLine("Authenticating...");
-            _sslStream.AuthenticateAsClient(_host);
+            _sslStream.AuthenticateAsClient(_host, null, SslProtocols.Tls13 | SslProtocols.Tls12, false);
         }
 
         public void CloseConnection()
@@ -117,7 +118,7 @@ namespace UserDataViewer
             if (sslPolicyErrors == SslPolicyErrors.None)
                 return true;
 
-            if ((sslPolicyErrors & SslPolicyErrors.RemoteCertificateNameMismatch) != 0)
+            if ((sslPolicyErrors & SslPolicyErrors.RemoteCertificateNotAvailable) != 0)
                 return false;
 
             string errors = "";
@@ -136,6 +137,7 @@ namespace UserDataViewer
             Console.WriteLine("Do you want to trust this certificate anyway? (Y/N)");
             Console.ForegroundColor = ConsoleColor.White;
             char c = Console.ReadKey().KeyChar;
+            Console.WriteLine();
             if (c == 'y' || c == 'Y')
                 return true;
             return false;

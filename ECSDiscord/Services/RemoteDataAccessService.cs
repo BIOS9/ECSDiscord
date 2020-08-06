@@ -7,6 +7,7 @@ using System.IO;
 using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
+using System.Security.Authentication;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
@@ -61,12 +62,13 @@ namespace ECSDiscord.Services
             Log.Debug("Starting remote data access server.");
             try
             {
+                Log.Information("Remote data access server listening for connections on port {port}", _port);
+                TcpListener tcpListener = new TcpListener(new IPEndPoint(IPAddress.Any, _port));
+                tcpListener.Start();
                 while (true)
                 {
                     try
                     {
-                        Log.Information("Remote data access server listening for connections on port {port}", _port);
-                        TcpListener tcpListener = new TcpListener(new IPEndPoint(IPAddress.Any, _port));
                         handleClient(await tcpListener.AcceptTcpClientAsync());
                     }
                     catch(Exception ex)
@@ -84,34 +86,35 @@ namespace ECSDiscord.Services
         private async void handleClient(TcpClient client)
         {
             Log.Information("[Remote data access]: Client connected {client}", client.Client.RemoteEndPoint.ToString());
-            SslStream sslStream = new SslStream(client.GetStream(), false, new RemoteCertificateValidationCallback(validateClientCert), new LocalCertificateSelectionCallback(selectServerCert));
             try
             {
+                SslStream sslStream = new SslStream(client.GetStream(), false, new RemoteCertificateValidationCallback(validateClientCert), new LocalCertificateSelectionCallback(selectServerCert));
+                await sslStream.AuthenticateAsServerAsync(_certificate, true, SslProtocols.Tls12 | SslProtocols.Tls12, false);
                 while (client.Connected)
                 {
                     DataChunk chunk = await readData(sslStream);
                     ulong discordId;
                     if (!ulong.TryParse(chunk.Data, out discordId))
                     {
-                        Log.Warning("[Remote data access]: Client {client} provided invalid Discord ID {id}", chunk.Data);
+                        Log.Warning("[Remote data access]: Client {client} provided invalid Discord ID {id}", client.Client.RemoteEndPoint.ToString(), chunk.Data);
                         await sendData(sslStream, new DataChunk { TransferStatus = DataChunk.Status.InvalidDiscordId });
                         continue;
                     }
                     try
                     {
-                        Log.Information("[Remote data access]: Client {client} requested encrypted username for Discord ID {id}", discordId);
+                        Log.Information("[Remote data access]: Client {client} requested encrypted username for Discord ID {id}", client.Client.RemoteEndPoint.ToString(), discordId);
                         byte[] encryptedUsername = await _storageService.Users.GetEncryptedUsernameAsync(discordId);
                         string b64 = Convert.ToBase64String(encryptedUsername);
                         await sendData(sslStream, new DataChunk { Data = b64, TransferStatus = DataChunk.Status.Success });
                     }
                     catch (StorageService.RecordNotFoundException)
                     {
-                        Log.Information("[Remote data access]: Client {client} attempted to get encrypted username for Discord ID {id} but the user was not found", discordId);
+                        Log.Information("[Remote data access]: Client {client} attempted to get encrypted username for Discord ID {id} but the user was not found", client.Client.RemoteEndPoint.ToString(), discordId);
                         await sendData(sslStream, new DataChunk { TransferStatus = DataChunk.Status.UserNotFound });
                     }
                     catch (Exception ex)
                     {
-                        Log.Error(ex, "[Remote data access]: Client {client} attempted to get encrypted username for Discord ID {id} there was an error: {error}", discordId, ex.Message);
+                        Log.Error(ex, "[Remote data access]: Client {client} attempted to get encrypted username for Discord ID {id} there was an error: {error}", client.Client.RemoteEndPoint.ToString(), discordId, ex.Message);
                         await sendData(sslStream, new DataChunk { TransferStatus = DataChunk.Status.Failure });
                     }
                 }
@@ -124,19 +127,6 @@ namespace ECSDiscord.Services
             catch (Exception ex)
             {
                 Log.Error(ex, "[Remote data access]: Error occured communicating with a client {client} {message}", client.Client.RemoteEndPoint.ToString(), ex.Message);
-            }
-            finally
-            {
-                try
-                {
-                    sslStream.Close();
-                    client.Close();
-                }
-                catch { }
-                finally
-                {
-                    client.Dispose();
-                }
             }
             Log.Information("[Remote data access]: Client disconnected {client}", client.Client.RemoteEndPoint.ToString());
         }
