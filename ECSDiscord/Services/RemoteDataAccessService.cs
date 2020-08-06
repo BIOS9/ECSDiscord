@@ -1,26 +1,49 @@
 ﻿using Microsoft.Extensions.Configuration;
+using Newtonsoft.Json;
 using Serilog;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
+using System.Net.Security;
 using System.Net.Sockets;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace ECSDiscord.Services
 {
     public class RemoteDataAccessService
     {
         private readonly IConfigurationRoot _config;
+        private readonly StorageService _storageService;
         private bool _enable;
         private int _port;
         private X509Certificate2 _certificate;
+        private string _allowedCertificateHash;
 
-        public RemoteDataAccessService(IConfigurationRoot config)
+        private class DataChunk
+        {
+            public enum Status
+            {
+                Success,
+                UserNotFound,
+                InvalidDiscordId,
+                Failure
+            }
+
+            public Status TransferStatus;
+            public string Data;
+        }
+
+        public class ClientDisconnectedException : Exception { }
+
+        public RemoteDataAccessService(IConfigurationRoot config, StorageService storageService)
         {
             Log.Debug("Remote data access service loading.");
             _config = config;
+            _storageService = storageService;
             loadConfig();
             if (_enable)
             {
@@ -61,11 +84,116 @@ namespace ECSDiscord.Services
         private async void handleClient(TcpClient client)
         {
             Log.Information("[Remote data access]: Client connected {client}", client.Client.RemoteEndPoint.ToString());
-            while(client.Connected)
+            SslStream sslStream = new SslStream(client.GetStream(), false, new RemoteCertificateValidationCallback(validateClientCert), new LocalCertificateSelectionCallback(selectServerCert));
+            try
             {
-
+                while (client.Connected)
+                {
+                    DataChunk chunk = await readData(sslStream);
+                    ulong discordId;
+                    if (!ulong.TryParse(chunk.Data, out discordId))
+                    {
+                        Log.Warning("[Remote data access]: Client {client} provided invalid Discord ID {id}", chunk.Data);
+                        await sendData(sslStream, new DataChunk { TransferStatus = DataChunk.Status.InvalidDiscordId });
+                        continue;
+                    }
+                    try
+                    {
+                        Log.Information("[Remote data access]: Client {client} requested encrypted username for Discord ID {id}", discordId);
+                        byte[] encryptedUsername = await _storageService.Users.GetEncryptedUsernameAsync(discordId);
+                        string b64 = Convert.ToBase64String(encryptedUsername);
+                        await sendData(sslStream, new DataChunk { Data = b64, TransferStatus = DataChunk.Status.Success });
+                    }
+                    catch (StorageService.RecordNotFoundException)
+                    {
+                        Log.Information("[Remote data access]: Client {client} attempted to get encrypted username for Discord ID {id} but the user was not found", discordId);
+                        await sendData(sslStream, new DataChunk { TransferStatus = DataChunk.Status.UserNotFound });
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error(ex, "[Remote data access]: Client {client} attempted to get encrypted username for Discord ID {id} there was an error: {error}", discordId, ex.Message);
+                        await sendData(sslStream, new DataChunk { TransferStatus = DataChunk.Status.Failure });
+                    }
+                }
+            }
+            catch (ClientDisconnectedException)
+            {
+                Log.Information("[Remote data access]: Client {client} disconnected.", client.Client.RemoteEndPoint.ToString());
+                return;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "[Remote data access]: Error occured communicating with a client {client} {message}", client.Client.RemoteEndPoint.ToString(), ex.Message);
+            }
+            finally
+            {
+                try
+                {
+                    sslStream.Close();
+                    client.Close();
+                }
+                catch { }
+                finally
+                {
+                    client.Dispose();
+                }
             }
             Log.Information("[Remote data access]: Client disconnected {client}", client.Client.RemoteEndPoint.ToString());
+        }
+
+        private async Task sendData(SslStream stream, DataChunk chunk)
+        {
+            string json = JsonConvert.SerializeObject(chunk);
+            byte[] jsonData = Encoding.UTF8.GetBytes(json);
+            if (jsonData.LongLength > int.MaxValue)
+                throw new Exception("Encoded data length exceeds header capacity.");
+            byte[] dataLength = BitConverter.GetBytes(jsonData.Length);
+
+            await stream.WriteAsync(dataLength);
+            await stream.WriteAsync(jsonData);
+        }
+
+        private async Task<DataChunk> readData(SslStream stream)
+        {
+            byte[] dataLengthBuffer = new byte[4]; // 4 byte integer
+            int readBytes = await stream.ReadAsync(dataLengthBuffer, 0, 4);
+            if (readBytes == 0)
+                throw new ClientDisconnectedException();
+            int dataLength = BitConverter.ToInt32(dataLengthBuffer, 0);
+            byte[] data = new byte[dataLength];
+            readBytes = await stream.ReadAsync(data, 0, dataLength);
+            if (readBytes == 0)
+                throw new ClientDisconnectedException();
+            string json = Encoding.UTF8.GetString(data);
+            DataChunk chunk = JsonConvert.DeserializeObject<DataChunk>(json);
+            return chunk;
+        }
+
+        private bool validateClientCert(
+            object sender,
+            X509Certificate certificate,
+            X509Chain chain,
+            SslPolicyErrors sslPolicyErrors)
+        {
+            string hash = certificate.GetCertHashString(HashAlgorithmName.SHA256);
+            if (!hash.Equals(_allowedCertificateHash))
+            {
+                Log.Information("[Remote data access]: Access denied for client due to unauthorised client certificate. Hash: {hash}", hash);
+                return false;
+            }
+
+            Log.Debug("[Remote data access]: Access granted for certificate hash {hash}", hash);
+            return true;
+        }
+
+        public X509Certificate selectServerCert(
+            object sender,
+            string targetHost,
+            X509CertificateCollection localCertificates,
+            X509Certificate remoteCertificate,
+            string[] acceptableIssuers)
+        {
+            return _certificate;
         }
 
         private void loadConfig()
@@ -105,6 +233,17 @@ namespace ECSDiscord.Services
             {
                 Log.Error(ex, "Failed to import remote data access PKCS12 bundle. Invalid bundle or incorrect password. {message}", ex.Message);
                 throw new ArgumentException("Failed to import remote data access PKCS12 bundle. Invalid bundle or incorrect password.", ex);
+            }
+
+            try
+            {
+                X509Certificate2 verificationCert = new X509Certificate2(_config["verification:publicKeyCertPath"]);
+                _allowedCertificateHash = verificationCert.GetCertHashString(HashAlgorithmName.SHA256);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Failed to import verification public key certificate certificate.", ex.Message);
+                throw new ArgumentException("Failed to import verification public key certificate certificate.", ex);
             }
         }
     }
