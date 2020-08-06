@@ -242,7 +242,7 @@ namespace UserDataViewer
                 }
                 writeColor("Confirm password:", ConsoleColor.Yellow);
                 SecureString passwordConf = readPassword();
-                if (!IsEqualTo(password, passwordConf))
+                if (!compareSecureStrings(password, passwordConf))
                     writeColor("Passwords do not match!", ConsoleColor.Red);
                 else
                 {
@@ -317,7 +317,7 @@ namespace UserDataViewer
             return pass;
         }
 
-        public bool IsEqualTo(SecureString ss1, SecureString ss2)
+        private bool compareSecureStrings(SecureString ss1, SecureString ss2)
         {
             IntPtr bstr1 = IntPtr.Zero;
             IntPtr bstr2 = IntPtr.Zero;
