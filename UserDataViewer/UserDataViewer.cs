@@ -57,9 +57,9 @@ namespace UserDataViewer
             while (true)
             {
                 writeColor("Please select an option:", ConsoleColor.Yellow);
-                Console.WriteLine("1. Save credentials to file.");
-                Console.WriteLine("2. Send credentials to another user.");
-                Console.WriteLine("3. View ECS Discord user data.");
+                Console.WriteLine("1. View ECS Discord user data.");
+                Console.WriteLine("2. Save credentials to file.");
+                Console.WriteLine("3. Send credentials to another user.");
                 Console.WriteLine("4. Exit.");
 
                 char selection = Console.ReadKey().KeyChar;
@@ -67,13 +67,13 @@ namespace UserDataViewer
                 switch (selection)
                 {
                     case '1':
-                        exportPkcs12();
+                        accessData();
                         break;
                     case '2':
-                        exportToUser();
+                        exportPkcs12();
                         break;
                     case '3':
-                        accessData();
+                        exportToUser();
                         break;
                     case '4':
                         Environment.Exit(0);
