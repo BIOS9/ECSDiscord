@@ -349,11 +349,6 @@ namespace UserDataViewer
                             writeColor("Data decryption failed. The data is invalid or you have the wrong key.", ConsoleColor.Red);
                         }
                     }
-                    catch(ServerConnection.ServerDisconnectedException)
-                    {
-                        writeColor("The server closed the connection. This may be because the key you provided does not have access to the user records.", ConsoleColor.Red);
-                        return;
-                    }
                     catch(ServerConnection.UserNotFoundException)
                     {
                         writeColor("That Discord ID was not found. You might have entered the ID wrong or the user is unverified.", ConsoleColor.Red);
