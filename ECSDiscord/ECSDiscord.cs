@@ -68,6 +68,7 @@ namespace ECSDiscord
             provider.GetRequiredService<Services.CourseService>(); // Start course service
             provider.GetRequiredService<Services.StorageService>(); // Start course service
             provider.GetRequiredService<Services.VerificationService>(); // Start verification service
+            provider.GetRequiredService<Services.RemoteDataAccessService>(); // Start remote data access service
             await provider.GetRequiredService<Services.StartupService>().StartAsync(); // Run startup service
             if (await provider.GetRequiredService<Services.StorageService>().TestConnection()) // Test DB connection
                 await Task.Delay(-1); // Keep program from exiting
@@ -95,6 +96,7 @@ namespace ECSDiscord
             .AddSingleton<Services.CourseService>()          // Add courseservice to the collection
             .AddSingleton<Services.StorageService>()          // Add storageservice to the collection
             .AddSingleton<Services.VerificationService>()       // Add verificationservice to the collection
+            .AddSingleton<Services.RemoteDataAccessService>()       // Add verificationservice to the collection
             .AddSingleton(Configuration);           // Add the configuration to the collection
         }
 
@@ -102,7 +104,7 @@ namespace ECSDiscord
         {
             // Configure logger.
             Log.Logger = new LoggerConfiguration()
-                .MinimumLevel.Information()
+                .MinimumLevel.Debug()
                 .WriteTo.Console()
                 .WriteTo.File(LogFileName, rollingInterval: LogInterval)
                 .CreateLogger();

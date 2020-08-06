@@ -38,3 +38,8 @@ database:
   database: null
   username: null
   password: null
+remoteDataAccess:
+  enable: false
+  port: 12036
+  pkcs12Bundle: null
+  pkcs12Password: null
