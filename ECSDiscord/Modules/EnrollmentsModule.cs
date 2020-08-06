@@ -249,13 +249,36 @@ namespace ECSDiscord.BotModules
                 return;
             }
 
-            StringBuilder builder = new StringBuilder(_courses.NormaliseCourseName(courseName) + " has the following members:```");
+            StringBuilder builder = new StringBuilder(_courses.NormaliseCourseName(courseName) + $" has the following {users.Count} members:```");
             foreach(SocketUser user in users)
             {
                 builder.Append("\n");
                 builder.Append($"{user.Username}#{user.Discriminator}  -  {user.Id}");
             }
             await ReplyAsync(builder.ToString().SanitizeMentions() + "```");
+        }
+
+        [Command("membercount")]
+        [Alias("countmembers", "coursemembercount")]
+        [Summary("Gives the number of members in a course.")]
+        [RequireUserPermission(GuildPermission.Administrator)]
+        public async Task MemberCountAsync(string courseName)
+        {
+            await ReplyAsync("Processing...");
+            if (!await _courses.CourseExists(courseName))
+            {
+                await ReplyAsync(":warning:  Course does not exist.");
+                return;
+            }
+
+            IList<SocketUser> users = await _enrollments.GetCourseMembers(courseName);
+            if (users == null || users.Count == 0)
+            {
+                await ReplyAsync("There are no users in that course.");
+                return;
+            }
+
+            await ReplyAsync(_courses.NormaliseCourseName(courseName) + $" has {users.Count} members.".SanitizeMentions());
         }
 
         private bool checkCourses(string[] courses, bool ignoreDuplicates, out string errorMessage, out ISet<string> formattedCourses)
