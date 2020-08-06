@@ -28,7 +28,7 @@ namespace UserDataViewer
 
         public void GenerateKey(string partnerPublicString)
         {
-            byte[] partnerPublicKey = Convert.FromBase64String(partnerPublicString.Replace("-----BEGIN PUBLIC KEY-----", "").Replace("-----END PUBLIC KEY-----", "").Replace("\n", ""));
+            byte[] partnerPublicKey = Convert.FromBase64String(partnerPublicString.Replace("-----BEGIN PUBLIC KEY-----", "").Replace("-----END PUBLIC KEY-----", "").Replace("\n", "").Trim());
             _sharedKey = _ec.DeriveKeyMaterial(ECDiffieHellmanCngPublicKey.FromByteArray(partnerPublicKey, CngKeyBlobFormat.EccPublicBlob));
         }
 
@@ -62,7 +62,7 @@ namespace UserDataViewer
             if (_sharedKey == null)
                 throw new InvalidOperationException("Key exchange must be completed before data can be exchanged.");
 
-            certificateData = certificateData.Replace("-----BEGIN ENCRYPTED DATA-----", "").Replace("-----END ENCRYPTED DATA-----", "").Replace("\n", "");
+            certificateData = certificateData.Replace("-----BEGIN ENCRYPTED DATA-----", "").Replace("-----END ENCRYPTED DATA-----", "").Replace("\n", "").Trim();
             
             string[] parts = certificateData.Split("|");
             byte[] iv = Convert.FromBase64String(parts[0]);

@@ -2,6 +2,7 @@
 using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Crypto.Generators;
 using Org.BouncyCastle.Crypto.Operators;
+using Org.BouncyCastle.Math;
 using Org.BouncyCastle.Pkcs;
 using Org.BouncyCastle.Security;
 using Org.BouncyCastle.Utilities;
@@ -27,7 +28,12 @@ namespace UserDataViewer
 
         public void LoadCertificateFromFile(string path, SecureString password)
         {
-            Certificate = new X509Certificate2(path, password);
+            X509Certificate2 cert = new X509Certificate2(path, password);
+            if(!cert.HasPrivateKey)
+            {
+                throw new Exception("The specified certificate bundle does not contain a private key!");
+            }
+            Certificate = cert;
         }
 
         public void LoadCertificateFromFile(string path, string password)
@@ -86,7 +92,7 @@ namespace UserDataViewer
             var random = new SecureRandom();
             var certificateGenerator = new X509V3CertificateGenerator();
 
-            var serialNumber = BigIntegers.CreateRandomInRange(Org.BouncyCastle.Math.BigInteger.One, Org.BouncyCastle.Math.BigInteger.ValueOf(int.MaxValue), random);
+            var serialNumber = BigIntegers.CreateRandomInRange(BigInteger.One, BigInteger.ValueOf(int.MaxValue), random);
             certificateGenerator.SetSerialNumber(serialNumber);
 
             certificateGenerator.SetIssuerDN(new X509Name($"O={organisation}, CN={commonName}"));
