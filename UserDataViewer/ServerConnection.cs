@@ -16,6 +16,8 @@ namespace UserDataViewer
         public class InvalidDiscordIdException : Exception { }
         public class GeneralFailureException : Exception { }
 
+        public class ServerDisconnectedException : Exception { }
+
         private class DataChunk
         {
             public enum Status
@@ -85,6 +87,18 @@ namespace UserDataViewer
             }
         }
 
+        public void ReadStatus()
+        {
+            try
+            {
+                _sslStream.ReadByte();
+            }
+            catch
+            {
+                throw new ServerDisconnectedException();
+            }
+        }
+
         private void sendData(DataChunk chunk)
         {
             string json = JsonConvert.SerializeObject(chunk);
@@ -100,10 +114,14 @@ namespace UserDataViewer
         private DataChunk readData()
         {
             byte[] dataLengthBuffer = new byte[4]; // 4 byte integer
-            _sslStream.Read(dataLengthBuffer, 0, 4);
+            int readData = _sslStream.Read(dataLengthBuffer, 0, 4);
+            if (readData == 0)
+                throw new ServerDisconnectedException();
             int dataLength = BitConverter.ToInt32(dataLengthBuffer, 0);
             byte[] data = new byte[dataLength];
-            _sslStream.Read(data, 0, dataLength);
+            readData = _sslStream.Read(data, 0, dataLength);
+            if (readData == 0)
+                throw new ServerDisconnectedException();
             string json = Encoding.UTF8.GetString(data);
             DataChunk chunk = JsonConvert.DeserializeObject<DataChunk>(json);
             return chunk;

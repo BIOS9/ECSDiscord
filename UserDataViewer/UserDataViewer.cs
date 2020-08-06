@@ -9,7 +9,7 @@ namespace UserDataViewer
 {
     class UserDataViewer
     {
-        private const string ServerHost = "localhost";//"ecsdiscord.nightfish.co";
+        private const string ServerHost = "baofeng.cia.domain";//"ecsdiscord.nightfish.co";
         private const int ServerPort = 12036;
 
         private CertificateService _certificateService = new CertificateService();
@@ -319,10 +319,16 @@ namespace UserDataViewer
             {
                 ServerConnection connection = new ServerConnection(ServerHost, ServerPort, _certificateService.Certificate);
                 connection.OpenConnection();
+                connection.ReadStatus();
                 while (true)
                 {
                     writeColor("Please enter the Discord ID of a user to view their username: (Empty value to cancel)", ConsoleColor.White);
                     string discordIdStr = Console.ReadLine();
+                    if(string.IsNullOrWhiteSpace(discordIdStr))
+                    {
+                        connection.CloseConnection();
+                        return;
+                    }
                     ulong discordId;
                     if(!ulong.TryParse(discordIdStr, out discordId))
                     {
@@ -343,6 +349,11 @@ namespace UserDataViewer
                             writeColor("Data decryption failed. The data is invalid or you have the wrong key.", ConsoleColor.Red);
                         }
                     }
+                    catch(ServerConnection.ServerDisconnectedException)
+                    {
+                        writeColor("The server closed the connection. This may be because the key you provided does not have access to the user records.", ConsoleColor.Red);
+                        return;
+                    }
                     catch(ServerConnection.UserNotFoundException)
                     {
                         writeColor("That Discord ID was not found. You might have entered the ID wrong or the user is unverified.", ConsoleColor.Red);
@@ -356,9 +367,13 @@ namespace UserDataViewer
                         writeColor("A general failure occured while obtaining the data, please check the server logs for more information.", ConsoleColor.Red);
                     }
                 }
-                connection.CloseConnection();
             }
-            catch(Exception ex)
+            catch (ServerConnection.ServerDisconnectedException)
+            {
+                writeColor("The server closed the connection. This may be because the key you provided does not have access to the user records.", ConsoleColor.Red);
+                return;
+            }
+            catch (Exception ex)
             {
                 writeColor("Online data connection failed: " + ex.Message, ConsoleColor.Red);
             }

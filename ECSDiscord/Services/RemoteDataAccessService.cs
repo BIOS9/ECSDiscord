@@ -89,7 +89,10 @@ namespace ECSDiscord.Services
             try
             {
                 SslStream sslStream = new SslStream(client.GetStream(), false, new RemoteCertificateValidationCallback(validateClientCert), new LocalCertificateSelectionCallback(selectServerCert));
+                Log.Debug("[Remote data access]: Authenticating client using TLS client certificate...");
                 await sslStream.AuthenticateAsServerAsync(_certificate, true, SslProtocols.Tls12 | SslProtocols.Tls12, false);
+                await sslStream.WriteAsync(new byte[] { 255 });
+                Log.Debug("[Remote data access]: Sent status byte.");
                 while (client.Connected)
                 {
                     DataChunk chunk = await readData(sslStream);
@@ -118,6 +121,11 @@ namespace ECSDiscord.Services
                         await sendData(sslStream, new DataChunk { TransferStatus = DataChunk.Status.Failure });
                     }
                 }
+            }
+            catch (AuthenticationException)
+            {
+                Log.Information("[Remote data access]: Client {client} access denied. Invalid client certificate.", client.Client.RemoteEndPoint.ToString());
+                return;
             }
             catch (ClientDisconnectedException)
             {
