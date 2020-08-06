@@ -70,7 +70,7 @@ namespace UserDataViewer
             Console.WriteLine("Getting encrypted username...");
             sendData(new DataChunk { Data = discordId.ToString() });
             DataChunk chunk = readData();
-            switch(chunk.TransferStatus)
+            switch (chunk.TransferStatus)
             {
                 case DataChunk.Status.Success:
                     return Convert.FromBase64String(chunk.Data);
@@ -88,7 +88,7 @@ namespace UserDataViewer
         {
             string json = JsonConvert.SerializeObject(chunk);
             byte[] jsonData = Encoding.UTF8.GetBytes(json);
-            if(jsonData.LongLength > int.MaxValue)
+            if (jsonData.LongLength > int.MaxValue)
                 throw new Exception("Encoded data length exceeds header capacity.");
             byte[] dataLength = BitConverter.GetBytes(jsonData.Length);
 
@@ -109,14 +109,35 @@ namespace UserDataViewer
         }
 
         private bool validateServerCert(
-            object sender, 
-            X509Certificate certificate, 
-            X509Chain chain, 
+            object sender,
+            X509Certificate certificate,
+            X509Chain chain,
             SslPolicyErrors sslPolicyErrors)
         {
             if (sslPolicyErrors == SslPolicyErrors.None)
                 return true;
 
+            if ((sslPolicyErrors & SslPolicyErrors.RemoteCertificateNameMismatch) != 0)
+                return false;
+
+            string errors = "";
+            if ((sslPolicyErrors & SslPolicyErrors.RemoteCertificateNameMismatch) != 0)
+                errors = "The server certificate name does not match the host name or IP address.\n";
+            if ((sslPolicyErrors & SslPolicyErrors.RemoteCertificateChainErrors) != 0)
+                errors += "The server certificate is self signed or not signed by a trusted certificate authority.";
+
+            X509Certificate2 cert = new X509Certificate2(certificate);
+
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.WriteLine("The server TLS certificate has the following errors:\n" + errors.Trim());
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.WriteLine("Certificate thumbprint: " + cert.Thumbprint);
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.WriteLine("Do you want to trust this certificate anyway? (Y/N)");
+            Console.ForegroundColor = ConsoleColor.White;
+            char c = Console.ReadKey().KeyChar;
+            if (c == 'y' || c == 'Y')
+                return true;
             return false;
         }
 
