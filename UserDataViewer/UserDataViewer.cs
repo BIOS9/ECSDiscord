@@ -9,6 +9,9 @@ namespace UserDataViewer
 {
     class UserDataViewer
     {
+        private const string ServerHost = "ecsdiscord.nightfish.co";
+        private const int ServerPort = 12036;
+
         private CertificateService _certificateService = new CertificateService();
         private CryptoService _cryptoService;
 
@@ -48,6 +51,7 @@ namespace UserDataViewer
                         break;
                 }
             }
+            _cryptoService = new CryptoService(_certificateService.Certificate);
             writeColor("Credentials loaded.\n", ConsoleColor.Green);
 
             while (true)
@@ -79,16 +83,6 @@ namespace UserDataViewer
                         break;
                 }
             }
-            Console.ReadLine();
-            _certificateService.GenerateCertificate();
-            _certificateService.SaveToPkcs12File("cert.pfx", Console.ReadLine());
-            //_certificateService.LoadCertificateFromFile(@"C:\Users\nightfish.CIA\Documents\test.pfx", "12341234");
-            //_cryptoService = new CryptoService(_certificateService.Certificate);
-
-            //string usernameFile = @"C:\Users\nightfish.CIA\Downloads\users-encryptedUsername.bin";
-            //byte[] usernameData = File.ReadAllBytes(usernameFile);
-
-            //Console.WriteLine(_cryptoService.DecryptText(usernameData));
         }
 
         private bool importPkcs12()
@@ -290,7 +284,116 @@ namespace UserDataViewer
 
         private void accessData()
         {
+            Console.WriteLine("Beginning user data access...");
+            bool validSelection = false;
+            while (!validSelection)
+            {
+                writeColor("Please select an option:", ConsoleColor.Yellow);
+                Console.WriteLine("1. Read online data. (Recommended)");
+                Console.WriteLine("2. Decrypt offline encrypted data.");
+                Console.WriteLine("3. Exit.");
 
+                char selection = Console.ReadKey().KeyChar;
+                Console.WriteLine();
+                switch (selection)
+                {
+                    case '1':
+                        readOnlineData();
+                        break;
+                    case '2':
+                        readOfflineData();
+                        break;
+                    case '3':
+                        Environment.Exit(0);
+                        break;
+                    default:
+                        writeColor("Invalid selection.", ConsoleColor.Red);
+                        break;
+                }
+            }
+        }
+
+        private void readOnlineData()
+        {
+            try
+            {
+                ServerConnection connection = new ServerConnection(ServerHost, ServerPort, _certificateService.Certificate);
+                connection.OpenConnection();
+                while (true)
+                {
+                    writeColor("Please enter the Discord ID of a user to view their username: (Empty value to cancel)", ConsoleColor.Yellow);
+                    string discordIdStr = Console.ReadLine();
+                    ulong discordId;
+                    if(!ulong.TryParse(discordIdStr, out discordId))
+                    {
+                        writeColor("Invalid Discord ID. Please use the snowflake ID format.", ConsoleColor.Red);
+                        continue;
+                    }
+
+                    try
+                    {
+                        byte[] encryptedUsername = connection.GetEncryptedUsername(discordId);
+                        try
+                        {
+                            string username = _cryptoService.DecryptText(encryptedUsername);
+                            writeColor("Decrypted username: " + username, ConsoleColor.Green);
+                        }
+                        catch
+                        {
+                            writeColor("Data decryption failed. The data is invalid or you have the wrong key.", ConsoleColor.Red);
+                        }
+                    }
+                    catch(ServerConnection.UserNotFoundException)
+                    {
+                        writeColor("That Discord ID was not found. You might have entered the ID wrong or the user is unverified.", ConsoleColor.Red);
+                    }
+                    catch(ServerConnection.InvalidDiscordIdException)
+                    {
+                        writeColor("The server reported that the specified Discord ID is invalid.", ConsoleColor.Red);
+                    }
+                    catch(ServerConnection.GeneralFailureException)
+                    {
+                        writeColor("A general failure occured while obtaining the data, please check the server logs for more information.", ConsoleColor.Red);
+                    }
+                }
+                connection.CloseConnection();
+            }
+            catch(Exception ex)
+            {
+                writeColor("Online data connection failed: " + ex.Message, ConsoleColor.Red);
+            }
+        }
+
+        private void readOfflineData()
+        {
+            while (true)
+            {
+                writeColor("Please enter Base64 encoded encrypted username: (Empty value to cancel)", ConsoleColor.Yellow);
+                string b64 = Console.ReadLine();
+                if (string.IsNullOrWhiteSpace(b64))
+                    break;
+
+                byte[] encryptedUsername;
+                try
+                {
+                    encryptedUsername = Convert.FromBase64String(b64);
+                }
+                catch
+                {
+                    writeColor("Invalid Base64 string.", ConsoleColor.Red);
+                    continue;
+                }
+
+                try
+                {
+                    string username = _cryptoService.DecryptText(encryptedUsername);
+                    writeColor("Decrypted username: " + username, ConsoleColor.Green);
+                }
+                catch
+                {
+                    writeColor("Data decryption failed. The data is invalid or you have the wrong key.", ConsoleColor.Red);
+                }
+            }
         }
 
         private SecureString readPassword()
