@@ -9,7 +9,7 @@ namespace UserDataViewer
 {
     class UserDataViewer
     {
-        private const string ServerHost = "baofeng.cia.domain";//"ecsdiscord.nightfish.co";
+        private const string ServerHost = "ecsdiscord.nightfish.co";
         private const int ServerPort = 12036;
 
         private CertificateService _certificateService = new CertificateService();
