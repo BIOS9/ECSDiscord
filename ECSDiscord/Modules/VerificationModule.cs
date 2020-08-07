@@ -31,8 +31,12 @@ namespace ECSDiscord.Modules
         [Remarks("Supply your uni email address to verify.")]
         public async Task VerifyAsync()
         {
-            await ReplyAsync($":warning:  Invalid email address.\n" +
-                $"Please provide your uni email address e.g.\n" +
+            if(!Context.IsPrivate)
+            {
+                await ReplyAsync($":warning:  Verification can only done in a private message channel.");
+                return;
+            }
+            await ReplyAsync($"Please provide your uni student email address e.g.\n" +
                 $"```{_config["prefix"]}verify username@myvuw.ac.nz```");
         }
 
@@ -48,6 +52,12 @@ namespace ECSDiscord.Modules
                 await Context.Message.DeleteAsync();
             }
             catch { }
+
+            if (!Context.IsPrivate)
+            {
+                await ReplyAsync($":warning:  Verification can only done in a private message channel.");
+                return;
+            }
 
             StringBuilder stringBuilder = new StringBuilder();
 
@@ -80,7 +90,7 @@ namespace ECSDiscord.Modules
                 switch (result)
                 {
                     case EmailResult.InvalidEmail:
-                        stringBuilder.Append($":warning:  Invalid email address. Please use a uni email address.\n");
+                        stringBuilder.Append($":warning:  Invalid email address. Please use a uni student email address.\n");
                         break;
                     default:
                     case EmailResult.Failure:
