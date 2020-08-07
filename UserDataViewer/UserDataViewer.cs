@@ -60,7 +60,9 @@ namespace UserDataViewer
                 Console.WriteLine("1. View ECS Discord user data.");
                 Console.WriteLine("2. Save credentials to file.");
                 Console.WriteLine("3. Send credentials to another user.");
-                Console.WriteLine("4. Exit.");
+                Console.WriteLine("4. View public key.");
+                Console.WriteLine("5. Save public key to file.");
+                Console.WriteLine("6. Exit.");
 
                 char selection = Console.ReadKey().KeyChar;
                 Console.WriteLine();
@@ -76,6 +78,12 @@ namespace UserDataViewer
                         exportToUser();
                         break;
                     case '4':
+                        exportPublicKey(false);
+                        break;
+                    case '5':
+                        exportPublicKey(true);
+                        break;
+                    case '6':
                         Environment.Exit(0);
                         break;
                     default:
@@ -280,6 +288,48 @@ namespace UserDataViewer
             writeColor("Share this encrypted credential data with the other user.", ConsoleColor.Yellow);
             Console.WriteLine(sharingService.SendCertificate(_certificateService.Certificate));
             writeColor("Credentials exported successfully!", ConsoleColor.Green);
+        }
+
+        private void exportPublicKey(bool file)
+        {
+            Console.WriteLine("Starting public key export...");
+            if (file)
+            {
+                while (true)
+                {
+                    writeColor("Enter file name to save public key to (Press enter for default certificate.crt)", ConsoleColor.Yellow);
+                    string path = Console.ReadLine();
+                    if (string.IsNullOrWhiteSpace(path))
+                        path = "certificate.crt";
+
+                    if (File.Exists(path))
+                    {
+                        writeColor($"\"{path}\" already exists! Do you want to overwrite? (Y/N)", ConsoleColor.Yellow);
+                        char c = Console.ReadKey().KeyChar;
+                        Console.WriteLine();
+                        if (c != 'Y' && c != 'y')
+                        {
+                            writeColor("Public key export cancelled.", ConsoleColor.Red);
+                            return;
+                        }
+                    }
+
+                    try
+                    {
+                        _certificateService.SavePublicKeyToPemFile(path, true);
+                        writeColor($"Public key exported to \"{path}\"!", ConsoleColor.Green);
+                    }
+                    catch (Exception ex)
+                    {
+                        writeColor("Public key export failed: " + ex.Message, ConsoleColor.Red);
+                    }
+                }
+            }
+            else
+            {
+                Console.WriteLine("Public key certificate:\n");
+                Console.WriteLine(_certificateService.ExportPublicKeyToPem());
+            }
         }
 
         private void accessData()
