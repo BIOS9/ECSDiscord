@@ -319,6 +319,7 @@ namespace UserDataViewer
                     {
                         _certificateService.SavePublicKeyToPemFile(path, true);
                         writeColor($"Public key exported to \"{path}\"!", ConsoleColor.Green);
+                        return;
                     }
                     catch (Exception ex)
                     {
