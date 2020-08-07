@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using System.Security;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using System.Threading;
 
 namespace UserDataViewer
 {
@@ -248,7 +249,7 @@ namespace UserDataViewer
                     writeColor("Passwords do not match!", ConsoleColor.Red);
                 else
                 {
-                    _certificateService.SaveToPkcs12File("credentials.pfx", password);
+                    _certificateService.SaveToPkcs12File("credentials.pfx", password, true);
                     writeColor("Credentials saved to credentials.pfx in working directory!", ConsoleColor.Green);
                     break;
                 }

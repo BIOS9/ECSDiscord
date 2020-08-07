@@ -28,7 +28,7 @@ namespace UserDataViewer
 
         public void LoadCertificateFromFile(string path, SecureString password)
         {
-            X509Certificate2 cert = new X509Certificate2(path, password);
+            X509Certificate2 cert = new X509Certificate2(path, password, X509KeyStorageFlags.Exportable);
             if(!cert.HasPrivateKey)
             {
                 throw new Exception("The specified certificate bundle does not contain a private key!");
@@ -38,7 +38,7 @@ namespace UserDataViewer
 
         public void LoadCertificateFromFile(string path, string password)
         {
-            Certificate = new X509Certificate2(path, password);
+            Certificate = new X509Certificate2(path, password, X509KeyStorageFlags.Exportable);
         }
 
         public void SavePublicKeyToPemFile(string path, bool overwrite = false)
@@ -53,12 +53,13 @@ namespace UserDataViewer
             }
         }
 
-        public void SaveToPkcs12File(string path, SecureString password)
+        public void SaveToPkcs12File(string path, SecureString password, bool overwrite = false)
         {
             if (Certificate == null)
                 throw new InvalidOperationException("Certificate must be set before it can be exported.");
 
-            Certificate.Export(X509ContentType.Pkcs12, password);
+            using (FileStream fs = new FileStream(path, (overwrite ? FileMode.Create : FileMode.CreateNew), FileAccess.Write, FileShare.None))
+                fs.Write(Certificate.Export(X509ContentType.Pkcs12, password));
         }
 
         public void SaveToPkcs12File(string path, string password, bool overwrite = false)
