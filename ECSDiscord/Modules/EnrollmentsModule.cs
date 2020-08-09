@@ -222,8 +222,25 @@ namespace ECSDiscord.BotModules
             if (courses.Count == 0)
                 await ReplyAsync($"You are not in any courses. Use `{_config["prefix"]}allcourses` to view a list of all courses.");
             else
-                await ReplyAsync("You are in the following courses:\n" + 
-                    (await _enrollments.GetUserCourses(Context.User))
+                await ReplyAsync("You are in the following courses:\n" +
+                    courses
+                    .Select(x => $"`{x}`")
+                    .Aggregate((x, y) => $"{x}, {y}")
+                    .SanitizeMentions());
+        }
+
+        [Command("listcourses")]
+        [Alias("list", "courses", "ranks", "roles", "papers")]
+        [Summary("List the courses a user is in.")]
+        [RequireUserPermission(GuildPermission.Administrator)]
+        public async Task CoursesAsync(SocketUser user)
+        {
+            List<string> courses = await _enrollments.GetUserCourses(user);
+            if (courses.Count == 0)
+                await ReplyAsync($"That user is not in any courses.");
+            else
+                await ReplyAsync("That user is in the following courses:\n" +
+                    courses
                     .Select(x => $"`{x}`")
                     .Aggregate((x, y) => $"{x}, {y}")
                     .SanitizeMentions());

@@ -104,7 +104,7 @@ namespace ECSDiscord
         {
             // Configure logger.
             Log.Logger = new LoggerConfiguration()
-                .MinimumLevel.Debug()
+                .MinimumLevel.Information()
                 .WriteTo.Console()
                 .WriteTo.File(LogFileName, rollingInterval: LogInterval)
                 .CreateLogger();

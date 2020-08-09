@@ -242,5 +242,19 @@ namespace ECSDiscord.Modules
             }
             await ReplyAsync(sb.ToString().SanitizeMentions());
         }
+
+        [Command("countverifiedusers")]
+        [Alias("countverified", "verified", "numberverified", "verifiedcount", "verifiednumber")]
+        [Summary("Gets number of verified users.")]
+        [RequireUserPermission(GuildPermission.Administrator)]
+        public async Task CountVerifiedUsersAsync()
+        {
+            int verifiedUsers = await _storage.Verification.GetVerifiedUsersCount();
+
+            if (verifiedUsers == 0)
+                await ReplyAsync("There are no verified users.");
+            else
+                await ReplyAsync($"There are {verifiedUsers} verified users.");
+        }
     }
 }

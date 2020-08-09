@@ -35,6 +35,7 @@ namespace ECSDiscord.Services
             private const string PendingVerificationsTable = "pendingVerifications";
             private const string VerificationHistoryTable = "verificationHistory";
             private const string VerificationOverrideTable = "verificationOverrides";
+            private const string UsersTable = "users";
             private static readonly TimeSpan PendingVerificationDeletionTime = TimeSpan.FromDays(14);
 
             private StorageService _storageService;
@@ -262,6 +263,26 @@ namespace ECSDiscord.Services
                 return rowsAffected >= 1;
             }
 
+            public async Task<int> GetVerifiedUsersCount()
+            {
+                Log.Debug("Getting all verified users from database.");
+
+                List<ulong> users = new List<ulong>();
+                using (MySqlConnection con = _storageService.GetMySqlConnection())
+                using (MySqlCommand cmd = new MySqlCommand())
+                {
+                    await con.OpenAsync();
+                    cmd.Connection = con;
+
+                    cmd.CommandText = $"SELECT COUNT(*) FROM `{UsersTable}` WHERE `encryptedUsername` IS NOT NULL;";
+
+                    using (var reader = (MySqlDataReader)await cmd.ExecuteReaderAsync())
+                    {
+                        await reader.ReadAsync();
+                        return reader.GetInt32(0);
+                    }
+                }
+            }
 
             public async Task<Dictionary<ulong, OverrideType>> GetAllVerificationOverrides()
             {
