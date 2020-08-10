@@ -90,6 +90,7 @@ namespace ECSDiscord
                 LogLevel = LogSeverity.Verbose,     // Tell the logger to give Verbose amount of info
                 DefaultRunMode = RunMode.Async,     // Force all commands to run async by default
             }))
+            .AddSingleton(Core.Translations.Translator.DefaultTranslations)       // Add Translations provider
             .AddSingleton<Services.CommandService>()         // Add commandservice to the collection
             .AddSingleton<Services.StartupService>()         // Add startupservice to the collection
             .AddSingleton<Services.LoggingService>()         // Add loggingservice to the collection
@@ -98,7 +99,6 @@ namespace ECSDiscord
             .AddSingleton<Services.StorageService>()          // Add storageservice to the collection
             .AddSingleton<Services.VerificationService>()       // Add verificationservice to the collection
             .AddSingleton<Services.RemoteDataAccessService>()       // Add verificationservice to the collection
-            .AddSingleton<Core.Translations.Translator>()       // Add Translations provider
             .AddSingleton(Configuration);           // Add the configuration to the collection
         }
 
