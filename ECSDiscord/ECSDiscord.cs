@@ -4,6 +4,7 @@ using Discord.WebSocket;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
+using System;
 using System.IO;
 using System.Threading.Tasks;
 
@@ -70,9 +71,10 @@ namespace ECSDiscord
             provider.GetRequiredService<Services.VerificationService>(); // Start verification service
             provider.GetRequiredService<Services.RemoteDataAccessService>(); // Start remote data access service
             provider.GetRequiredService<Core.Translations.Translator>();
-            if (await provider.GetRequiredService<Services.StorageService>().TestConnection()) // Test DB connection
-                await Task.Delay(-1); // Keep program from exiting
+            if (!await provider.GetRequiredService<Services.StorageService>().TestConnection()) // Test DB connection
+                throw new Exception("Storage service init failed.");
             await provider.GetRequiredService<Services.StartupService>().StartAsync(); // Run startup service
+            await Task.Delay(-1); // Keep program from exiting
         }
 
         /// <summary>
