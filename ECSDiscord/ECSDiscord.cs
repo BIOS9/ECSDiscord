@@ -69,9 +69,10 @@ namespace ECSDiscord
             provider.GetRequiredService<Services.StorageService>(); // Start course service
             provider.GetRequiredService<Services.VerificationService>(); // Start verification service
             provider.GetRequiredService<Services.RemoteDataAccessService>(); // Start remote data access service
-            await provider.GetRequiredService<Services.StartupService>().StartAsync(); // Run startup service
+            provider.GetRequiredService<Core.Translations.Translator>();
             if (await provider.GetRequiredService<Services.StorageService>().TestConnection()) // Test DB connection
                 await Task.Delay(-1); // Keep program from exiting
+            await provider.GetRequiredService<Services.StartupService>().StartAsync(); // Run startup service
         }
 
         /// <summary>
@@ -97,6 +98,7 @@ namespace ECSDiscord
             .AddSingleton<Services.StorageService>()          // Add storageservice to the collection
             .AddSingleton<Services.VerificationService>()       // Add verificationservice to the collection
             .AddSingleton<Services.RemoteDataAccessService>()       // Add verificationservice to the collection
+            .AddSingleton<Core.Translations.Translator>()       // Add Translations provider
             .AddSingleton(Configuration);           // Add the configuration to the collection
         }
 

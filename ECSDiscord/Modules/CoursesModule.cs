@@ -11,25 +11,22 @@ using System.Threading.Tasks;
 using System.Linq;
 using Discord.WebSocket;
 using ECSDiscord.Util;
+using ECSDiscord.Core.Translations;
 
 namespace ECSDiscord.Modules
 {
     [Name("Course Administration")]
     public class CoursesModule : ModuleBase<SocketCommandContext>
     {
-        private readonly Discord.Commands.CommandService _service;
-        private readonly StorageService _storage;
-        private readonly CourseService _courses;
-        private readonly VerificationService _verification;
         private readonly IConfigurationRoot _config;
+        private readonly ITranslator _translator;
+        private readonly CourseService _courseService;
 
-        public CoursesModule(Discord.Commands.CommandService service, IConfigurationRoot config, CourseService courses, VerificationService verification, StorageService storage)
+        public CoursesModule(IConfigurationRoot config, ITranslator translator, CourseService courseService)
         {
-            _storage = storage;
-            _service = service;
             _config = config;
-            _courses = courses;
-            _verification = verification;
+            _translator = translator;
+            _courseService = courseService;
         }
 
         [Command("updatecourses")]
@@ -38,11 +35,11 @@ namespace ECSDiscord.Modules
         [RequireUserPermission(GuildPermission.Administrator)]
         public async Task UpdateCoursesAsync()
         {
-            await ReplyAsync("Course update started...");
-            if (await _courses.DownloadCourseList())
-                await ReplyAsync("Course update succeeded.");
+            await ReplyAsync(_translator.T("COURSE_UPDATE_STARTED"));
+            if (await _courseService.DownloadCourseList())
+                await ReplyAsync(_translator.T("COURSE_UPDATE_SUCCESS"));
             else
-                await ReplyAsync("Course update failed. Please check the logs for more information.");
+                await ReplyAsync(_translator.T("COURSE_UPDATE_FAIL"));
         }
 
         [Command("createcategory")]
@@ -52,14 +49,7 @@ namespace ECSDiscord.Modules
         public async Task CreateCategoryAsync()
         {
             string prefix = _config["prefix"];
-            await ReplyAsync($"Creates/adds a category for course channels.\n" +
-                $"You can specify a RegEx auto import rule for a category to define which category new courses are added to.\n" +
-                $"The auto import priority specifies the order in which the auto import rule on categories are checked. A higher value is checked before a lower value." +
-                $"Use a value less than 0 disable auto import\n" +
-                $"Examples:\n```{prefix}createcategory 100-Level [a-z]{{4}}-1\\d\\d 1```" +
-                $"```{prefix}createcategory 733285993481896008 [a-z]{{4}}-2\\d\\d 2```" +
-                $"```{prefix}createcategory \"Text Channels\"```\n\n" +
-                $"To delete a category, just delete the Discord category.");
+            await ReplyAsync(_translator.T("CATEGORY_ADD_HELP", prefix));
         }
 
         [Command("createcategory")]
@@ -77,7 +67,7 @@ namespace ECSDiscord.Modules
         [RequireUserPermission(GuildPermission.Administrator)]
         public async Task CreateCategoryAsync(string name, string autoImportPattern, int autoImportPriority)
         {
-            await ReplyAsync("Processing...");
+            await ReplyAsync(_translator.T("COMMAND_PROCESSING"));
             Regex pattern;
             try
             {
@@ -86,13 +76,13 @@ namespace ECSDiscord.Modules
             catch
             {
                 Log.Debug("Invalid regex supplied in createcategory command.");
-                await ReplyAsync(":warning:  Invalid auto import RegEx. Try something like `ecen-1\\d\\d` to match all 100 level ECEN courses");
+                await ReplyAsync(_translator.T("INVALID_CATEGORY_AUTO_IMPORT_REGEX"));
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(name))
             {
-                await ReplyAsync(":warning:  Invalid name.");
+                await ReplyAsync(_translator.T("INVALID_CATEGORY_CREATE_NAME"));
                 return;
             }
 
@@ -101,13 +91,13 @@ namespace ECSDiscord.Modules
                 .FirstOrDefault(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
             if (category != null)
             {
-                await _courses.CreateCourseCategoryAsync(category, pattern, autoImportPriority);
-                await ReplyAsync(":white_check_mark:  Successfully added existing category.");
+                await _courseService.CreateCourseCategoryAsync(category, pattern, autoImportPriority);
+                await ReplyAsync(_translator.T("CATEGORY_ADDED_EXISTING"));
             }
             else
             {
-                await _courses.CreateCourseCategoryAsync(name, pattern, autoImportPriority);
-                await ReplyAsync(":white_check_mark:  Successfully created new category.");
+                await _courseService.CreateCourseCategoryAsync(name, pattern, autoImportPriority);
+                await ReplyAsync(_translator.T("CATEGORY_ADDED"));
             }
         }
 
@@ -117,10 +107,10 @@ namespace ECSDiscord.Modules
         [RequireUserPermission(GuildPermission.Administrator)]
         public async Task CreateCategoryAsync(SocketCategoryChannel cateogry, string autoImportPattern, int autoImportPriority)
         {
-            await ReplyAsync("Processing...");
+            await ReplyAsync(_translator.T("COMMAND_PROCESSING"));
             if (cateogry == null)
             {
-                await ReplyAsync(":warning:  Invalid category.");
+                await ReplyAsync(_translator.T("INVALID_CATEGORY"));
                 return;
             }
 
@@ -132,12 +122,12 @@ namespace ECSDiscord.Modules
             catch
             {
                 Log.Debug("Invalid regex supplied in createcategory command.");
-                await ReplyAsync(":warning:  Invalid auto import RegEx. Try something like `ecen-1\\d\\d` to match all 100 level ECEN courses");
+                await ReplyAsync(_translator.T("INVALID_CATEGORY_AUTO_IMPORT_REGEX"));
                 return;
             }
 
-            await _courses.CreateCourseCategoryAsync(cateogry, pattern, autoImportPriority);
-            await ReplyAsync(":white_check_mark:  Successfuly added existing category.");
+            await _courseService.CreateCourseCategoryAsync(cateogry, pattern, autoImportPriority);
+            await ReplyAsync(_translator.T("CATEGORY_ADDED_EXISTING"));
         }
 
         [Command("createcourse")]
@@ -146,21 +136,21 @@ namespace ECSDiscord.Modules
         [RequireUserPermission(GuildPermission.Administrator)]
         public async Task CreateCourseAsync(IGuildChannel channel)
         {
-            await ReplyAsync("Processing...");
+            await ReplyAsync(_translator.T("COMMAND_PROCESSING"));
             if (channel == null)
             {
-                await ReplyAsync(":warning:  Invalid channel.");
+                await ReplyAsync(_translator.T("INVALID_CHANNEL"));
                 return;
             }
 
-            if (await _courses.CourseExists(channel.Name))
+            if (await _courseService.CourseExists(channel.Name))
             {
-                await ReplyAsync(":warning:  Course already exists.");
+                await ReplyAsync(_translator.T("DUPLICATE_COURSE"));
                 return;
             }
 
-            await _courses.CreateCourseAsync(channel);
-            await ReplyAsync(":white_check_mark:  Successfuly added existing channel as course.");
+            await _courseService.CreateCourseAsync(channel);
+            await ReplyAsync(_translator.T("COURSE_ADDED_EXISTING_CHANNEL"));
         }
 
         [Command("createcourse")]
@@ -169,21 +159,21 @@ namespace ECSDiscord.Modules
         [RequireUserPermission(GuildPermission.Administrator)]
         public async Task CreateCourseAsync(string courseName)
         {
-            await ReplyAsync("Processing...");
+            await ReplyAsync(_translator.T("COMMAND_PROCESSING"));
             if (string.IsNullOrWhiteSpace(courseName))
             {
-                await ReplyAsync(":warning:  Invalid course name.");
+                await ReplyAsync(_translator.T("INVALID_COURSE_CREATE_NAME"));
                 return;
             }
 
-            if (await _courses.CourseExists(courseName))
+            if (await _courseService.CourseExists(courseName))
             {
-                await ReplyAsync(":warning:  Course already exists.");
+                await ReplyAsync(_translator.T("DUPLICATE_COURSE"));
                 return;
             }
 
-            await _courses.CreateCourseAsync(courseName);
-            await ReplyAsync(":white_check_mark:  Successfuly added course.");
+            await _courseService.CreateCourseAsync(courseName);
+            await ReplyAsync(_translator.T("COURSE_ADDED"));
         }
 
         [Command("unlinkcourse")]
@@ -192,15 +182,15 @@ namespace ECSDiscord.Modules
         [RequireUserPermission(GuildPermission.Administrator)]
         public async Task UnlinkCourseAsync(string courseName)
         {
-            await ReplyAsync("Processing...");
-            if (!await _courses.CourseExists(courseName))
+            await ReplyAsync(_translator.T("COMMAND_PROCESSING"));
+            if (!await _courseService.CourseExists(courseName))
             {
-                await ReplyAsync(":warning:  Course does not exist.");
+                await ReplyAsync(_translator.T("INVALID_COURSE"));
                 return;
             }
 
-            await _courses.RemoveCourseAsync(courseName);
-            await ReplyAsync(":white_check_mark:  Successfuly unlinked course.");
+            await _courseService.RemoveCourseAsync(courseName);
+            await ReplyAsync(_translator.T("COURSE_UNLINKED"));
         }
 
         [Command("unlinkcourse")]
@@ -209,21 +199,21 @@ namespace ECSDiscord.Modules
         [RequireUserPermission(GuildPermission.Administrator)]
         public async Task UnlinkCourseAsync(IGuildChannel channel)
         {
-            await ReplyAsync("Processing...");
+            await ReplyAsync(_translator.T("COMMAND_PROCESSING"));
             if (channel == null)
             {
-                await ReplyAsync(":warning:  Invalid channel.");
+                await ReplyAsync(_translator.T("INVALID_CHANNEL"));
                 return;
             }
 
-            if (!await _courses.CourseExists(channel.Name))
+            if (!await _courseService.CourseExists(channel.Name))
             {
-                await ReplyAsync(":warning:  Course does not exist.");
+                await ReplyAsync(_translator.T("INVALID_COURSE"));
                 return;
             }
 
-            await _courses.RemoveCourseAsync(channel.Name);
-            await ReplyAsync(":white_check_mark:  Successfuly unlinked course.");
+            await _courseService.RemoveCourseAsync(channel.Name);
+            await ReplyAsync(_translator.T("COURSE_UNLINKED"));
         }
 
         [Command("massimportcourses")]
@@ -232,7 +222,7 @@ namespace ECSDiscord.Modules
         [RequireUserPermission(GuildPermission.Administrator)]
         public async Task MassImportCourseAsync(string regex)
         {
-            await ReplyAsync("Processing...");
+            await ReplyAsync(_translator.T("COMMAND_PROCESSING"));
             Regex pattern;
             try
             {
@@ -240,7 +230,7 @@ namespace ECSDiscord.Modules
             }
             catch
             {
-                await ReplyAsync(":warning:  Invalid RegEx.");
+                await ReplyAsync(_translator.T("INVALID_REGEX"));
                 return;
             }
 
@@ -248,13 +238,13 @@ namespace ECSDiscord.Modules
             List<SocketGuildChannel> channels = Context.Guild.Channels.Where(x => pattern.IsMatch(x.Name)).ToList();
             foreach (SocketGuildChannel channel in channels)
             {
-                await _courses.CreateCourseAsync(channel);
+                await _courseService.CreateCourseAsync(channel);
             }
 
             if (channels.Count > 0)
-                await ReplyAsync($":white_check_mark:  Successfuly imported {channels.Count} courses.");
+                await ReplyAsync(_translator.T("CHANNELS_IMPORTED", channels.Count));
             else
-                await ReplyAsync($":warning:  No courses imported. Is your RegEx valid?");
+                await ReplyAsync(_translator.T("NO_CHANNELS_IMPORTED"));
         }
 
         [Command("massupdatepermissions")]
@@ -263,7 +253,7 @@ namespace ECSDiscord.Modules
         [RequireUserPermission(GuildPermission.Administrator)]
         public async Task MassUpdatePermissionsAsync(string regex)
         {
-            await ReplyAsync("Processing...");
+            await ReplyAsync(_translator.T("COMMAND_PROCESSING"));
             Regex pattern;
             try
             {
@@ -271,7 +261,7 @@ namespace ECSDiscord.Modules
             }
             catch
             {
-                await ReplyAsync(":warning:  Invalid RegEx.");
+                await ReplyAsync(_translator.T("INVALID_REGEX"));
                 return;
             }
 
@@ -280,11 +270,11 @@ namespace ECSDiscord.Modules
             int count = 0;
             foreach (SocketGuildChannel channel in channels)
             {
-                if (await _courses.ApplyChannelPermissionsAsync(channel))
+                if (await _courseService.ApplyChannelPermissionsAsync(channel))
                     ++count;
             }
 
-            await ReplyAsync($":white_check_mark:  Updated permissions on {count} channels.");
+            await ReplyAsync(_translator.T("CHANNELS_PERMISSIONS_UPDATED", count));
         }
 
         [Command("updatepermissions")]
@@ -293,17 +283,17 @@ namespace ECSDiscord.Modules
         [RequireUserPermission(GuildPermission.Administrator)]
         public async Task UpdatePermissionsAsync(IGuildChannel channel)
         {
-            await ReplyAsync("Processing...");
+            await ReplyAsync(_translator.T("COMMAND_PROCESSING"));
 
             if (channel == null)
             {
-                await ReplyAsync(":warning:  Invalid channel.");
+                await ReplyAsync(_translator.T("INVALID_CHANNEL"));
                 return;
             }
 
-            await _courses.ApplyChannelPermissionsAsync(channel);
+            await _courseService.ApplyChannelPermissionsAsync(channel);
 
-            await ReplyAsync($":white_check_mark:  Updated permissions for {MentionUtils.MentionChannel(channel.Id)}.");
+            await ReplyAsync(_translator.T("CHANNEL_PERMISSIONS_UPDATED", MentionUtils.MentionChannel(channel.Id)));
         }
 
         [Command("organisechannel")]
@@ -312,17 +302,17 @@ namespace ECSDiscord.Modules
         [RequireUserPermission(GuildPermission.Administrator)]
         public async Task OrganiseChannelAsync(IGuildChannel channel)
         {
-            await ReplyAsync("Processing...");
+            await ReplyAsync(_translator.T("COMMAND_PROCESSING"));
 
             if (channel == null)
             {
-                await ReplyAsync(":warning:  Invalid channel.");
+                await ReplyAsync(_translator.T("INVALID_CHANNEL"));
                 return;
             }
 
-            await _courses.OrganiseCoursePosition(channel);
+            await _courseService.OrganiseCoursePosition(channel);
 
-            await ReplyAsync($":white_check_mark:  Organised {MentionUtils.MentionChannel(channel.Id)}.");
+            await ReplyAsync(_translator.T("CHANNEL_ORGANISED", MentionUtils.MentionChannel(channel.Id)));
         }
 
         [Command("massorganisechannels")]
@@ -331,7 +321,7 @@ namespace ECSDiscord.Modules
         [RequireUserPermission(GuildPermission.Administrator)]
         public async Task MassOrganiseChannelAsync(string regex)
         {
-            await ReplyAsync("Processing...");
+            await ReplyAsync(_translator.T("COMMAND_PROCESSING"));
 
             Regex pattern;
             try
@@ -340,7 +330,7 @@ namespace ECSDiscord.Modules
             }
             catch
             {
-                await ReplyAsync(":warning:  Invalid RegEx.");
+                await ReplyAsync(_translator.T("INVALID_REGEX"));
                 return;
             }
 
@@ -349,10 +339,10 @@ namespace ECSDiscord.Modules
             foreach (SocketGuildChannel channel in channels)
             {
                 await Task.Delay(100); // Helps prevent API throttling
-                await _courses.OrganiseCoursePosition(channel);
+                await _courseService.OrganiseCoursePosition(channel);
             }
 
-            await ReplyAsync($":white_check_mark:  Organised {channels.Count} channels.");
+            await ReplyAsync(_translator.T("CHANNELS_ORGANISED", channels.Count));
         }
 
         [Command("allcourses")]
@@ -362,23 +352,20 @@ namespace ECSDiscord.Modules
         {
             if (!Context.CheckConfigChannel("enrollments", _config)) return;
 
-            await ReplyAsync("Processing...");
+            await ReplyAsync(_translator.T("COMMAND_PROCESSING"));
 
-            IList<CourseService.Course> courses = await _courses.GetCourses();
+            IList<CourseService.Course> courses = await _courseService.GetCourses();
             if (courses.Count == 0)
             {
-                await ReplyAsync("There are no courses.");
+                await ReplyAsync(_translator.T("NO_COURSES"));
                 return;
             }
 
-            StringBuilder builder = new StringBuilder("Here are the courses you can join: ```");
+            StringBuilder builder = new StringBuilder();
             foreach (CourseService.Course course in courses)
-            {
-                builder.Append("\n");
-                builder.Append($"{course.Code}");
-            }
+                builder.Append(_translator.T("COURSE_LIST_ITEM", course.Code));
 
-            await ReplyAsync(builder.ToString().SanitizeMentions() + "```");
+            await ReplyAsync(_translator.T("COURSE_LIST", builder.ToString().SanitizeMentions()));
         }
     }
 }
