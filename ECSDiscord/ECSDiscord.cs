@@ -1,6 +1,7 @@
 ﻿using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
+using ECSDiscord.Core.Translations;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
@@ -70,7 +71,6 @@ namespace ECSDiscord
             provider.GetRequiredService<Services.StorageService>(); // Start course service
             provider.GetRequiredService<Services.VerificationService>(); // Start verification service
             provider.GetRequiredService<Services.RemoteDataAccessService>(); // Start remote data access service
-            provider.GetRequiredService<Core.Translations.Translator>();
             if (!await provider.GetRequiredService<Services.StorageService>().TestConnection()) // Test DB connection
                 throw new Exception("Storage service init failed.");
             await provider.GetRequiredService<Services.StartupService>().StartAsync(); // Run startup service
@@ -92,7 +92,7 @@ namespace ECSDiscord
                 LogLevel = LogSeverity.Verbose,     // Tell the logger to give Verbose amount of info
                 DefaultRunMode = RunMode.Async,     // Force all commands to run async by default
             }))
-            .AddSingleton(Core.Translations.Translator.DefaultTranslations)       // Add Translations provider
+            .AddSingleton((ITranslator)Translator.DefaultTranslations)       // Add Translations provider
             .AddSingleton<Services.CommandService>()         // Add commandservice to the collection
             .AddSingleton<Services.StartupService>()         // Add startupservice to the collection
             .AddSingleton<Services.LoggingService>()         // Add loggingservice to the collection

@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using static ECSDiscord.Services.EnrollmentsService;
 using Discord;
 using Discord.WebSocket;
+using ECSDiscord.Core.Translations;
 
 namespace ECSDiscord.BotModules
 {
@@ -16,12 +17,14 @@ namespace ECSDiscord.BotModules
     public class EnrollmentsModule : ModuleBase<SocketCommandContext>
     {
         private readonly IConfigurationRoot _config;
+        private readonly ITranslator _translator;
         private readonly EnrollmentsService _enrollments;
         private readonly CourseService _courses;
 
-        public EnrollmentsModule(IConfigurationRoot config, EnrollmentsService enrollments, CourseService courses)
+        public EnrollmentsModule(IConfigurationRoot config, ITranslator translator, EnrollmentsService enrollments, CourseService courses)
         {
             _config = config;
+            _translator = translator;
             _enrollments = enrollments;
             _courses = courses;
         }
@@ -41,7 +44,7 @@ namespace ECSDiscord.BotModules
                 return;
             }
 
-            await ReplyAsync("Processing...");
+            await ReplyAsync(_translator.T("COMMAND_PROCESSING"));
             // Add user to courses
             StringBuilder stringBuilder = new StringBuilder();
             foreach (string course in formattedCourses)
@@ -50,20 +53,20 @@ namespace ECSDiscord.BotModules
                 switch(result)
                 {
                     case EnrollmentResult.AlreadyJoined:
-                        stringBuilder.Append($":warning:  **{course}** - You are already in `{course}`.\n");
+                        stringBuilder.Append(_translator.T("ENROLLMENT_ALREADY_ENROLLED", course));
                         break;
                     case EnrollmentResult.CourseNotExist:
-                        stringBuilder.Append($":warning:  **{course}** - Sorry `{course}` does not exist.\n");
+                        stringBuilder.Append(_translator.T("ENROLLMENT_INVALID_COURSE", course));
                         break;
                     default:
                     case EnrollmentResult.Failure:
-                        stringBuilder.Append($":fire:  **{course}** - A server error occured. Please ask an admin to check the logs.\n");
+                        stringBuilder.Append(_translator.T("ENROLLMENT_SERVER_ERROR", course));
                         break;
                     case EnrollmentResult.Success:
-                        stringBuilder.Append($":inbox_tray:  **{course}** - Added you to {course} successfully.\n");
+                        stringBuilder.Append(_translator.T("ENROLLMENT_JOIN_SUCCESS", course));
                         break;
                     case EnrollmentResult.Unverified:
-                        stringBuilder.Append($":warning:  **{course}** - Sorry you must be verified before you can join any courses.\n");
+                        stringBuilder.Append(_translator.T("ENROLLMENT_VERIFICATION_REQUIRED", course));
                         break;
                 }
             }
@@ -92,7 +95,7 @@ namespace ECSDiscord.BotModules
                 return;
             }
 
-            await ReplyAsync("Processing...");
+            await ReplyAsync(_translator.T("COMMAND_PROCESSING"));
             // Add user to courses
             StringBuilder stringBuilder = new StringBuilder();
             foreach (string course in formattedCourses)
@@ -101,17 +104,17 @@ namespace ECSDiscord.BotModules
                 switch (result)
                 {
                     case EnrollmentResult.AlreadyLeft:
-                        stringBuilder.Append($":warning:  **{course}** - You are not in `{course}`.\n");
+                        stringBuilder.Append(_translator.T("ENROLLMENT_ALREADY_LEFT", course));
                         break;
                     case EnrollmentResult.CourseNotExist:
-                        stringBuilder.Append($":warning:  **{course}** - Sorry `{course}` does not exist.\n");
+                        stringBuilder.Append(_translator.T("ENROLLMENT_INVALID_COURSE", course));
                         break;
                     default:
                     case EnrollmentResult.Failure:
-                        stringBuilder.Append($":fire:  **{course}** - A server error occured. Please ask an admin to check the logs.\n");
+                        stringBuilder.Append(_translator.T("ENROLLMENT_SERVER_ERROR", course));
                         break;
                     case EnrollmentResult.Success:
-                        stringBuilder.Append($":outbox_tray:  **{course}** - Removed you from {course} successfully.\n");
+                        stringBuilder.Append(_translator.T("ENROLLMENT_LEAVE_SUCCESS", course));
                         break;
                 }
             }
@@ -129,11 +132,11 @@ namespace ECSDiscord.BotModules
             List<string> courses = await _enrollments.GetUserCourses(Context.User);
             if (courses.Count == 0)
             {
-                await ReplyAsync("You are not in any courses.");
+                await ReplyAsync(_translator.T("ENROLLMENT_NO_COURSES_JOINED"));
                 return;
             }
 
-            await ReplyAsync("Processing...");
+            await ReplyAsync(_translator.T("COMMAND_PROCESSING"));
             // Add user to courses
             StringBuilder stringBuilder = new StringBuilder();
             foreach (string course in courses)
@@ -142,17 +145,17 @@ namespace ECSDiscord.BotModules
                 switch (result)
                 {
                     case EnrollmentResult.AlreadyLeft:
-                        stringBuilder.Append($":warning:  **{course}** - You are not in `{course}`.\n");
+                        stringBuilder.Append(_translator.T("ENROLLMENT_ALREADY_LEFT", course));
                         break;
                     case EnrollmentResult.CourseNotExist:
-                        stringBuilder.Append($":warning:  **{course}** - Sorry `{course}` does not exist.\n");
+                        stringBuilder.Append(_translator.T("ENROLLMENT_INVALID_COURSE", course));
                         break;
                     default:
                     case EnrollmentResult.Failure:
-                        stringBuilder.Append($":fire:  **{course}** - A server error occured. Please ask an admin to check the logs.\n");
+                        stringBuilder.Append(_translator.T("ENROLLMENT_SERVER_ERROR", course));
                         break;
                     case EnrollmentResult.Success:
-                        stringBuilder.Append($":outbox_tray:  **{course}** - Removed you from {course} successfully.\n");
+                        stringBuilder.Append(_translator.T("ENROLLMENT_LEAVE_SUCCESS", course));
                         break;
                 }
             }
@@ -175,7 +178,7 @@ namespace ECSDiscord.BotModules
                 return;
             }
 
-            await ReplyAsync("Processing...");
+            await ReplyAsync(_translator.T("COMMAND_PROCESSING"));
 
             List<string> existingCourses = await _enrollments.GetUserCourses(Context.User); // List of courses the user is already in, probably should've used a set for that
 
@@ -191,19 +194,20 @@ namespace ECSDiscord.BotModules
                 switch (result)
                 {
                     case EnrollmentResult.CourseNotExist:
-                        stringBuilder.Append($":warning:  **{course}** - Sorry `{course}` does not exist.\n");
+                        stringBuilder.Append(_translator.T("ENROLLMENT_INVALID_COURSE", course));
                         break;
                     default:
                     case EnrollmentResult.Failure:
-                        stringBuilder.Append($":fire:  **{course}** - A server error occured. Please ask an admin to check the logs.\n");
+                        stringBuilder.Append(_translator.T("ENROLLMENT_SERVER_ERROR", course));
                         break;
                     case EnrollmentResult.Success:
-                        string actionString = alreadyInCourse ? "Removed you from" : "Added you to";
-                        string iconString = alreadyInCourse ? ":outbox_tray:" : ":inbox_tray:";
-                        stringBuilder.Append($"{iconString}  **{course}** - {actionString} {course} successfully.\n");
+                        if(alreadyInCourse)
+                            stringBuilder.Append(_translator.T("ENROLLMENT_LEAVE_SUCCESS", course));
+                        else
+                            stringBuilder.Append(_translator.T("ENROLLMENT_JOIN_SUCCESS", course));
                         break;
                     case EnrollmentResult.Unverified:
-                        stringBuilder.Append($":warning:  **{course}** - Sorry you must be verified before you can join any courses.\n");
+                        stringBuilder.Append(_translator.T("ENROLLMENT_VERIFICATION_REQUIRED", course));
                         break;
                 }
             }
@@ -252,17 +256,17 @@ namespace ECSDiscord.BotModules
         [RequireUserPermission(GuildPermission.Administrator)]
         public async Task MembersAsync(string courseName)
         {
-            await ReplyAsync("Processing...");
+            await ReplyAsync(_translator.T("COMMAND_PROCESSING"));
             if (!await _courses.CourseExists(courseName))
             {
-                await ReplyAsync(":warning:  Course does not exist.");
+                await ReplyAsync(_translator.T("INVALID_COURSE"));
                 return;
             }
 
             IList<SocketUser> users = await _enrollments.GetCourseMembers(courseName);
             if(users == null || users.Count == 0)
             {
-                await ReplyAsync("There are no users in that course.");
+                await ReplyAsync(_translator.T("COURSE_EMPTY"));
                 return;
             }
 
@@ -281,17 +285,17 @@ namespace ECSDiscord.BotModules
         [RequireUserPermission(GuildPermission.Administrator)]
         public async Task MemberCountAsync(string courseName)
         {
-            await ReplyAsync("Processing...");
+            await ReplyAsync(_translator.T("COMMAND_PROCESSING"));
             if (!await _courses.CourseExists(courseName))
             {
-                await ReplyAsync(":warning:  Course does not exist.");
+                await ReplyAsync(_translator.T("INVALID_COURSE"));
                 return;
             }
 
             IList<SocketUser> users = await _enrollments.GetCourseMembers(courseName);
             if (users == null || users.Count == 0)
             {
-                await ReplyAsync("There are no users in that course.");
+                await ReplyAsync(_translator.T("COURSE_EMPTY"));
                 return;
             }
 
