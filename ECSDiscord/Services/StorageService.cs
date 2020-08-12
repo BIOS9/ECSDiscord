@@ -678,7 +678,10 @@ namespace ECSDiscord.Services
                         List<Category> categories = new List<Category>();
                         while(await reader.ReadAsync())
                         {
-                            categories.Add(new Category(reader.GetUInt64(0), reader.GetString(1), reader.GetInt32(2)));
+                            if (await reader.IsDBNullAsync(1))
+                                categories.Add(new Category(reader.GetUInt64(0), null, reader.GetInt32(2)));
+                            else
+                                categories.Add(new Category(reader.GetUInt64(0), reader.GetString(1), reader.GetInt32(2)));
                         }
                         return categories;
                     }

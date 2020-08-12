@@ -68,10 +68,11 @@ namespace ECSDiscord.Modules
         public async Task CreateCategoryAsync(string name, string autoImportPattern, int autoImportPriority)
         {
             await ReplyAsync(_translator.T("COMMAND_PROCESSING"));
-            Regex pattern;
+            Regex pattern = null;
             try
             {
-                pattern = new Regex(autoImportPattern, RegexOptions.IgnoreCase);
+                if(autoImportPattern != null && autoImportPriority != -1)
+                    pattern = new Regex(autoImportPattern, RegexOptions.IgnoreCase);
             }
             catch
             {
@@ -114,10 +115,11 @@ namespace ECSDiscord.Modules
                 return;
             }
 
-            Regex pattern;
+            Regex pattern = null;
             try
             {
-                pattern = new Regex(autoImportPattern);
+                if (autoImportPattern != null && autoImportPriority != -1)
+                    pattern = new Regex(autoImportPattern);
             }
             catch
             {

@@ -77,13 +77,13 @@ namespace ECSDiscord.Services
 
         private async Task _discord_ChannelDestroyed(SocketChannel arg)
         {
-            if(await _storage.Courses.DoesCategoryExistAsync(arg.Id))
+            if (await _storage.Courses.DoesCategoryExistAsync(arg.Id))
             {
                 Log.Information("Deleting category because Discord category was deleted {categoryId}", arg.Id);
                 await RemoveCourseCategoryAsync(arg.Id);
             }
 
-            if(await _storage.Courses.DoesCourseExistAsync(arg.Id))
+            if (await _storage.Courses.DoesCourseExistAsync(arg.Id))
             {
                 Log.Information("Deleting course because Discord course channel was deleted {categoryId}", arg.Id);
                 await RemoveCourseAsync(arg.Id);
@@ -108,21 +108,21 @@ namespace ECSDiscord.Services
         public async Task CreateCourseCategoryAsync(SocketCategoryChannel existingCategory, Regex autoImportPattern, int autoImportPriority)
         {
             Log.Information("Creating course category for existing category {categoryId} {categoryName}", existingCategory.Id, existingCategory.Name);
-            await _storage.Courses.CreateCategoryAsync(existingCategory.Id, autoImportPattern.ToString(), autoImportPriority);
+            await _storage.Courses.CreateCategoryAsync(existingCategory.Id, autoImportPattern?.ToString(), autoImportPriority);
         }
 
         public async Task CreateCourseCategoryAsync(string name, Regex autoImportPattern, int autoImportPriority)
         {
             Log.Information("Creating course category {categoryName}", name);
             RestCategoryChannel category = await _discord.GetGuild(_guildId).CreateCategoryChannelAsync(name);
-            await _storage.Courses.CreateCategoryAsync(category.Id, autoImportPattern.ToString(), autoImportPriority);
+            await _storage.Courses.CreateCategoryAsync(category.Id, autoImportPattern?.ToString(), autoImportPriority);
         }
 
         public async Task RemoveCourseCategoryAsync(ulong discordId)
         {
             Log.Information("Deleting course category {id}", discordId);
             SocketCategoryChannel category = _discord.GetGuild(_guildId).GetCategoryChannel(discordId);
-            if(category != null)
+            if (category != null)
             {
                 await category.DeleteAsync();
             }
@@ -134,8 +134,9 @@ namespace ECSDiscord.Services
             string courseName = NormaliseCourseName(name);
             Log.Information("Creating course {name}", courseName);
             SocketGuild guild = _discord.GetGuild(_guildId);
-            RestTextChannel channel = await guild.CreateTextChannelAsync(courseName, (a) => {
-                if(_cachedCourses.ContainsKey(courseName))
+            RestTextChannel channel = await guild.CreateTextChannelAsync(courseName, (a) =>
+            {
+                if (_cachedCourses.ContainsKey(courseName))
                 {
                     a.Topic = _cachedCourses[courseName].Description;
                 }
@@ -179,7 +180,7 @@ namespace ECSDiscord.Services
         {
             Log.Debug("Organising course position for {channelid} {channelName}", channel.Id, channel.Name);
 
-            if(_discord.GetGuild(_guildId).GetCategoryChannel(channel.Id) != null)
+            if (_discord.GetGuild(_guildId).GetCategoryChannel(channel.Id) != null)
             {
                 Log.Debug("Skipping organising category {channelid} {channelName}", channel.Id, channel.Name);
                 return;
@@ -195,20 +196,21 @@ namespace ECSDiscord.Services
             categories = categories.Where(x => x.AutoImportPriority >= 0).OrderByDescending(x => x.AutoImportPriority).ToList();
             Log.Debug("Found {count} enabled auto import categories.", categories.Count);
 
-            foreach(var category in categories)
+            foreach (var category in categories)
             {
-                Regex pattern;
+                Regex pattern = null;
                 try
                 {
-                    pattern = new Regex(category.AutoImportPattern, RegexOptions.IgnoreCase);
+                    if (!string.IsNullOrWhiteSpace(category.AutoImportPattern))
+                        pattern = new Regex(category.AutoImportPattern, RegexOptions.IgnoreCase);
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     Log.Error(ex, "Invalid auto import RegEx for category {category}", category.DiscordId);
                     continue;
                 }
 
-                if(pattern.IsMatch(channel.Name))
+                if (pattern?.IsMatch(channel.Name) ?? false)
                 {
                     Log.Debug("Setting course position to category {category} for {channelid} {channelName}", category.DiscordId, channel.Id, channel.Name);
                     await channel.ModifyAsync(x =>
@@ -234,7 +236,7 @@ namespace ECSDiscord.Services
 
             SocketRole verifiedRole = guild.GetRole(_verifiedRoleId);
 
-            if(verifiedRole == null)
+            if (verifiedRole == null)
             {
                 Log.Error("Invalid verified role ID configured in settings. Role not found.");
                 return false;
@@ -283,7 +285,7 @@ namespace ECSDiscord.Services
                             await Task.Delay(100); // Help prevent API throttling
                         }
                     }
-                    catch(Exception ex)
+                    catch (Exception ex)
                     {
                         Log.Error(ex, "Failed to update permission mismatch for channel {channelName} {channelid}", channel.Name, channel.Id);
                     }
@@ -296,7 +298,7 @@ namespace ECSDiscord.Services
             Log.Debug("Found {count} new permissions for {channelid} {channelName}", courseMemberIds.Count, channel.Id, channel.Name);
             Log.Debug("Found {count} old permissions for {channelid} {channelName}", extraMembers.Count, channel.Id, channel.Name);
 
-            foreach(ulong extraMember in extraMembers)
+            foreach (ulong extraMember in extraMembers)
             {
                 await Task.Delay(100); // To help reduce API throttling
                 SocketUser user = _discord.GetUser(extraMember);
@@ -366,7 +368,7 @@ namespace ECSDiscord.Services
                     Log.Debug("Downloading courses from: {url}", url);
                     HtmlWeb web = new HtmlWeb();
                     HtmlDocument document = new HtmlDocument();
-                    
+
                     using (WebClient wc = new WebClient())
                     {
                         byte[] data = await wc.DownloadDataTaskAsync(url);
@@ -431,7 +433,7 @@ namespace ECSDiscord.Services
                 _verifiedAllowPerms = ulong.Parse(_config["courses:defaultChannelPermissions:allowed:verified"]);
                 _verifiedDenyPerms = ulong.Parse(_config["courses:defaultChannelPermissions:denied:verified"]);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Log.Error("Failed to load defaultCoursePermissions from config. Please use a valid Discord permission value. See https://discordapi.com/permissions.html");
                 throw ex;
