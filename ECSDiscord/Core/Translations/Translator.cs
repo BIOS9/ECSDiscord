@@ -53,17 +53,17 @@ namespace ECSDiscord.Core.Translations
             { "INVALID_REGEX", ":warning:  Invalid RegEx pattern." },
             { "ENROLLMENT_ALREADY_ENROLLED", ":warning:  **{0}** - You are already in `{0}`.\n" },
             { "ENROLLMENT_ALREADY_LEFT", ":warning:  **{0}** - You are not in `{0}`.\n" },
-            { "ENROLLMENT_INVALID_COURSE",  ":warning:  **{0}** - Sorry `{0}` does not exist.\n"},
-            { "ENROLLMENT_SERVER_ERROR",  ":fire:  **{0}** - A server error occured. Please ask an admin to check the logs.\n"},
-            { "ENROLLMENT_JOIN_SUCCESS",  ":inbox_tray:  **{0}** - Added you to {0} successfully.\n"},
-            { "ENROLLMENT_LEAVE_SUCCESS",  ":outbox_tray:  **{0}** - Removed you from {0} successfully.\n"},
+            { "ENROLLMENT_INVALID_COURSE",  ":warning:  **{0}** - Sorry `{0}` does not exist.\n" },
+            { "ENROLLMENT_SERVER_ERROR",  ":fire:  **{0}** - A server error occured. Please ask an admin to check the logs.\n" },
+            { "ENROLLMENT_JOIN_SUCCESS",  ":inbox_tray:  **{0}** - Added you to {0} successfully.\n" },
+            { "ENROLLMENT_LEAVE_SUCCESS",  ":outbox_tray:  **{0}** - Removed you from {0} successfully.\n" },
             { "ENROLLMENT_VERIFICATION_REQUIRED",  ":warning:  **{0}** - Sorry you must be verified before you can join any courses.\n" +
-                "Send me the following command in a private message to verify: ```+verify username@myvuw.ac.nz```"},
-            { "ENROLLMENT_NO_COURSES_JOINED",  ":warning:  You are not in any courses."},
+                "Private message me the following command to verify: ```+verify username@myvuw.ac.nz```" },
+            { "ENROLLMENT_NO_COURSES_JOINED",  ":warning:  You are not in any courses." },
         });
 
-        private readonly IDictionary<string, string> _translationMap; 
-        
+        private readonly IDictionary<string, string> _translationMap;
+
         private Translator(IDictionary<string, string> translationsMap)
         {
             _translationMap = translationsMap;
