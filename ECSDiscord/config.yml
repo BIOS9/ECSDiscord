@@ -1,4 +1,4 @@
-﻿prefix: +
+prefix: +
 guildId: null
 dmUsersOnJoin: false
 joinDmTemplate: null
@@ -30,6 +30,7 @@ verification:
 forcedChannels:
   help: null
   enrollments: null
+  unknownCommandReply: null
 secrets:
   discordBotToken: null
 database:

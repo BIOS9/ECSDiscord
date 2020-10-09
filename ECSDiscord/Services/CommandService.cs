@@ -49,6 +49,9 @@ namespace ECSDiscord.Services
                     switch (result.Error)
                     {
                         case CommandError.UnknownCommand:
+                            string replyChannel = _config["forcedChannels:unknownCommandReply"];
+                            if (replyChannel != null && ulong.Parse(replyChannel) != s.Channel.Id)
+                                return;
                             Log.Debug("User {discordUser} sent unknown command.", s.Author.Id);
                             await context.Channel.SendMessageAsync($"Sorry, that is an unknown command.\nTry `{_config["prefix"]}help` to see a list of commands.");
                             break;
