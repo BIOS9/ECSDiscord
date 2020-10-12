@@ -31,13 +31,26 @@ namespace ECSDiscord.Modules
         [Remarks("Supply your uni email address to verify.")]
         public async Task VerifyAsync()
         {
-            if(!Context.IsPrivate)
+            if (!Context.IsPrivate)
             {
-                await ReplyAsync($":warning:  Verification can only done in a private message channel.");
-                return;
+                try
+                {
+                    await Context.User.SendMessageAsync($"Please provide your uni student email address e.g.\n" +
+                    $"```{_config["prefix"]}verify username@myvuw.ac.nz```");
+                    await ReplyAsync($"I've send you a DM with further instructions on how to verify.");
+                } 
+                catch (Discord.Net.HttpException)
+                {
+                    await ReplyAsync($":warning: Your privacy settings have prevented me from sending you a DM.\n" +
+                        $"You can **Allow direct messages from server members.** under the **Privacy settings** in the server drop down on desktop\n" +
+                        $"or in the server menu on mobile.");
+                }   
             }
-            await ReplyAsync($"Please provide your uni student email address e.g.\n" +
-                $"```{_config["prefix"]}verify username@myvuw.ac.nz```");
+            else
+            {
+                await ReplyAsync($"Please provide your uni student email address to verify e.g.\n" +
+                    $"```{_config["prefix"]}verify username@myvuw.ac.nz```");
+            }
         }
 
 
