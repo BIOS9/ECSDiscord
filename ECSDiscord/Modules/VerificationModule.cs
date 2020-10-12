@@ -67,7 +67,7 @@ namespace ECSDiscord.Modules
 
             if (!Context.IsPrivate)
             {
-                await ReplyAsync($":warning:  Verification can only done in a private message channel.");
+                await ReplyAsync($":warning:  Please send me a DM to verify.");
                 return;
             }
 
