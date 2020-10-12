@@ -37,7 +37,7 @@ namespace ECSDiscord.Modules
                 {
                     await Context.User.SendMessageAsync($"Please provide your uni student email address e.g.\n" +
                     $"```{_config["prefix"]}verify username@myvuw.ac.nz```");
-                    await ReplyAsync($"I've send you a DM with further instructions on how to verify.");
+                    await ReplyAsync($"I've sent you a DM with further instructions on how to verify.");
                 } 
                 catch (Discord.Net.HttpException)
                 {
