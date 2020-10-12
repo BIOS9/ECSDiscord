@@ -42,8 +42,7 @@ namespace ECSDiscord.Modules
                 catch (Discord.Net.HttpException)
                 {
                     await ReplyAsync($":warning: Your privacy settings have prevented me from sending you a DM.\n" +
-                        $"You can **Allow direct messages from server members.** under the **Privacy settings** in the server drop down on desktop\n" +
-                        $"or in the server menu on mobile.");
+                        $"You can **Allow direct messages from server members.** under the **Privacy settings** in the server drop down on desktop or in the server menu on mobile.");
                 }   
             }
             else
