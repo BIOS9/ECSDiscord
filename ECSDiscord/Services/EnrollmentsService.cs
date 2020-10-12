@@ -16,6 +16,7 @@ namespace ECSDiscord.Services
         private readonly DiscordSocketClient _discord;
         private readonly CourseService _courses;
         private readonly StorageService _storage;
+        private readonly VerificationService _verification;
         private readonly IConfigurationRoot _config;
 
         private ulong _guildId;
@@ -31,13 +32,14 @@ namespace ECSDiscord.Services
             Failure
         }
 
-        public EnrollmentsService(DiscordSocketClient discord, CourseService courses, StorageService storage, IConfigurationRoot config)
+        public EnrollmentsService(DiscordSocketClient discord, CourseService courses, StorageService storage, VerificationService verification, IConfigurationRoot config)
         {
             Log.Debug("Enrollments service loading.");
             _discord = discord;
             _courses = courses;
             _config = config;
             _storage = storage;
+            _verification = verification;
             loadConfig();
             Log.Debug("Enrollments service loaded.");
         }
@@ -50,16 +52,16 @@ namespace ECSDiscord.Services
                 {
                     try
                     {
-                        if(await _storage.Users.GetEncryptedUsernameAsync(user.Id) == null)
+                        if(!await _verification.IsUserVerifiedAsync(user))
                         {
                             Log.Information("Unverified user {user} tried to join a course.", user.Id);
                             return EnrollmentResult.Unverified;
                         }
                     }
-                    catch (StorageService.RecordNotFoundException)
+                    catch (Exception ex)
                     {
-                        Log.Information("Unverified user {user} tried to join a course.", user.Id);
-                        return EnrollmentResult.Unverified;
+                        Log.Error(ex, "Error checking user verification {user} while joining a course.", user.Id);
+                        return EnrollmentResult.Failure;
                     }
                 }
 

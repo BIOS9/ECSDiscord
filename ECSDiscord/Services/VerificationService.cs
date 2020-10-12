@@ -279,6 +279,11 @@ namespace ECSDiscord.Services
             Log.Debug("User verification check for {id}", discordId);
             try
             {
+                SocketGuild guild = _discord.GetGuild(_guildId);
+                SocketGuildUser guildUser = guild.GetUser(discordId);
+                Dictionary<ulong, OverrideType> verificationOverrides = await _storageService.Verification.GetAllVerificationOverrides();
+                if (verificationOverrides.ContainsKey(discordId) || guildUser.Roles.Any(x => verificationOverrides.ContainsKey(x.Id)))
+                    return true;
                 return await _storageService.Users.GetEncryptedUsernameAsync(discordId) != null;
             }
             catch(RecordNotFoundException)
@@ -312,9 +317,7 @@ namespace ECSDiscord.Services
                 return false;
             }
 
-            Dictionary<ulong, OverrideType> verificationOverrides = await _storageService.Verification.GetAllVerificationOverrides();
-
-            if (await IsUserVerifiedAsync(user) || verificationOverrides.ContainsKey(user.Id) || guildUser.Roles.Any(x => verificationOverrides.ContainsKey(x.Id)))
+            if (await IsUserVerifiedAsync(user))
             {
                 if (!guildUser.Roles.Any(x => x.Id == _verifiedRoleId))
                 {
