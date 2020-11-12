@@ -60,6 +60,9 @@ namespace ECSDiscord.Core.Translations
             { "ENROLLMENT_VERIFICATION_REQUIRED",  ":warning:  **{0}** - Sorry you must be verified before you can join any courses.\n" +
                 "Private message me the following command to verify: ```+verify username@myvuw.ac.nz```" },
             { "ENROLLMENT_NO_COURSES_JOINED",  ":warning:  You are not in any courses." },
+            { "IMPORT_PERMISSIONS_START",  "**Import:** Converting role permissions to user override permissions on course channels.\n" +
+                "This may take a while." },
+            { "IMPORT_PERMISSIONS_END",  "**Import:** Permission conversion finished." },
         });
 
         private readonly IDictionary<string, string> _translationMap;

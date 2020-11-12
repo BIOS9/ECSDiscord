@@ -106,10 +106,10 @@ namespace ECSDiscord.Modules
         [Alias("addcategory")]
         [Summary("Adds a category for course channels.")]
         [RequireUserPermission(GuildPermission.Administrator)]
-        public async Task CreateCategoryAsync(SocketCategoryChannel cateogry, string autoImportPattern, int autoImportPriority)
+        public async Task CreateCategoryAsync(SocketCategoryChannel category, string autoImportPattern, int autoImportPriority)
         {
             await ReplyAsync(_translator.T("COMMAND_PROCESSING"));
-            if (cateogry == null)
+            if (category == null)
             {
                 await ReplyAsync(_translator.T("INVALID_CATEGORY"));
                 return;
@@ -128,7 +128,7 @@ namespace ECSDiscord.Modules
                 return;
             }
 
-            await _courseService.CreateCourseCategoryAsync(cateogry, pattern, autoImportPriority);
+            await _courseService.CreateCourseCategoryAsync(category, pattern, autoImportPriority);
             await ReplyAsync(_translator.T("CATEGORY_ADDED_EXISTING"));
         }
 
