@@ -1,7 +1,9 @@
-﻿namespace DiscordBot.Application
+﻿using System.Threading.Tasks;
+
+namespace DiscordBot.Application
 {
     public interface IApplication
     {
-        void Run();
+        Task RunAsync();
     }
 }
