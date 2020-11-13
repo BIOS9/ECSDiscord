@@ -15,7 +15,7 @@ namespace DiscordBot.Discord
                 AlwaysDownloadUsers = true,
                 DefaultRetryMode = RetryMode.RetryRatelimit,
                 GuildSubscriptions = true,
-                LogLevel = LogSeverity.Verbose,
+                LogLevel = LogSeverity.Debug,
                 MessageCacheSize = 1000             // Cache 1,000 messages per channel
             });
         }
