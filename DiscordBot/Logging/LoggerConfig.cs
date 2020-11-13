@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using Serilog;
 
-namespace DiscordBot
+namespace DiscordBot.Logging
 {
     internal static class LoggerConfig
     {

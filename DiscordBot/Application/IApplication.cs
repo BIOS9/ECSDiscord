@@ -1,4 +1,4 @@
-﻿namespace DiscordBot
+﻿namespace DiscordBot.Application
 {
     public interface IApplication
     {

@@ -1,4 +1,5 @@
 ﻿using Autofac;
+using DiscordBot.Application;
 
 namespace DiscordBot
 {

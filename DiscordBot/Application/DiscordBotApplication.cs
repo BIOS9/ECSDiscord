@@ -1,16 +1,21 @@
-﻿using DiscordBot.Translation;
+﻿using Discord.WebSocket;
+using DiscordBot.Translation;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 
-namespace DiscordBot
+namespace DiscordBot.Application
 {
-    public class DiscordBot : IApplication
+    public class DiscordBotApplication : IApplication
     {
-        ILogger _logger;
-        ITranslator _translator;
+        private readonly ILogger _logger;
+        private readonly ITranslator _translator;
+        private readonly DiscordSocketClient _discordClient;
 
-        public DiscordBot(ILoggerFactory loggerFactory, ITranslatorFactory translatorFactory)
+        public DiscordBotApplication(
+            ILoggerFactory loggerFactory,
+            ITranslatorFactory translatorFactory,
+            DiscordSocketClient discordClient)
         {
             _logger = loggerFactory.CreateLogger("Application");
             _translator = translatorFactory.CreateTranslator(new Dictionary<string, string>
