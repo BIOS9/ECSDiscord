@@ -14,7 +14,8 @@ namespace DiscordBot
 
             builder.RegisterType<DiscordBotApplication>().As<IApplication>().SingleInstance();
             builder.Register((c, p) => LoggerConfig.CreateLoggerFactory()).SingleInstance();
-            builder.Register((c, p) => TranslatorConfig.CreateTranslatorFactory()).SingleInstance();
+            builder.Register((c, p) => TranslatorConfig.CreatePluginTranslatorFactory(c)).SingleInstance();
+            builder.Register((c, p) => TranslatorConfig.CreateTranslationFileFactory()).SingleInstance();
             builder.Register((c, p) => DiscordBotConfig.CreateDiscordBot()).SingleInstance();
 
             return builder.Build();

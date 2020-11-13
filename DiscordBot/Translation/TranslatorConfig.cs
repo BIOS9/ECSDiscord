@@ -1,4 +1,8 @@
-﻿using System;
+﻿using Autofac;
+using DiscordBot.Translation.Plugin;
+using DiscordBot.Translation.Storage;
+using DiscordBot.Translation.Storage.Json;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -6,9 +10,14 @@ namespace DiscordBot.Translation
 {
     internal static class TranslatorConfig
     {
-        public static ITranslatorFactory CreateTranslatorFactory()
+        public static IPluginTranslatorFactory CreatePluginTranslatorFactory(IComponentContext componentContext)
         {
-            return new BasicTranslator.BasicTranslatorFactory();
+            return new PluginTranslatorFactory(componentContext.Resolve<ITranslationFileFactory>()); // Use plugin translator
+        }
+
+        public static ITranslationFileFactory CreateTranslationFileFactory()
+        {
+            return new JsonTranslationFileFactory(); // Use Json translation files
         }
     }
 }

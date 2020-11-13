@@ -1,16 +1,27 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Text;
 
-namespace DiscordBot.Translation.BasicTranslator
+namespace DiscordBot.Translation.Basic
 {
     internal class BasicTranslator : ITranslator
     {
-        private readonly IDictionary<string, string> _translationMap;
+        private readonly IReadOnlyDictionary<string, string> _translationMap;
 
         internal BasicTranslator(IDictionary<string, string> translationMap)
         {
-            _translationMap = translationMap;
+            _translationMap = translationMap.ToImmutableDictionary();
+        }
+
+        public IDictionary<string, string> GetTranslations()
+        {
+            return (IDictionary<string, string>)_translationMap;
+        }
+
+        public bool ContainsTranslation(string key)
+        {
+            return _translationMap.ContainsKey(key);
         }
 
         public string T(string key, params object[] values)
