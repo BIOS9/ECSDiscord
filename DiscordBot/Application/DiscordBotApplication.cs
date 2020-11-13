@@ -1,5 +1,5 @@
 ﻿using Discord;
-using Discord.WebSocket;
+using DiscordBot.DiscordBot;
 using DiscordBot.Translation;
 using DiscordBot.Translation.Plugin;
 using Microsoft.Extensions.Logging;
@@ -14,12 +14,12 @@ namespace DiscordBot.Application
         private readonly ILogger _logger;
         private readonly ILogger _discordBotLogger;
         private readonly ITranslator _translator;
-        private readonly DiscordSocketClient _discordClient;
+        private readonly IDiscordBotClient _discordClient;
 
         public DiscordBotApplication(
             ILoggerFactory loggerFactory,
             IPluginTranslatorFactory pluginTranslatorFactory,
-            DiscordSocketClient discordClient)
+            IDiscordBotClient discordClient)
         {
             _logger = loggerFactory.CreateLogger("Application");
             _discordBotLogger = loggerFactory.CreateLogger("Discord");
@@ -69,8 +69,9 @@ namespace DiscordBot.Application
             _logger.LogInformation("HI!");
             _logger.LogInformation("Test");
             _logger.LogInformation($"Translated: {_translator.T("STRING")}");
-            //await _discordClient.LoginAsync(TokenType.Bot, discordToken);
-            //await _discordClient.StartAsync();
+            await _discordClient.LoginAsync(TokenType.Bot, "Nzc2ODAyMjYzOTc2MjQ3MzI4.X66LfA.BBKb1uid-zyipPEdz5S8Q0aUhi0");
+            await _discordClient.StartAsync();
+            Console.ReadLine();
         }
     }
 }

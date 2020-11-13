@@ -1,6 +1,6 @@
 ﻿using Autofac;
 using DiscordBot.Application;
-using DiscordBot.Discord;
+using DiscordBot.DiscordBot;
 using DiscordBot.Logging;
 using DiscordBot.Translation;
 
