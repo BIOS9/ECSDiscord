@@ -69,7 +69,7 @@ namespace DiscordBot.Application
             _logger.LogInformation("HI!");
             _logger.LogInformation("Test");
             _logger.LogInformation($"Translated: {_translator.T("STRING")}");
-            await _discordClient.LoginAsync(TokenType.Bot, "Nzc2ODAyMjYzOTc2MjQ3MzI4.X66LfA.BBKb1uid-zyipPEdz5S8Q0aUhi0");
+            await _discordClient.LoginAsync(TokenType.Bot, "TOKEN HAS BEEN DISABLED");
             await _discordClient.StartAsync();
             Console.ReadLine();
         }
