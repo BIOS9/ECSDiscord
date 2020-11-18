@@ -13,7 +13,6 @@ namespace ConsoleLogging
         public Version Version => Assembly.GetExecutingAssembly().GetName().Version;
 
         private ILoggerFactory _loggerFactory;
-        private Microsoft.Extensions.Logging.ILogger _logger;
 
         public SerilogLoggerFactory()
         {
@@ -22,19 +21,6 @@ namespace ConsoleLogging
                     .Enrich.FromLogContext()
                     .WriteTo.Console(outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss zzz}][{Level:u3}][{SourceContext}] {Message:lj}{NewLine}{Exception}")
                     .CreateLogger());
-            _logger = _loggerFactory.CreateLogger("Logging");
-        }
-
-        public Task StartAsync()
-        {
-            _logger.LogInformation("Started!");
-            return Task.Delay(10000);
-        }
-
-        public Task StopAsync()
-        {
-            _logger.LogInformation("Stopped!");
-            return Task.CompletedTask;
         }
 
         public Microsoft.Extensions.Logging.ILogger CreateLogger(string categoryName)

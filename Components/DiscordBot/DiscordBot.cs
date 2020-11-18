@@ -1,15 +1,17 @@
-﻿using ComponentApplication.Components;
+﻿using ComponentApplication.Components.Services;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Reflection;
 using System.Threading.Tasks;
+using static ComponentApplication.Components.Services.IService;
 
 namespace DiscordBotComponent
 {
-    public class DiscordBot : IComponent
+    public class DiscordBot : IService
     {
         public string Name => "Discord Bot";
         public Version Version => Assembly.GetExecutingAssembly().GetName().Version;
+        public ServiceState State { get; private set; }
 
         private ILogger _logger;
 
@@ -18,16 +20,20 @@ namespace DiscordBotComponent
             _logger = loggerFactory.CreateLogger("Discord Bot");
         }
 
-        public Task StartAsync()
+        public async Task StartAsync()
         {
+            State = ServiceState.Starting;
             _logger.LogInformation("Started!");
-            return Task.Delay(5000);
+            await Task.Delay(5000);
+            State = ServiceState.Running;
         }
 
-        public Task StopAsync()
+        public async Task StopAsync()
         {
+            State = ServiceState.Stopping;
             _logger.LogInformation("Stopped!");
-            return Task.Delay(5000);
+            await Task.Delay(5000);
+            State = ServiceState.Stopped;
         }
     }
 }

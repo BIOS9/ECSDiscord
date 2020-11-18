@@ -1,5 +1,6 @@
 ﻿using System;
-using System.Threading.Tasks;
+using System.Collections.Generic;
+using System.Text;
 
 namespace ComponentApplication.Components
 {
@@ -7,8 +8,5 @@ namespace ComponentApplication.Components
     {
         string Name { get; }
         Version Version { get; }
-
-        Task StartAsync();
-        Task StopAsync();
     }
 }
