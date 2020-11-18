@@ -1,10 +1,14 @@
 ﻿using Autofac;
 using ComponentApplication.Components;
+using ComponentApplication.Components.Resources;
 using ComponentApplication.Components.Services;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.Loader;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace ComponentApplication
@@ -15,12 +19,17 @@ namespace ComponentApplication
     /// </summary>
     class Program
     {
+        
         /// <summary>
         /// Entry point.
         /// </summary>
         /// <param name="args">Command line arguments.</param>
         static async Task Main(string[] args)
         {
+            IResourceLoader resourceLoader = new PluginResourceLoader(); // Use plugin loader to load resources.
+            resourceLoader.LoadAssemblies();
+            AppDomain.CurrentDomain.AssemblyResolve += resourceLoader.AssemblyResolve; // Provide assemblies from loaded resources.
+
             IComponentLoader componentLoader = new PluginComponentLoader(); // Use plugin loader to load components.
             var container = ContainerConfig.Configure(componentLoader, componentLoader.LoadAssemblies());  // Register dependencies.
             using (var scope = container.BeginLifetimeScope()) // Dependency scope for app.

@@ -9,7 +9,7 @@ namespace ComponentApplication.Components
     /// <summary>
     /// Loads application component assemblies.
     /// </summary>
-    internal interface IComponentLoader
+    public interface IComponentLoader
     { 
         /// <summary>
         /// Loads assemblies containing components.
