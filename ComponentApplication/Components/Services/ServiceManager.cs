@@ -22,23 +22,23 @@ namespace ComponentApplication.Components.Services
         public Task StartServices()
         {
             List<Task> tasks = new List<Task>();
-            foreach (IService service in _services)
+            foreach (IService service in _services) // Start all registered services.
             {
                 Console.WriteLine($"Starting service: {service.Name} Version {service.Version}");
                 tasks.Add(service.StartAsync());
             }
-            return Task.WhenAll(tasks);
+            return Task.WhenAll(tasks); // Wait on all services to start.
         }
 
         public Task StopServices()
         {
             List<Task> tasks = new List<Task>();
-            foreach (IService service in _services)
+            foreach (IService service in _services) // Stop all registered services.
             {
                 Console.WriteLine($"Stopping service: {service.Name} Version {service.Version}");
                 tasks.Add(service.StopAsync());
             }
-            return Task.WhenAll(tasks);
+            return Task.WhenAll(tasks); // Wait on all services to stop.
         }
     }
 }

@@ -6,9 +6,15 @@ using System.Threading.Tasks;
 
 namespace ComponentApplication.Components
 {
+    /// <summary>
+    /// Loads application component assemblies.
+    /// </summary>
     internal interface IComponentLoader
-    {
-        Task<Assembly[]> LoadAssembliesAsync();
+    { 
+        /// <summary>
+        /// Loads assemblies containing components.
+        /// </summary>
+        /// <returns>Array of assemblies that contain components.</returns>
         Assembly[] LoadAssemblies();
     }
 }
