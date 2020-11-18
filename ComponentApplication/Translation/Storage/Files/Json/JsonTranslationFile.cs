@@ -5,7 +5,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 
-namespace DiscordBot.Translation.Storage.Json
+namespace DiscordBot.Translation.Storage.Files.Json
 {
     internal class JsonTranslationFile : ITranslationFile
     {
@@ -24,7 +24,9 @@ namespace DiscordBot.Translation.Storage.Json
         public async Task<IDictionary<string, string>> ReadAsync()
         {
             if (!File.Exists(_filePath))
+            {
                 throw new FileNotFoundException($"Json translation file not found: \"{_filePath}\"");
+            }
 
             using (FileStream fs = new FileStream(_filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
             using (StreamReader sw = new StreamReader(fs))

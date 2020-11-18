@@ -1,5 +1,6 @@
 ﻿using DiscordBot.Translation.Basic;
 using DiscordBot.Translation.Storage;
+using DiscordBot.Translation.Storage.Files;
 using System;
 using System.Collections.Generic;
 using System.IO;

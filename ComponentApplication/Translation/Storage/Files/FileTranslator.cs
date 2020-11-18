@@ -4,15 +4,15 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
-namespace DiscordBot.Translation.Storage
+namespace DiscordBot.Translation.Storage.Files
 {
     internal class FileTranslator : ITranslator
     {
         private readonly ITranslator _basicTranslator;
 
         public FileTranslator(
-            string filePath, 
-            IDictionary<string, string> defaultTranslations, 
+            string filePath,
+            IDictionary<string, string> defaultTranslations,
             ITranslationFileFactory translationFileFactory)
         {
             ITranslationFile file = translationFileFactory.CreateTranslationFile(filePath);

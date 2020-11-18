@@ -1,7 +1,7 @@
 ﻿using Autofac;
 using DiscordBot.Translation.Plugin;
 using DiscordBot.Translation.Storage;
-using DiscordBot.Translation.Storage.Json;
+using DiscordBot.Translation.Storage.Files.Json;
 using System;
 using System.Collections.Generic;
 using System.Text;
