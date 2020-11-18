@@ -8,7 +8,7 @@ namespace ComponentApplication.Components
         string Name { get; }
         Version Version { get; }
 
-        Task LoadAsync();
-        Task UnloadAsync();
+        Task StartAsync();
+        Task StopAsync();
     }
 }

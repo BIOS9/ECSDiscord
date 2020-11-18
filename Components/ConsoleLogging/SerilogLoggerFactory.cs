@@ -25,15 +25,15 @@ namespace ConsoleLogging
             _logger = _loggerFactory.CreateLogger("Logging");
         }
 
-        public Task LoadAsync()
+        public Task StartAsync()
         {
-            _logger.LogInformation("Loaded!");
-            return Task.CompletedTask;
+            _logger.LogInformation("Started!");
+            return Task.Delay(10000);
         }
 
-        public Task UnloadAsync()
+        public Task StopAsync()
         {
-            _logger.LogInformation("Unloaded!");
+            _logger.LogInformation("Stopped!");
             return Task.CompletedTask;
         }
 

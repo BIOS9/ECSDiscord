@@ -1,6 +1,5 @@
 ﻿using Autofac;
 using ComponentApplication.Components;
-using ComponentApplication.Components.Plugins;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,15 +17,31 @@ namespace ComponentApplication
             using (var scope = container.BeginLifetimeScope())
             {
                 var components = container.Resolve<IEnumerable<IComponent>>();
-
-                //components.Select(x => x.LoadAsync());
-                foreach (IComponent component in components)
-                {
-                    Console.WriteLine($"Loading component: {component.Name} Version {component.Version}");
-                    component.LoadAsync();
-                }
+                return run(components);
             }
-            return Task.CompletedTask;
+        }
+
+        static async Task run(IEnumerable<IComponent> components)
+        {
+            List<Task> startTasks = new List<Task>();
+            foreach (IComponent component in components)
+            {
+                Console.WriteLine($"Loading component: {component.Name} Version {component.Version}");
+                startTasks.Add(component.StartAsync());
+            }
+
+            Console.WriteLine("All components started.");
+            await Task.WhenAll(startTasks);
+
+            List<Task> stopTasks = new List<Task>();
+            foreach (IComponent component in components)
+            {
+                Console.WriteLine($"Unloading component: {component.Name} Version {component.Version}");
+                stopTasks.Add(component.StopAsync());
+            }
+
+            await Task.WhenAll(stopTasks);
+            Console.WriteLine("All components stopped.");
         }
     }
 }

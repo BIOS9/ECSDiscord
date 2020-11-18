@@ -25,6 +25,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ComponentApplication", "Com
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ConsoleLogging", "Components\ConsoleLogging\ConsoleLogging.csproj", "{1811B5A4-2527-4595-8DF1-32D13157D981}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Configuration", "Components\Configuration\Configuration.csproj", "{BA5B11AD-5028-4E1D-ABBC-19AE6B3501CA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -63,6 +65,10 @@ Global
 		{1811B5A4-2527-4595-8DF1-32D13157D981}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1811B5A4-2527-4595-8DF1-32D13157D981}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1811B5A4-2527-4595-8DF1-32D13157D981}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BA5B11AD-5028-4E1D-ABBC-19AE6B3501CA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BA5B11AD-5028-4E1D-ABBC-19AE6B3501CA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BA5B11AD-5028-4E1D-ABBC-19AE6B3501CA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BA5B11AD-5028-4E1D-ABBC-19AE6B3501CA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -77,6 +83,7 @@ Global
 		{6AAA2082-1908-4BF5-A895-893EC226C961} = {4AC3DD28-F869-41F8-BD39-F528AAE53A69}
 		{C0C18D2C-22CF-4875-9DC1-7555D9043B67} = {66F3E3CA-E0E3-4CBA-83BE-72E0802C00F9}
 		{1811B5A4-2527-4595-8DF1-32D13157D981} = {4AC3DD28-F869-41F8-BD39-F528AAE53A69}
+		{BA5B11AD-5028-4E1D-ABBC-19AE6B3501CA} = {4AC3DD28-F869-41F8-BD39-F528AAE53A69}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {9C7C24DB-92B3-49E7-84FD-E83EEE1EF8EB}

@@ -1,8 +1,5 @@
 ﻿using Autofac;
 using ComponentApplication.Components;
-using ComponentApplication.Logging;
-using DiscordBot.Translation;
-using System.Collections.Generic;
 using System.Reflection;
 
 namespace ComponentApplication

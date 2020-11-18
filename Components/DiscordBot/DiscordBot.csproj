@@ -1,8 +1,12 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Discord.Net" Version="2.2.0" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\ComponentApplication\ComponentApplication.csproj" />
@@ -10,6 +14,10 @@
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
     <Exec Command="copy /Y &quot;bin\debug\netcoreapp3.1\DiscordBot.dll&quot; &quot;..\..\ComponentApplication\bin\Debug\netcoreapp3.1\Plugins&quot;" />
+  </Target>
+
+  <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
+    <Exec Command="del &quot;bin\debug\netcoreapp3.1\DiscordBot.dll&quot;" />
   </Target>
 
 </Project>

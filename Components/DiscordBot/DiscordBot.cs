@@ -18,16 +18,16 @@ namespace DiscordBotComponent
             _logger = loggerFactory.CreateLogger("Discord Bot");
         }
 
-        public Task LoadAsync()
+        public Task StartAsync()
         {
-            _logger.LogInformation("Loaded!");
-            return Task.CompletedTask;
+            _logger.LogInformation("Started!");
+            return Task.Delay(5000);
         }
 
-        public Task UnloadAsync()
+        public Task StopAsync()
         {
-            _logger.LogInformation("Unloaded!");
-            return Task.CompletedTask;
+            _logger.LogInformation("Stopped!");
+            return Task.Delay(5000);
         }
     }
 }

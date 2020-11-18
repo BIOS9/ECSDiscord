@@ -8,4 +8,8 @@
     <Exec Command="copy /Y &quot;bin\debug\netcoreapp3.1\Translation.dll&quot; &quot;..\..\ComponentApplication\bin\Debug\netcoreapp3.1\Plugins&quot;" />
   </Target>
 
+  <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
+    <Exec Command="del &quot;bin\debug\netcoreapp3.1\Translation.dll&quot;" />
+  </Target>
+
 </Project>
