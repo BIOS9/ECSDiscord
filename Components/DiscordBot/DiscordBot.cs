@@ -1,4 +1,5 @@
 ﻿using ComponentApplication.Components.Services;
+using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Reflection;
@@ -14,16 +15,19 @@ namespace DiscordBotComponent
         public ServiceState State { get; private set; }
 
         private ILogger _logger;
+        private IStringLocalizer _localizer;
 
-        public DiscordBot(ILoggerFactory loggerFactory)
+        public DiscordBot(ILoggerFactory loggerFactory, IStringLocalizerFactory localizerFactory)
         {
             _logger = loggerFactory.CreateLogger("Discord Bot");
+            _localizer = localizerFactory.Create(typeof(DiscordBot));
         }
 
         public async Task StartAsync()
         {
             State = ServiceState.Starting;
             _logger.LogInformation("Started!");
+            _logger.LogInformation(_localizer["TEST"]);
             await Task.Delay(5000);
             State = ServiceState.Running;
         }
