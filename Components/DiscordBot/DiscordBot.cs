@@ -1,4 +1,5 @@
 ﻿using ComponentApplication.Components.Services;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
 using System;
@@ -6,7 +7,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using static ComponentApplication.Components.Services.IService;
 
-namespace DiscordBotComponent
+namespace DiscordBot
 {
     public class DiscordBot : IService
     {
@@ -14,13 +15,20 @@ namespace DiscordBotComponent
         public Version Version => Assembly.GetExecutingAssembly().GetName().Version;
         public ServiceState State { get; private set; }
 
-        private ILogger _logger;
-        private IStringLocalizer _localizer;
+        private readonly ILogger _logger;
+        private readonly IStringLocalizer _localizer;
+        private readonly DiscordBotConfig _config;
 
-        public DiscordBot(ILoggerFactory loggerFactory, IStringLocalizerFactory localizerFactory)
+        public DiscordBot(
+            ILoggerFactory loggerFactory, 
+            IStringLocalizerFactory localizerFactory,
+            IConfigurationRoot configurationRoot)
         {
             _logger = loggerFactory.CreateLogger("Discord Bot");
             _localizer = localizerFactory.Create(typeof(DiscordBot));
+            _config = new DiscordBotConfig(
+                configurationRoot.GetSection(nameof(DiscordBot)),
+                loggerFactory);
         }
 
         public async Task StartAsync()
