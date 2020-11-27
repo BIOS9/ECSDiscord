@@ -1,4 +1,4 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -6,7 +6,13 @@ namespace ComponentApplication.Components.Services
 {
     internal class ServiceManager : IServiceManager
     {
-        private ISet<IService> _services = new HashSet<IService>();
+        private readonly ISet<IService> _services = new HashSet<IService>();
+        private readonly ILogger _logger;
+
+        public ServiceManager(ILoggerFactory loggerFactory)
+        {
+            _logger = loggerFactory.CreateLogger("Service Manager");
+        }
 
         public void RegisterService(IService service)
         {
@@ -20,10 +26,11 @@ namespace ComponentApplication.Components.Services
 
         public Task StartServices()
         {
+            _logger.LogInformation("Starting services...");
             List<Task> tasks = new List<Task>();
             foreach (IService service in _services) // Start all registered services.
             {
-                Console.WriteLine($"Starting service: {service.Name} Version {service.Version}");
+                _logger.LogInformation("Starting service: {name} Version {version}", service.Name, service.Version);
                 tasks.Add(service.StartAsync());
             }
             return Task.WhenAll(tasks); // Wait on all services to start.
@@ -31,10 +38,11 @@ namespace ComponentApplication.Components.Services
 
         public Task StopServices()
         {
+            _logger.LogInformation("Stopping services...");
             List<Task> tasks = new List<Task>();
             foreach (IService service in _services) // Stop all registered services.
             {
-                Console.WriteLine($"Stopping service: {service.Name} Version {service.Version}");
+                _logger.LogInformation("Stopping service: {name} Version {version}", service.Name, service.Version);
                 tasks.Add(service.StopAsync());
             }
             return Task.WhenAll(tasks); // Wait on all services to stop.

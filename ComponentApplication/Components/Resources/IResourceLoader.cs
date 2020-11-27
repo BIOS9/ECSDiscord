@@ -7,11 +7,6 @@ namespace ComponentApplication.Components.Resources
     public interface IResourceLoader
     {
         /// <summary>
-        /// Load resource assemblies into the resource loader.
-        /// </summary>
-        void LoadAssemblies();
-
-        /// <summary>
         /// Get the assemblies that have been loaded into the resource loader.
         /// </summary>
         /// <returns>Collection of loaded assemblies.</returns>

@@ -23,7 +23,6 @@ namespace Localization
 
         public IStringLocalizer Create(Type resourceSource)
         {
-            Console.WriteLine(resourceSource.Assembly.GetName().Name);
             string resourceName = string.Empty;
             foreach (var res in resourceSource.Assembly.GetManifestResourceNames())
             {

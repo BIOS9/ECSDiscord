@@ -22,16 +22,17 @@ namespace ComponentApplication
         /// <param name="args">Command line arguments.</param>
         static async Task Main(string[] args)
         {
-            IResourceLoader resourceLoader = new PluginResourceLoader(); // Use plugin loader to load resources.
-            resourceLoader.LoadAssemblies();
-            AppDomain.CurrentDomain.AssemblyResolve += resourceLoader.AssemblyResolve; // Provide assemblies from loaded resources.
-
             IComponentLoader componentLoader = new PluginComponentLoader(); // Use plugin loader to load components.
-            var container = ContainerConfig.Configure(componentLoader, componentLoader.LoadAssemblies());  // Register dependencies.
+
+            IResourceLoader globalResourceLoader = new PluginResourceLoader("GlobalResources", "Global", true); // Use plugin loader to load global resources.
+            AppDomain.CurrentDomain.AssemblyResolve += globalResourceLoader.AssemblyResolve; // Provide assemblies from loaded resources.
+
+            var container = ContainerConfig.Configure(componentLoader.LoadAssemblies());  // Register dependencies.
             using (var scope = container.BeginLifetimeScope()) // Dependency scope for app.
             {
-                var services = container.Resolve<IEnumerable<IService>>(); // Get all loaded services.
-                var serviceManager = container.Resolve<IServiceManager>(); // Get service manager.
+                var serviceManager = scope.Resolve<IServiceManager>(); // Get service manager.
+                var services = scope.Resolve<IEnumerable<IService>>(); // Get all loaded services.
+                
                 services.ToList().ForEach(serviceManager.RegisterService); // Register services in service manager.
                 await serviceManager.StartServices(); // Start all services and wait for finish.
                 await serviceManager.StopServices(); // Stop all services to cleanup.
