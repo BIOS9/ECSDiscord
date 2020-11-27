@@ -8,8 +8,7 @@ namespace DiscordBot.Config
 {
     internal class DiscordBotConfig
     {
-        public string Token => _token;
-        private readonly string _token;
+        public string Token { get; }
 
         private readonly ILogger _logger;
 
@@ -21,7 +20,7 @@ namespace DiscordBot.Config
             var c = configurationSection;
 
             checkSectionExists(c);
-            _token = readToken(c);
+            Token = readToken(c);
         }
 
         private void checkSectionExists(IConfigurationSection configurationSection)
