@@ -1,4 +1,5 @@
 ﻿using ComponentApplication.Components.Services;
+using DiscordBot.Config;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
@@ -15,6 +16,9 @@ namespace DiscordBot
         public Version Version => Assembly.GetExecutingAssembly().GetName().Version;
         public ServiceState State { get; private set; }
 
+        private const string LoggerName = "Discord Bot";
+        private const string ConfigSectionName = "DiscordBot";
+
         private readonly ILogger _logger;
         private readonly IStringLocalizer _localizer;
         private readonly DiscordBotConfig _config;
@@ -24,10 +28,10 @@ namespace DiscordBot
             IStringLocalizerFactory localizerFactory,
             IConfigurationRoot configurationRoot)
         {
-            _logger = loggerFactory.CreateLogger("Discord Bot");
+            _logger = loggerFactory.CreateLogger(LoggerName);
             _localizer = localizerFactory.Create(typeof(DiscordBot));
             _config = new DiscordBotConfig(
-                configurationRoot.GetSection(nameof(DiscordBot)),
+                configurationRoot.GetSection(ConfigSectionName),
                 loggerFactory);
         }
 
