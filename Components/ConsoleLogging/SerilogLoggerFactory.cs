@@ -1,9 +1,10 @@
 ﻿using ComponentApplication.Components;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Serilog;
+using Serilog.Events;
 using System;
 using System.Reflection;
-using System.Threading.Tasks;
 
 namespace ConsoleLogging
 {
@@ -12,15 +13,20 @@ namespace ConsoleLogging
         public string Name => "Serilog Console Logging";
         public Version Version => Assembly.GetExecutingAssembly().GetName().Version;
 
-        private ILoggerFactory _loggerFactory;
+        private const string ConfigSectionName = "Logging";
 
-        public SerilogLoggerFactory()
+        private ILoggerFactory _loggerFactory;
+        private LoggingConfig _config;
+
+        public SerilogLoggerFactory(IConfigurationRoot configurationRoot)
         {
+            _config = new LoggingConfig(configurationRoot.GetSection(ConfigSectionName));
             _loggerFactory = new LoggerFactory()
-                    .AddSerilog(new LoggerConfiguration()
-                    .Enrich.FromLogContext()
-                    .WriteTo.Console(outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss zzz}][{Level:u3}][{SourceContext}] {Message:lj}{NewLine}{Exception}")
-                    .CreateLogger());
+                   .AddSerilog(new LoggerConfiguration()
+                   .Enrich.FromLogContext()
+                   .MinimumLevel.Is(_config.LogLevel ?? LogEventLevel.Verbose)
+                   .WriteTo.Console(outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss zzz}][{Level:u3}][{SourceContext}] {Message:lj}{NewLine}{Exception}")
+                   .CreateLogger());
         }
 
         public Microsoft.Extensions.Logging.ILogger CreateLogger(string categoryName)
