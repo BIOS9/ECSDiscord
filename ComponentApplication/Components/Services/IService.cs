@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Threading;
+using System.Threading.Tasks;
 
 namespace ComponentApplication.Components.Services
 {
@@ -25,7 +26,7 @@ namespace ComponentApplication.Components.Services
         /// Starts service.
         /// </summary>
         /// <returns>Task waiting for completion of service execution.</returns>
-        Task StartAsync();
+        Task StartAsync(CancellationToken cancellationToken);
 
         /// <summary>
         /// Stops service.

@@ -1,12 +1,14 @@
 ﻿using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace ComponentApplication.Components.Services
 {
     internal class ServiceManager : IServiceManager
     {
-        private readonly ISet<IService> _services = new HashSet<IService>();
+        private readonly IList<IService> _services = new List<IService>();
+        private readonly IDictionary<IService, CancellationTokenSource> _cancellationTokens = new Dictionary<IService, CancellationTokenSource>();
         private readonly ILogger _logger;
 
         public ServiceManager(ILoggerFactory loggerFactory)
@@ -31,21 +33,27 @@ namespace ComponentApplication.Components.Services
             foreach (IService service in _services) // Start all registered services.
             {
                 _logger.LogInformation("Starting service: {name} Version {version}", service.Name, service.Version);
-                tasks.Add(service.StartAsync());
+
+                var tokenSource = new CancellationTokenSource();
+                _cancellationTokens.Add(service, tokenSource);
+                tasks.Add(service.StartAsync(tokenSource.Token));
             }
             return Task.WhenAll(tasks); // Wait on all services to start.
         }
 
-        public Task StopServices()
+        public void StopServices()
         {
             _logger.LogInformation("Stopping services...");
             List<Task> tasks = new List<Task>();
             foreach (IService service in _services) // Stop all registered services.
             {
                 _logger.LogInformation("Stopping service: {name} Version {version}", service.Name, service.Version);
+                _cancellationTokens[service]?.Cancel();
+                _cancellationTokens[service]?.Dispose();
+                _cancellationTokens.Remove(service);
                 tasks.Add(service.StopAsync());
             }
-            return Task.WhenAll(tasks); // Wait on all services to stop.
+            Task.WhenAll(tasks).Wait(); // Wait on all services to stop.
         }
     }
 }

@@ -1,3 +1,4 @@
 ﻿{
-    "TEST": "Yoaaa!"
+  "LOG_START": "Discord bot starting...",
+  "LOG_LOGIN": "Discord bot logging in..."
 }

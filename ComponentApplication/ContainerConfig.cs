@@ -32,7 +32,7 @@ namespace ComponentApplication
                 .AsSelf()
                 .AsImplementedInterfaces();
 
-            builder.RegisterType<ServiceManager>().As<IServiceManager>();
+            builder.RegisterType<ServiceManager>().As<IServiceManager>().SingleInstance();
             return builder.Build();
         }
     }

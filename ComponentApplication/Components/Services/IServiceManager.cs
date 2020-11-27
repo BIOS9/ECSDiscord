@@ -29,6 +29,6 @@ namespace ComponentApplication.Components.Services
         /// Stop all services.
         /// </summary>
         /// <returns>Task waiting for all services to stop.</returns>
-        Task StopServices();
+        void StopServices();
     }
 }
