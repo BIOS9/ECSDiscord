@@ -78,7 +78,7 @@ namespace DiscordBot
             await _discordClient.StopAsync();
             await _discordClient.LogoutAsync();
             _logger.LogInformation(_localizer["LOG_STOPPED"]);
-            await Task.Delay(500);
+            await Task.Delay(5000);
         }
     }
 }

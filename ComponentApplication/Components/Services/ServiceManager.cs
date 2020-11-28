@@ -52,7 +52,14 @@ namespace ComponentApplication.Components.Services
                 _cancellationTokens.Add(service, tokenSource);
                 tasks.Add(service.RunAsync(tokenSource.Token));
             }
-            _waitTask = Task.WhenAll(tasks); // Wait on all services to finish.
+            _waitTask = Task.Run(async () =>
+            {
+                try
+                {
+                    await Task.WhenAll(tasks); // Wait on all services to finish.
+                }
+                catch (TaskCanceledException) { } // Suppress cancellation exception.
+            });
         }
 
         public async Task StopServices()

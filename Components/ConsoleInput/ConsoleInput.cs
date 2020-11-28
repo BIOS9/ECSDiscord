@@ -3,7 +3,6 @@ using System;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
-using static ComponentApplication.Components.Services.IService;
 
 namespace ConsoleInput
 {
@@ -41,6 +40,8 @@ namespace ConsoleInput
         {
             if (command.Equals("stop", StringComparison.OrdinalIgnoreCase))
                 _serviceManager.StopServices().Wait();
+            else
+                Console.WriteLine("Unknown command.");
         }
     }
 }
