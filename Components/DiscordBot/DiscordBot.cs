@@ -53,7 +53,7 @@ namespace DiscordBot
             await _discordClient.LoginAsync(TokenType.Bot, _config.Token); // Login to Discord
             _logger.LogInformation(_localizer["LOG_STARTING"]);
             await _discordClient.StartAsync(); // Connect to the websocket
-            _logger.LogInformation(_localizer["LOG_STARTED"]);
+            _logger.LogInformation(_localizer["LOG_READY"]);
 
             //await _commands.AddModulesAsync(Assembly.GetEntryAssembly(), _provider);     // Load commands and modules into the command service
             State = ServiceState.Running;

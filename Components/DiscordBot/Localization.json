@@ -1,4 +1,7 @@
 ﻿{
-  "LOG_START": "Discord bot starting...",
-  "LOG_LOGIN": "Discord bot logging in..."
+  "LOG_STARTING": "Starting up...",
+  "LOG_READY": "Ready!",
+  "LOG_LOGIN": "Logging in...",
+  "LOG_STOPPING": "Shutting down...",
+  "LOG_STOPPED": "Stopped."
 }
