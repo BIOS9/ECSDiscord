@@ -62,7 +62,7 @@ namespace DiscordBot
             await _discordClient.LoginAsync(TokenType.Bot, _config.Token); // Login to Discord
             _logger.LogInformation(_localizer["LOG_STARTING"]);
             await _discordClient.StartAsync(); // Connect to the websocket
-            await _clientReadyLock.WaitAsync();
+            await _clientReadyLock.WaitAsync(); // Wait for Discord client to be ready.
             //await _commands.AddModulesAsync(Assembly.GetEntryAssembly(), _provider);     // Load commands and modules into the command service
         }
 
@@ -78,7 +78,6 @@ namespace DiscordBot
             await _discordClient.StopAsync();
             await _discordClient.LogoutAsync();
             _logger.LogInformation(_localizer["LOG_STOPPED"]);
-            await Task.Delay(5000);
         }
     }
 }
