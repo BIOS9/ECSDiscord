@@ -41,7 +41,7 @@ namespace ComponentApplication.Components.Services
             return Task.WhenAll(tasks); // Wait on all services to start.
         }
 
-        public void StopServices()
+        public async Task StopServices()
         {
             _logger.LogInformation("Stopping services...");
             List<Task> tasks = new List<Task>();
@@ -53,7 +53,7 @@ namespace ComponentApplication.Components.Services
                 _cancellationTokens.Remove(service);
                 tasks.Add(service.StopAsync());
             }
-            Task.WhenAll(tasks).Wait(); // Wait on all services to stop.
+            await Task.WhenAll(tasks); // Wait on all services to stop.
         }
     }
 }

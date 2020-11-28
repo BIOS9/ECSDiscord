@@ -33,7 +33,7 @@ namespace ConsoleInput
         private void processCommand(string command)
         {
             if (command.Equals("stop", StringComparison.OrdinalIgnoreCase))
-                _serviceManager.StopServices();
+                _serviceManager.StopServices().Wait();
         }
 
         public Task StopAsync()
