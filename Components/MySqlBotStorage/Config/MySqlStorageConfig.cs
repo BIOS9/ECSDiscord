@@ -1,36 +1,36 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
-namespace DiscordBot.Config
+namespace MySqlBotStorage.Config
 {
-    internal class DiscordBotConfig
+    internal class MySqlStorageConfig
     {
-        public string Token { get; }
+        public string ConnectionString { get; }
 
         private readonly ILogger _logger;
 
-        public DiscordBotConfig(
+        public MySqlStorageConfig(
             IConfigurationSection configurationSection,
             ILoggerFactory loggerFactory)
         {
-            _logger = loggerFactory.CreateLogger("Discord Bot Configuration");
+            _logger = loggerFactory.CreateLogger("MySql Storage Configuration");
             var c = configurationSection;
 
             checkSectionExists(c);
-            Token = readToken(c);
+            ConnectionString = readConnectionString(c);
         }
 
         private void checkSectionExists(IConfigurationSection configurationSection)
         {
             if (!configurationSection.Exists())
-                fail("Discord bot configuration section is missing or empty.");
+                fail("MySql storage configuration section is missing or empty.");
         }
 
-        private string readToken(IConfigurationSection configurationSection)
+        private string readConnectionString(IConfigurationSection configurationSection)
         {
-            var t = configurationSection["Token"];
+            var t = configurationSection["ConnectionString"];
             if (t == null || string.Empty.Equals(t))
-                fail("Discord bot token is missing.");
+                fail("MySql connection string is missing.");
             return t;
         }
 

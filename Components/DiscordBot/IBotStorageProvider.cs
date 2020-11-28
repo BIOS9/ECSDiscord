@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace ComponentApplication.Configuration
+namespace DiscordBot
 {
-    public interface IConfiguration
+    public interface IBotStorageProvider
     {
     }
 }

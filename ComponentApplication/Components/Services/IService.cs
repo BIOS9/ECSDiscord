@@ -8,25 +8,19 @@ namespace ComponentApplication.Components.Services
     /// </summary>
     public interface IService : IComponent
     {
-        public enum ServiceState
-        {
-            Stopped,
-            Starting,
-            Running,
-            Stopping
-        }
-
-        /// <summary>
-        /// Life state of service.
-        /// Handled internally by each service.
-        /// </summary>
-        ServiceState State { get; }
-
         /// <summary>
         /// Starts service.
         /// </summary>
-        /// <returns>Task waiting for completion of service execution.</returns>
-        Task StartAsync(CancellationToken cancellationToken);
+        /// <returns>Task waiting for completion of service startup.</returns>
+        Task StartAsync();
+
+        /// <summary>
+        /// Run main service functionality.
+        /// Waits for completion of service execution.
+        /// </summary>
+        /// <param name="cancellationToken">CancellationToken to end service execution.</param>
+        /// <returns>Task waiting for service execution to finish.</returns>
+        Task RunAsync(CancellationToken cancellationToken);
 
         /// <summary>
         /// Stops service.

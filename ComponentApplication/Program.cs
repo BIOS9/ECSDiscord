@@ -34,11 +34,8 @@ namespace ComponentApplication
                 var services = scope.Resolve<IEnumerable<IService>>(); // Get all loaded services.
                 
                 services.ToList().ForEach(serviceManager.RegisterService); // Register services in service manager.
-                try
-                {
-                    await serviceManager.StartServices(); // Start all services and wait for finish
-                } catch(TaskCanceledException) // Suppress cancellation exception
-                { }
+                await serviceManager.StartServices(); // Start all services and wait for finish
+                await serviceManager.Wait();
             }
         }
     }

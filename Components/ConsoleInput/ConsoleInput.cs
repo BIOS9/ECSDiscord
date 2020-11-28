@@ -11,7 +11,6 @@ namespace ConsoleInput
     {
         public string Name => "Console Input";
         public Version Version => Assembly.GetExecutingAssembly().GetName().Version;
-        public ServiceState State { get; private set; }
 
         private readonly IServiceManager _serviceManager;
 
@@ -20,9 +19,13 @@ namespace ConsoleInput
             _serviceManager = serviceManager;
         }
 
-        public async Task StartAsync(CancellationToken cancellationToken)
+        public Task StartAsync()
         {
-            State = ServiceState.Running;
+            return Task.CompletedTask;
+        }
+
+        public async Task RunAsync(CancellationToken cancellationToken)
+        {
             await Task.Factory.StartNew(() =>
             {
                 while (!cancellationToken.IsCancellationRequested)
@@ -30,16 +33,14 @@ namespace ConsoleInput
             }, cancellationToken);
         }
 
+        public Task StopAsync()
+        {
+            return Task.CompletedTask;
+        }
         private void processCommand(string command)
         {
             if (command.Equals("stop", StringComparison.OrdinalIgnoreCase))
                 _serviceManager.StopServices().Wait();
-        }
-
-        public Task StopAsync()
-        {
-            State = ServiceState.Stopped;
-            return Task.CompletedTask;
         }
     }
 }

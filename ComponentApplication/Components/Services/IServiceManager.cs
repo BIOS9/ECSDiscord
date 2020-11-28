@@ -26,9 +26,15 @@ namespace ComponentApplication.Components.Services
         Task StartServices();
 
         /// <summary>
-        /// Stop all services.
+        /// Tells all services to stop and waits for completion.
         /// </summary>
         /// <returns>Task waiting for all services to stop.</returns>
         Task StopServices();
+
+        /// <summary>
+        /// Wait for all services to stop.
+        /// </summary>
+        /// <returns>Task waiting for all services to stop.</returns>
+        Task Wait();
     }
 }

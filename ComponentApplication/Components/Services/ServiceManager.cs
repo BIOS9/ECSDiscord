@@ -10,6 +10,7 @@ namespace ComponentApplication.Components.Services
         private readonly IList<IService> _services = new List<IService>();
         private readonly IDictionary<IService, CancellationTokenSource> _cancellationTokens = new Dictionary<IService, CancellationTokenSource>();
         private readonly ILogger _logger;
+        private Task _waitTask;
 
         public ServiceManager(ILoggerFactory loggerFactory)
         {
@@ -26,19 +27,32 @@ namespace ComponentApplication.Components.Services
             _services.Remove(service);
         }
 
-        public Task StartServices()
+        public async Task StartServices()
         {
             _logger.LogInformation("Starting services...");
             List<Task> tasks = new List<Task>();
             foreach (IService service in _services) // Start all registered services.
             {
                 _logger.LogInformation("Starting service: {name} Version {version}", service.Name, service.Version);
+                tasks.Add(service.StartAsync());
+            }
+            await Task.WhenAll(tasks); // Wait on all services to start.
+            _logger.LogInformation("All services started...");
+            runServices();
+        }
 
+        private void runServices()
+        {
+            _logger.LogDebug("Running services...");
+            List<Task> tasks = new List<Task>();
+            foreach (IService service in _services) // Run all registered services.
+            {
+                _logger.LogDebug("Running service: {name} Version {version}", service.Name, service.Version);
                 var tokenSource = new CancellationTokenSource();
                 _cancellationTokens.Add(service, tokenSource);
-                tasks.Add(service.StartAsync(tokenSource.Token));
+                tasks.Add(service.RunAsync(tokenSource.Token));
             }
-            return Task.WhenAll(tasks); // Wait on all services to start.
+            _waitTask = Task.WhenAll(tasks); // Wait on all services to finish.
         }
 
         public async Task StopServices()
@@ -54,6 +68,11 @@ namespace ComponentApplication.Components.Services
                 tasks.Add(service.StopAsync());
             }
             await Task.WhenAll(tasks); // Wait on all services to stop.
+        }
+
+        public Task Wait()
+        {
+            return _waitTask;
         }
     }
 }

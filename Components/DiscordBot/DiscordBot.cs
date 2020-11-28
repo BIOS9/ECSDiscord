@@ -17,26 +17,29 @@ namespace DiscordBot
     {
         public string Name => "Discord Bot";
         public Version Version => Assembly.GetExecutingAssembly().GetName().Version;
-        public ServiceState State { get; private set; }
 
         private const string LoggerName = "Discord Bot";
         private const string ConfigSectionName = "DiscordBot";
 
         private readonly ILogger _logger;
         private readonly IStringLocalizer _localizer;
+        private readonly IBotStorageProvider _botStorage;
         private readonly DiscordBotConfig _config;
         private readonly DiscordSocketClient _discordClient;
+        private readonly SemaphoreSlim _clientReadyLock = new SemaphoreSlim(0);
 
         public DiscordBot(
             ILoggerFactory loggerFactory,
             IStringLocalizerFactory localizerFactory,
-            IConfigurationRoot configurationRoot)
+            IConfigurationRoot configurationRoot,
+            IBotStorageProvider botStorageProvider)
         {
             _logger = loggerFactory.CreateLogger(LoggerName);
             _localizer = localizerFactory.Create(typeof(DiscordBot));
             _config = new DiscordBotConfig(
                 configurationRoot.GetSection(ConfigSectionName),
                 loggerFactory);
+            _botStorage = botStorageProvider;
             _discordClient = new DiscordSocketClient(new DiscordSocketConfig
             {
                 LogLevel = LogSeverity.Debug,       // Tell the logger to give all info, log level will be handled by the BotLogger
@@ -44,31 +47,38 @@ namespace DiscordBot
                 DefaultRetryMode = RetryMode.AlwaysRetry,
             });
             _discordClient.Log += new BotLogger(loggerFactory).Log;
+            _discordClient.Ready += _discordClient_Ready;
         }
 
-        public async Task StartAsync(CancellationToken cancellationToken)
+        private Task _discordClient_Ready()
         {
-            State = ServiceState.Starting;
+            _clientReadyLock.Release();
+            return Task.CompletedTask;
+        }
+
+        public async Task StartAsync()
+        {
             _logger.LogInformation(_localizer["LOG_LOGIN"]);
             await _discordClient.LoginAsync(TokenType.Bot, _config.Token); // Login to Discord
             _logger.LogInformation(_localizer["LOG_STARTING"]);
             await _discordClient.StartAsync(); // Connect to the websocket
-            _logger.LogInformation(_localizer["LOG_READY"]);
-
+            await _clientReadyLock.WaitAsync();
             //await _commands.AddModulesAsync(Assembly.GetEntryAssembly(), _provider);     // Load commands and modules into the command service
-            State = ServiceState.Running;
+        }
+
+        public async Task RunAsync(CancellationToken cancellationToken)
+        {
+            _logger.LogInformation(_localizer["LOG_READY"]);
             await Task.Delay(-1, cancellationToken);
         }
 
         public async Task StopAsync()
         {
-            State = ServiceState.Stopping;
             _logger.LogInformation(_localizer["LOG_STOPPING"]);
             await _discordClient.StopAsync();
             await _discordClient.LogoutAsync();
             _logger.LogInformation(_localizer["LOG_STOPPED"]);
             await Task.Delay(500);
-            State = ServiceState.Stopped;
         }
     }
 }
