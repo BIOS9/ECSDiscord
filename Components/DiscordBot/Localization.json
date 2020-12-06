@@ -3,5 +3,12 @@
   "LOG_READY": "Ready!",
   "LOG_LOGIN": "Logging in...",
   "LOG_STOPPING": "Shutting down...",
-  "LOG_STOPPED": "Stopped."
+  "LOG_STOPPED": "Stopped.",
+
+  "UNKNOWN_COMMAND": "{0} Sorry, that is an unknown command.",
+  "GUILD_ONLY_COMMAND": "{0} Sorry, that command can only be used in a server.",
+  "COMMAND_PERMISSION_DENIED": "{0} Sorry, you do not have permission to execute that command.",
+  "UNMET_COMMAND_PRECONDITION": "{0} Sorry, something is preventing you from running that command.",
+  "COMMAND_ERROR": "{0} Sorry, an error occured while executing that command.",
+  "COMMAND_BAD_ARG_COUNT": "{0} You supplied an invalid number of arguments."
 }

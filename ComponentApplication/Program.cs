@@ -27,7 +27,7 @@ namespace ComponentApplication
             IResourceLoader globalResourceLoader = new PluginResourceLoader("GlobalResources", "Global", true); // Use plugin loader to load global resources.
             AppDomain.CurrentDomain.AssemblyResolve += globalResourceLoader.AssemblyResolve; // Provide assemblies from loaded resources.
 
-            var container = ContainerConfig.Configure(componentLoader.LoadAssemblies());  // Register dependencies.
+            var container = DependencyContainerConfig.Configure(componentLoader.LoadAssemblies());  // Register dependencies.
             using (var scope = container.BeginLifetimeScope()) // Dependency scope for app.
             {
                 var serviceManager = scope.Resolve<IServiceManager>(); // Get service manager.

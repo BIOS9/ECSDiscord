@@ -17,9 +17,9 @@ namespace DiscordBot
 
         private readonly ILogger _logger;
 
-        public BotLogger(ILoggerFactory loggerFactory)
+        public BotLogger(ILoggerFactory loggerFactory, string name)
         {
-            _logger = loggerFactory.CreateLogger("Discord Client");
+            _logger = loggerFactory.CreateLogger(name);
         }
 
         public Task Log(LogMessage arg)

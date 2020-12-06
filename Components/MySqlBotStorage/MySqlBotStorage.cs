@@ -1,7 +1,8 @@
 ﻿using ComponentApplication.Components.Services;
-using DiscordBot;
+using DiscordBot.Storage;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using MySql.Data.MySqlClient;
 using MySqlBotStorage.Config;
 using System;
 using System.Reflection;
@@ -30,9 +31,23 @@ namespace MySqlBotStorage
                 loggerFactory);
         }
 
-        public Task StartAsync()
+        public async Task StartAsync()
         {
-            return Task.CompletedTask;
+            try
+            {
+                _logger.LogDebug("Testing MySql connection.");
+                using (MySqlConnection con = GetMySqlConnection())
+                {
+                    await con.OpenAsync();
+                    _logger.LogInformation("MySql server version: {version}", con.ServerVersion);
+                }
+                _logger.LogDebug("MySql connection test succeeded.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogCritical(ex, "Failed to connect to MySql {message}", ex.Message);
+                throw ex;
+            }
         }
 
         public Task RunAsync(CancellationToken cancellationToken)
@@ -43,6 +58,16 @@ namespace MySqlBotStorage
         public Task StopAsync()
         {
             return Task.CompletedTask;
+        }
+
+        protected MySqlConnection GetMySqlConnection()
+        {
+            return new MySqlConnection(_config.ConnectionString);
+        }
+
+        public Task<string> GetCommandPrefixAsync(ulong guildID)
+        {
+            return Task.FromResult("}");
         }
     }
 }

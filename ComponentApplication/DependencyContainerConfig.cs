@@ -14,7 +14,7 @@ namespace ComponentApplication
     /// <summary>
     /// Dependency injection setup/configuration.
     /// </summary>
-    internal static class ContainerConfig
+    internal static class DependencyContainerConfig
     {
         /// <summary>
         /// Configure dependency injection.
@@ -28,7 +28,7 @@ namespace ComponentApplication
             var builder = new ContainerBuilder();
             // Register components from loaded assemblies.
             builder.RegisterAssemblyTypes(components)
-                .AssignableTo<IComponent>()
+                .AssignableTo<IInjectable>()
                 .AsSelf()
                 .AsImplementedInterfaces();
 
