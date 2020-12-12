@@ -64,7 +64,7 @@ namespace DiscordBot.Commands
             }
             else
             {
-                valid = true;
+                valid = true; // Prefix not required in DM
             }
 
             if (valid == false && msg.HasMentionPrefix(_discordClient.CurrentUser, ref argPos)) // If bot was mentioned.
@@ -79,7 +79,7 @@ namespace DiscordBot.Commands
                 sockMsg.Author.Discriminator,
                 sockMsg.Author.Id);
             var result = await _commandService.ExecuteAsync(context, argPos, _serviceProvider); // Execute the command
-
+            
             if (result.IsSuccess) // If not successful, reply with the error.
             {
                 _logger.LogDebug("{user}#{discriminator} {userid} executed command \"{command}\"",
@@ -92,7 +92,7 @@ namespace DiscordBot.Commands
 
             switch (result.Error)
             {
-                case CommandError.UnknownCommand:
+                case CommandError.UnknownCommand: // Command was unknown.
                     _logger.LogInformation("{user}#{discriminator} {userid} executed unknown command \"{command}\"",
                         sockMsg.Author.Username,
                         sockMsg.Author.Discriminator,
@@ -101,7 +101,7 @@ namespace DiscordBot.Commands
 
                     await context.Channel.SendMessageAsync(_localizer["UNKNOWN_COMMAND", channelMention]);
                     break;
-                case CommandError.BadArgCount:
+                case CommandError.BadArgCount: // User supplied an invalid number of command arguments.
                     _logger.LogInformation("{user}#{discriminator} {userid} executed \"{command}\" but supplied an invalid number of arguments.",
                             sockMsg.Author.Username,
                             sockMsg.Author.Discriminator,
@@ -110,7 +110,7 @@ namespace DiscordBot.Commands
                     await context.Channel.SendMessageAsync(_localizer["COMMAND_BAD_ARG_COUNT", channelMention]);
                     break;
                 case CommandError.UnmetPrecondition:
-                    if (result.ErrorReason.StartsWith("User requires guild permission"))
+                    if (result.ErrorReason.StartsWith("User requires guild permission")) // User does not have required permission in the guild.
                     {
                         _logger.LogInformation("{user}#{discriminator} {userid} attempted to execute \"{command}\" without permission.",
                             sockMsg.Author.Username,
@@ -119,7 +119,7 @@ namespace DiscordBot.Commands
                             sockMsg.Content);
                         await context.Channel.SendMessageAsync(_localizer["COMMAND_PERMISSION_DENIED", channelMention]);
                     }
-                    else if (result.ErrorReason.StartsWith("Command must be used in a guild channel."))
+                    else if (result.ErrorReason.StartsWith("Command must be used in a guild channel.")) // User executed guild command in DMs
                     {
                         _logger.LogInformation("{user}#{discriminator} {userid} attempted to execute server command \"{command}\" in direct messages.",
                             sockMsg.Author.Username,
@@ -128,7 +128,7 @@ namespace DiscordBot.Commands
                             sockMsg.Content);
                         await context.Channel.SendMessageAsync(_localizer["GUILD_ONLY_COMMAND", channelMention]);
                     }
-                    else
+                    else // Some other uncaught precondition was not met.
                     {
                         _logger.LogWarning("{user}#{discriminator} {userid} attempted to execute \"{command}\" with an unmet precondition \"{reason}\".",
                             sockMsg.Author.Username,
@@ -139,7 +139,7 @@ namespace DiscordBot.Commands
                         await context.Channel.SendMessageAsync(_localizer["UNMET_COMMAND_PRECONDITION", channelMention]);
                     }
                     break;
-                default:
+                default: // An uncaught error occured.
                     _logger.LogError("{user}#{discriminator} {userid} executed \"{command}\" but an error occured \"{reason}\".",
                             sockMsg.Author.Username,
                             sockMsg.Author.Discriminator,
@@ -151,11 +151,15 @@ namespace DiscordBot.Commands
             }
         }
 
+        /// <summary>
+        /// Load command modules from current assembly into the command service.
+        /// </summary>
         public async Task LoadCommandsAsync()
         {
             _logger.LogDebug("Loading commands...");
             var modules = await _commandService.AddModulesAsync(Assembly.GetExecutingAssembly(), _serviceProvider); // Load commands and modules into the command service
-            foreach (var module in modules)
+            
+            foreach (var module in modules) // List loaded commands
             {
                 _logger.LogDebug("Loaded command module: {module}", module.Name);
             }

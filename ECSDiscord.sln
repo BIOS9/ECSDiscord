@@ -27,9 +27,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Configuration", "Components
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Localization", "Components\Localization\Localization.csproj", "{9970FAFB-08C3-41AB-BF6D-BBDD6DB11323}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConsoleInput", "Components\ConsoleInput\ConsoleInput.csproj", "{263E50A0-F95D-40AA-ADB3-D66D665B5FF7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ConsoleInput", "Components\ConsoleInput\ConsoleInput.csproj", "{263E50A0-F95D-40AA-ADB3-D66D665B5FF7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MySqlBotStorage", "Components\MySqlBotStorage\MySqlBotStorage.csproj", "{989E6D5C-8F40-4542-B629-31E76CFD5A96}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MySqlBotStorage", "Components\MySqlBotStorage\MySqlBotStorage.csproj", "{989E6D5C-8F40-4542-B629-31E76CFD5A96}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
