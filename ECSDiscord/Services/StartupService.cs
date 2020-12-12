@@ -54,6 +54,31 @@ namespace ECSDiscord.Services
             }
         }
 
+        private async void startConnectionWatchdogAsync()
+        {
+            string discordToken = _config["secrets:discordBotToken"];     // Get the discord token from the config file
+            while (true)
+            {
+                await Task.Delay(5000);
+                try
+                {
+                    if (_discord.ConnectionState != ConnectionState.Connected)
+                    {
+                        await Task.Delay(10000);
+                        Log.Information("Connection watchdog attempting connection...");
+                        await _discord.LoginAsync(TokenType.Bot, discordToken);     // Login to discord
+                        await _discord.StartAsync();                               // Connect to the websocket
+                        await Task.Delay(20000);
+                    }
+                }
+                catch(Exception ex)
+                {
+                    Log.Error(ex, "Connection watchdog error: " + ex.Message);
+                    await Task.Delay(120000);
+                }
+            }
+        }
+
         /// <summary>
         /// Start the service and add 
         /// </summary>
@@ -69,8 +94,7 @@ namespace ECSDiscord.Services
 
             _discord.GuildAvailable += _discord_GuildAvailable;
 
-            await _discord.LoginAsync(TokenType.Bot, discordToken);     // Login to discord
-            await _discord.StartAsync();                                // Connect to the websocket
+            startConnectionWatchdogAsync();
 
             await _commands.AddModulesAsync(Assembly.GetEntryAssembly(), _provider);     // Load commands and modules into the command service
         }
