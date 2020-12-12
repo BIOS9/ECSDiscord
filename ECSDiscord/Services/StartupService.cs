@@ -56,6 +56,7 @@ namespace ECSDiscord.Services
 
         private async void startConnectionWatchdogAsync()
         {
+            Log.Information("Watchdog started.");
             string discordToken = _config["secrets:discordBotToken"];     // Get the discord token from the config file
             while (true)
             {
