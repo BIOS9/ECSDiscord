@@ -6,6 +6,7 @@ using Microsoft.Extensions.Configuration;
 using Serilog;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -29,7 +30,7 @@ namespace ECSDiscord.Services
             }
         }
 
-        private class CachedCourse
+        public class CachedCourse
         {
             public readonly string Code;
             public readonly string Description;
@@ -89,6 +90,8 @@ namespace ECSDiscord.Services
                 await RemoveCourseAsync(arg.Id);
             }
         }
+
+        public IDictionary<string, CachedCourse> GetCachedCourses => ImmutableDictionary.ToImmutableDictionary(_cachedCourses);
 
         public async Task<IList<Course>> GetCourses()
         {
@@ -343,6 +346,46 @@ namespace ECSDiscord.Services
                 return course.ToLower().Trim();
 
             return match.Groups[1].Value.ToUpper() + "-" + match.Groups[2].Value;
+        }
+
+        public async Task<bool> CanAutoCreateCourseAsync(string course)
+        {
+            List<string> patterns = await _storage.Courses.GetAutoCreatePatternsAsync();
+            foreach (string pattern in patterns)
+            {
+                if (Regex.IsMatch(course, pattern) && _cachedCourses.ContainsKey(course))
+                    return true;
+            }
+            return false;
+        }
+
+        public async Task<List<string>> GetAllAutoCreateCoursesAsync()
+        {
+            List<string> patterns = await _storage.Courses.GetAutoCreatePatternsAsync();
+            List<string> courses = new List<string>();
+
+            foreach (string course in _cachedCourses.Keys)
+                foreach (string pattern in patterns)
+                {
+                    if (Regex.IsMatch(course, pattern) && _cachedCourses.ContainsKey(course))
+                        courses.Add(course);
+                }
+            return courses;
+        }
+
+        public async Task<List<string>> GetAutoCreatePatternsAsync()
+        {
+            return await _storage.Courses.GetAutoCreatePatternsAsync();
+        }
+
+        public async Task AddAutoCreatePatternAsync(string pattern)
+        {
+            await _storage.Courses.AddAutoCreatePatternAsync(pattern);
+        }
+
+        public async Task DeleteAutoCreatePatternAsync(string pattern)
+        {
+            await _storage.Courses.DeleteAutoCreatePatternAsync(pattern);
         }
 
         /// <summary>

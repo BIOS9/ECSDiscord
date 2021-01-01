@@ -574,6 +574,7 @@ namespace ECSDiscord.Services
             private const string CategoryTable = "courseCategories";
             private const string CourseTable = "courses";
             private const string UserCoursesTable = "userCourses";
+            private const string AutoCreatePatternTable = "autoCreatePatterns";
 
             private StorageService _storageService;
 
@@ -888,6 +889,71 @@ namespace ECSDiscord.Services
                         }
                         return users;
                     }
+                }
+            }
+
+            public async Task<List<string>> GetAutoCreatePatternsAsync()
+            {
+                Log.Debug("Getting join creation prefixes from database");
+                using (MySqlConnection con = _storageService.GetMySqlConnection())
+                using (MySqlCommand cmd = new MySqlCommand())
+                {
+                    await con.OpenAsync();
+                    cmd.Connection = con;
+
+                    cmd.CommandText = $"SELECT `pattern` FROM `{AutoCreatePatternTable}`;";
+                    cmd.Prepare();
+
+                    using (var reader = (MySqlDataReader)await cmd.ExecuteReaderAsync())
+                    {
+                        List<string> patterns = new List<string>();
+                        while (await reader.ReadAsync())
+                        {
+                            patterns.Add(reader.GetString(0));
+                        }
+                        return patterns;
+                    }
+                }
+            }
+
+            public async Task AddAutoCreatePatternAsync(string pattern)
+            {
+                Log.Debug("Adding auto create pattern to database {id}", pattern);
+                int rowsAffected = 0;
+                using (MySqlConnection con = _storageService.GetMySqlConnection())
+                using (MySqlCommand cmd = new MySqlCommand())
+                {
+                    await con.OpenAsync();
+                    cmd.Connection = con;
+
+                    cmd.CommandText = $"INSERT INTO `{AutoCreatePatternTable}` " +
+                        $"(`pattern`) " +
+                        $"VALUES (@pattern);";
+                    cmd.Prepare();
+
+                    cmd.Parameters.AddWithValue("@pattern", pattern);
+
+                    rowsAffected = await cmd.ExecuteNonQueryAsync();
+                    Log.Debug("Successfully added auto create pattern to database {id}. Rows affected: {rowsAffected}", pattern, rowsAffected);
+                }
+            }
+
+            public async Task DeleteAutoCreatePatternAsync(string pattern)
+            {
+                Log.Debug("Deleting auto create pattern from database {pattern}", pattern);
+                int rowsAffected = 0;
+                using (MySqlConnection con = _storageService.GetMySqlConnection())
+                using (MySqlCommand cmd = new MySqlCommand())
+                {
+                    await con.OpenAsync();
+                    cmd.Connection = con;
+
+                    cmd.CommandText = $"DELETE FROM `{AutoCreatePatternTable}` WHERE `pattern` = @pattern;";
+                    cmd.Parameters.AddWithValue("@pattern", pattern);
+                    cmd.Prepare();
+
+                    rowsAffected = await cmd.ExecuteNonQueryAsync();
+                    Log.Debug("Successfully deleted pattern from database {pattern}. Rows affected: {rowsAffected}", pattern, rowsAffected);
                 }
             }
 
