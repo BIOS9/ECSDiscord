@@ -157,25 +157,29 @@ namespace ECSDiscord.Modules
 
         [Command("createcourse")]
         [Alias("addcourse")]
-        [Summary("Adds a new course.")]
+        [Summary("Adds one or more new courses.")]
         [RequireUserPermission(GuildPermission.Administrator)]
-        public async Task CreateCourseAsync(string courseName)
+        public async Task CreateCourseAsync(params string[] courseNames)
         {
             await ReplyAsync(_translator.T("COMMAND_PROCESSING"));
-            if (string.IsNullOrWhiteSpace(courseName))
-            {
-                await ReplyAsync(_translator.T("INVALID_COURSE_CREATE_NAME"));
-                return;
-            }
+            foreach (string courseName in courseNames)
+            {   
+                if (string.IsNullOrWhiteSpace(courseName))
+                {
+                    await ReplyAsync(_translator.T("INVALID_COURSE_CREATE_NAME", courseName));
+                    return;
+                }
 
-            if (await _courseService.CourseExists(courseName))
-            {
-                await ReplyAsync(_translator.T("DUPLICATE_COURSE"));
-                return;
-            }
+                if (await _courseService.CourseExists(courseName))
+                {
+                    await ReplyAsync(_translator.T("DUPLICATE_COURSE", courseName));
+                    return;
+                }
 
-            await _courseService.CreateCourseAsync(courseName);
-            await ReplyAsync(_translator.T("COURSE_ADDED"));
+                await _courseService.CreateCourseAsync(courseName);
+                await ReplyAsync(_translator.T("COURSE_ADDED", courseName));
+                await Task.Delay(200);
+            }
         }
 
         [Command("unlinkcourse")]
