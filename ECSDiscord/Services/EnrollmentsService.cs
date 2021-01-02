@@ -68,18 +68,24 @@ namespace ECSDiscord.Services
                 SocketGuild guild = _discord.GetGuild(ulong.Parse(_config["guildId"]));
                 await _discord.DownloadUsersAsync(new List<IGuild> { guild });
 
-                
-                // Create course if does not exist yet but is allowed.
-                string normalisedName = _courses.NormaliseCourseName(courseName);
-                if (await _courses.CanAutoCreateCourseAsync(normalisedName))
-                {
-                    Log.Information("Auto creating course {course}", normalisedName);
-                    await _courses.CreateCourseAsync(normalisedName);
-                }
-
                 CourseService.Course course = await IsCourseValidAsync(courseName);
                 if (course == null)
-                    return EnrollmentResult.CourseNotExist;
+                {
+                    // Create course if does not exist yet but is allowed.
+                    string normalisedName = _courses.NormaliseCourseName(courseName);
+                    if (await _courses.CanAutoCreateCourseAsync(normalisedName))
+                    {
+                        Log.Information("Auto creating course {course}", normalisedName);
+                        await _courses.CreateCourseAsync(normalisedName);
+                        course = await IsCourseValidAsync(courseName);
+                        if(course == null)
+                            return EnrollmentResult.CourseNotExist;
+                    }
+                    else
+                    {
+                        return EnrollmentResult.CourseNotExist;
+                    }
+                }
 
                 IGuildChannel channel = guild.GetChannel(course.DiscordId);
                 if(channel == null)

@@ -25,6 +25,7 @@ verification:
   smtpFromName: null
   smtpUseSsl: false
   verifiedRoleId: null
+  mutedRoleId: null
   publicKeyCertPath: pub.crt
   skipBots: true
 forcedChannels:
