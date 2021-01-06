@@ -133,7 +133,12 @@ namespace ECSDiscord.Services
 
                 CourseService.Course course = await IsCourseValidAsync(courseName);
                 if (course == null)
+                {
+                    string normalisedName = _courses.NormaliseCourseName(courseName);
+                    if (await _courses.CanAutoCreateCourseAsync(normalisedName))
+                        return EnrollmentResult.AlreadyLeft; // Course has not been auto created yet so user cannot be in it.
                     return EnrollmentResult.CourseNotExist;
+                }
 
                 if (!await _storage.Users.IsUserInCourseAsync(user.Id, course.Code))
                     return EnrollmentResult.AlreadyLeft;
