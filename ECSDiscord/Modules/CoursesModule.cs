@@ -15,18 +15,20 @@ using ECSDiscord.Core.Translations;
 
 namespace ECSDiscord.Modules
 {
-    [Name("Course Administration")]
+    [Name("Courses")]
     public class CoursesModule : ModuleBase<SocketCommandContext>
     {
         private readonly IConfigurationRoot _config;
         private readonly ITranslator _translator;
         private readonly CourseService _courseService;
+        private readonly EnrollmentsService _enrollments;
 
-        public CoursesModule(IConfigurationRoot config, ITranslator translator, CourseService courseService)
+        public CoursesModule(IConfigurationRoot config, ITranslator translator, CourseService courseService, EnrollmentsService enrollments)
         {
             _config = config;
             _translator = translator;
             _courseService = courseService;
+            _enrollments = enrollments;
         }
 
         [Command("updatecourses")]
@@ -409,7 +411,9 @@ namespace ECSDiscord.Modules
             builder.WithTitle("Courses");
             builder.AddField("Usage", 
                 "You can manage your courses using the `+join` and `+leave` commands.\n" +
-                "e.g. `+join comp102 engr101 engr121 cybr171`", false); 
+                "e.g. `+join comp102 engr101 engr121 cybr171`", false);
+            if (await _enrollments.RequiresVerification(Context.User))
+                builder.AddField(":rotating_light:  You are unverified!  :rotating_light:", _translator.T("ALLCOURSES_VERIFICATION_REQUIRED"), false);
             builder.AddField("100-Level", createCourseBlock(level100Courses), false);
             builder.AddField("200-Level", createCourseBlock(level200Courses), false);
             builder.AddField("300-Level", createCourseBlock(level300Courses), false);

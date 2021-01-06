@@ -45,6 +45,12 @@ namespace ECSDiscord.BotModules
             }
 
             await ReplyAsync(_translator.T("COMMAND_PROCESSING"));
+            if(await _enrollments.RequiresVerification(Context.User))
+            {
+                await ReplyAsync(_translator.T("ENROLLMENT_VERIFICATION_REQUIRED_ANY"));
+                return;
+            }
+
             // Add user to courses
             StringBuilder stringBuilder = new StringBuilder();
             foreach (string course in formattedCourses)
@@ -179,6 +185,12 @@ namespace ECSDiscord.BotModules
             }
 
             await ReplyAsync(_translator.T("COMMAND_PROCESSING"));
+
+            if (await _enrollments.RequiresVerification(Context.User))
+            {
+                await ReplyAsync(_translator.T("ENROLLMENT_VERIFICATION_REQUIRED_ANY"));
+                return;
+            }
 
             List<string> existingCourses = await _enrollments.GetUserCourses(Context.User); // List of courses the user is already in, probably should've used a set for that
 

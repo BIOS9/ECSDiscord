@@ -44,6 +44,22 @@ namespace ECSDiscord.Services
             Log.Debug("Enrollments service loaded.");
         }
 
+        public async Task<bool> RequiresVerification(SocketUser user)
+        {
+            if (!_requireVerificationToJoin)
+                return false;
+
+            try
+            {
+                return !await _verification.IsUserVerifiedAsync(user);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Error checking user verification {user} requirement.", user.Id);
+                throw ex;
+            }
+        }
+
         public async Task<EnrollmentResult> EnrollUser(string courseName, SocketUser user)
         {
             try
@@ -52,7 +68,7 @@ namespace ECSDiscord.Services
                 {
                     try
                     {
-                        if(!await _verification.IsUserVerifiedAsync(user))
+                        if (!await _verification.IsUserVerifiedAsync(user))
                         {
                             Log.Information("Unverified user {user} tried to join a course.", user.Id);
                             return EnrollmentResult.Unverified;
@@ -78,7 +94,7 @@ namespace ECSDiscord.Services
                         Log.Information("Auto creating course {course}", normalisedName);
                         await _courses.CreateCourseAsync(normalisedName);
                         course = await IsCourseValidAsync(courseName);
-                        if(course == null)
+                        if (course == null)
                             return EnrollmentResult.CourseNotExist;
                     }
                     else
@@ -88,7 +104,7 @@ namespace ECSDiscord.Services
                 }
 
                 IGuildChannel channel = guild.GetChannel(course.DiscordId);
-                if(channel == null)
+                if (channel == null)
                 {
                     Log.Error("Channel for course {course} does not exist. {discordId}", course.Code, course.DiscordId);
                     return EnrollmentResult.Failure;
@@ -119,7 +135,7 @@ namespace ECSDiscord.Services
                 if (course == null)
                     return EnrollmentResult.CourseNotExist;
 
-                if(!await _storage.Users.IsUserInCourseAsync(user.Id, course.Code))
+                if (!await _storage.Users.IsUserInCourseAsync(user.Id, course.Code))
                     return EnrollmentResult.AlreadyLeft;
 
                 IGuildChannel channel = guild.GetChannel(course.DiscordId);
@@ -167,7 +183,7 @@ namespace ECSDiscord.Services
         private void loadConfig()
         {
             _guildId = ulong.Parse(_config["guildId"]);
-            if(!bool.TryParse(_config["courses:requireVerificationToJoin"], out _requireVerificationToJoin))
+            if (!bool.TryParse(_config["courses:requireVerificationToJoin"], out _requireVerificationToJoin))
             {
                 Log.Error("Invalid boolean for requireVerificationToJoin setting.");
                 throw new Exception("Invalid boolean for requireVerificationToJoin setting.");
