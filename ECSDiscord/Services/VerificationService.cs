@@ -121,6 +121,7 @@ namespace ECSDiscord.Services
             try
             {
                 Log.Debug("Starting verification for user: {user} {id}", user.Username, user.Id);
+                email = email.Replace('＠', '@');
 
                 if (!IsEmailValid(email, out string username))
                 {
