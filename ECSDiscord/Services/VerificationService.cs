@@ -47,7 +47,9 @@ namespace ECSDiscord.Services
         private ulong _guildId;
         private ulong
             _verifiedRoleId,
-            _mutedRoleId;
+            _mutedRoleId,
+            _deletedMessagesChannelId,
+            _logChannelId;
 
 
         public VerificationService(IConfigurationRoot config, DiscordSocketClient discord, StorageService storageService)
@@ -60,8 +62,14 @@ namespace ECSDiscord.Services
             _discord.GuildMemberUpdated += _discord_GuildMemberUpdated;
             _discord.GuildAvailable += _discord_GuildAvailable;
             _discord.RoleDeleted += _discord_RoleDeleted;
+            _discord.MessageReceived += _discord_MessageReceived;
             loadConfig();
             Log.Debug("Verification service loaded.");
+        }
+
+        private async Task _discord_MessageReceived(SocketMessage arg)
+        {
+            await scrubDeletedMessage(arg);
         }
 
         private async Task _discord_RoleDeleted(SocketRole arg)
@@ -449,6 +457,18 @@ namespace ECSDiscord.Services
                 .Replace("{verificationCode}", verificationCode);
         }
 
+        private async Task scrubDeletedMessage(SocketMessage arg)
+        {
+            if(arg.Channel.Id == _deletedMessagesChannelId)
+            {
+                if (arg.Embeds.First().Description.Contains("+verify"))
+                {
+                    await arg.DeleteAsync();
+                    Log.Information("Scrubbed verify command from deleted messages channel.");
+                }
+            }
+        }
+
         private void loadConfig()
         {
             // Ensure the email regex is configured
@@ -516,6 +536,18 @@ namespace ECSDiscord.Services
             {
                 Log.Error("Invalid mutedRoleId configured in verification settings.");
                 throw new ArgumentException("Invalid mutedRoleId configured in verification settings.");
+            }
+
+            if (!ulong.TryParse(_config["logChannelId"], out _logChannelId))
+            {
+                Log.Error("Invalid logChannelId configured in settings.");
+                throw new ArgumentException("Invalid logChannelId configured in settings.");
+            }
+
+            if (!ulong.TryParse(_config["deletedMessagesChannelId"], out _deletedMessagesChannelId))
+            {
+                Log.Error("Invalid deletedMessagesChannelId configured in settings.");
+                throw new ArgumentException("Invalid deletedMessagesChannelId configured in settings.");
             }
 
             _publicKeyCertPath = _config["verification:publicKeyCertPath"];

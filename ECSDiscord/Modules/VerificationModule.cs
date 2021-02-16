@@ -67,7 +67,7 @@ namespace ECSDiscord.Modules
 
             if (!Context.IsPrivate)
             {
-                await ReplyAsync($":warning:  Please send me a **Direct Message** to verify.");
+                await ReplyAsync($":warning:  You must send me a **Direct Message** to verify (don't use this channel)\n*Right-click/tap on my profile picture and select __message__*");
                 return;
             }
 

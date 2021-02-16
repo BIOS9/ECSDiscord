@@ -2,6 +2,8 @@ prefix: +
 guildId: null
 dmUsersOnJoin: false
 joinDmTemplate: null
+logChannelId: null
+deletedMessagesChannelId: null
 courses:
   defaultChannelPermissions:
     allowed:
