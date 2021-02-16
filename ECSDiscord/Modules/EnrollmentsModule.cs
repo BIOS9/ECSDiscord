@@ -170,7 +170,7 @@ namespace ECSDiscord.BotModules
         }
 
         [Command("togglecourse")]
-        [Alias("rank", "role", "course", "paper", "disenroll", "disenrol")]
+        [Alias("rank", "role", "course", "paper")]
         [Summary("Join or leave a uni course channel.")]
         public async Task ToggleCourseAsync(params string[] courses)
         {
