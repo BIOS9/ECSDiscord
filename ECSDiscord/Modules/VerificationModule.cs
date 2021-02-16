@@ -67,7 +67,7 @@ namespace ECSDiscord.Modules
 
             if (!Context.IsPrivate)
             {
-                await ReplyAsync($":warning:  Please send me a DM to verify.");
+                await ReplyAsync($":warning:  Please send me a **Direct Message** to verify.");
                 return;
             }
 
