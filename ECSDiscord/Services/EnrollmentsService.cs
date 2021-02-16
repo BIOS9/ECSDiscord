@@ -40,8 +40,21 @@ namespace ECSDiscord.Services
             _config = config;
             _storage = storage;
             _verification = verification;
+            _discord.UserJoined += _discord_UserJoined;
             loadConfig();
             Log.Debug("Enrollments service loaded.");
+        }
+
+        private async Task _discord_UserJoined(SocketGuildUser arg)
+        {
+            try
+            {
+                await ApplyUserCoursePermissions(arg);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Error re-adding user to courses after leave then join. {message}", ex.Message);
+            }
         }
 
         public async Task<bool> RequiresVerification(SocketUser user)
@@ -183,6 +196,32 @@ namespace ECSDiscord.Services
                 return await _courses.GetCourse(normalisedName);
             }
             return null;
+        }
+
+        public async Task ApplyUserCoursePermissions(SocketUser user)
+        {
+            Log.Information("Applying permission for all courses of user {user}#{discriminator} {discordId}", user.Username, user.Discriminator, user.Id);
+            SocketGuild guild = _discord.GetGuild(ulong.Parse(_config["guildId"]));
+            List<string> courses = await GetUserCourses(user);
+            foreach(string courseName in courses)
+            {
+                try
+                {
+                    CourseService.Course course = await IsCourseValidAsync(courseName);
+                    if (course == null) continue;
+                    IGuildChannel channel = guild.GetChannel(course.DiscordId);
+                    if (channel == null)
+                    {
+                        Log.Error("Channel for course {course} does not exist. {discordId}", course.Code, course.DiscordId);
+                        continue;
+                    }
+                    await _courses.ApplyChannelPermissionsAsync(channel);
+                }
+                catch(Exception ex)
+                {
+                    Log.Error(ex, "Failed to apply permissions for user course {user}#{discriminator} {discordId}, {course}, {message}", user.Username, user.Discriminator, user.Id, courseName, ex.Message);
+                }
+            }            
         }
 
         private void loadConfig()

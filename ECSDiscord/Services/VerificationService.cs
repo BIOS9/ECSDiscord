@@ -461,7 +461,7 @@ namespace ECSDiscord.Services
         {
             if(arg.Channel.Id == _deletedMessagesChannelId)
             {
-                if (arg.Embeds.First().Description.Contains("+verify"))
+                if (arg.Embeds.First().Description.ToLower().Contains("+verify"))
                 {
                     await arg.DeleteAsync();
                     Log.Information("Scrubbed verify command from deleted messages channel.");
