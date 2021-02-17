@@ -55,6 +55,12 @@ namespace ECSDiscord.BotModules
             StringBuilder stringBuilder = new StringBuilder();
             foreach (string course in formattedCourses)
             {
+                if(course.Equals("boomer", System.StringComparison.OrdinalIgnoreCase))
+                {
+                    stringBuilder.Append(_translator.T("ENROLLMENT_OK_BOOMER"));
+                    continue;
+                }
+
                 EnrollmentResult result = await _enrollments.EnrollUser(course, Context.User);
                 switch(result)
                 {
@@ -242,7 +248,7 @@ namespace ECSDiscord.BotModules
                     courses
                     .Select(x => $"`{x}`")
                     .Aggregate((x, y) => $"{x}, {y}")
-                    .SanitizeMentions());
+                    .SanitizeMentions() + $"\n\nUse `{_config["prefix"]}allcourses` to view a list of all courses.");
         }
 
         [Command("listcourses")]
