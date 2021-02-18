@@ -62,6 +62,17 @@ namespace ECSDiscord.Services
             _joinedAllowPerms,
             _joinedDenyPerms;
 
+        class RolePermissionOverride
+        {
+            public string Name;
+            public ulong 
+                RoleId,
+                AllowedPermissions,
+                DeniedPermissions;
+        }
+
+        List<RolePermissionOverride> _rolePermissionOverrides = new List<RolePermissionOverride>();
+
         private Dictionary<string, CachedCourse> _cachedCourses = new Dictionary<string, CachedCourse>();
 
         public CourseService(IConfigurationRoot config, DiscordSocketClient discord, StorageService storage)
@@ -262,6 +273,26 @@ namespace ECSDiscord.Services
             {
                 Log.Debug("Setting verified role permissions for channel {channelId} {channelName}", channel.Id, channel.Name);
                 await channel.AddPermissionOverwriteAsync(verifiedRole, new OverwritePermissions(_verifiedAllowPerms, _verifiedDenyPerms));
+            }
+
+            foreach(var o in _rolePermissionOverrides)
+            {
+                try
+                {
+                    SocketRole role = guild.GetRole(o.RoleId);
+                    OverwritePermissions? perms = channel.GetPermissionOverwrite(role);
+                    if (!perms.HasValue ||
+                        perms?.AllowValue != o.AllowedPermissions ||
+                        perms?.DenyValue != o.DeniedPermissions)
+                    {
+                        Log.Debug("Setting {role} role permissions for channel {channelId} {channelName}", o.Name, channel.Id, channel.Name);
+                        await channel.AddPermissionOverwriteAsync(role, new OverwritePermissions(o.AllowedPermissions, o.DeniedPermissions));
+                    }
+                }
+                catch(Exception ex)
+                {
+                    Log.Error(ex, "Error setting {role} role permission override on course channel {message}", o.Name, ex.Message);
+                }
             }
 
             HashSet<ulong> courseMemberIds = new HashSet<ulong>(await _storage.Courses.GetCourseUsersAsync(courseName));
@@ -479,6 +510,27 @@ namespace ECSDiscord.Services
             catch (Exception ex)
             {
                 Log.Error("Failed to load defaultCoursePermissions from config. Please use a valid Discord permission value. See https://discordapi.com/permissions.html");
+                throw ex;
+            }
+
+            try
+            {
+                _rolePermissionOverrides = new List<RolePermissionOverride>();
+                foreach(var o in _config.GetSection("courses:channelRolePermissionOverrides").GetChildren())
+                {
+                    Log.Debug("Adding course channel role permission override for {role}", o.Key);
+                    _rolePermissionOverrides.Add(new RolePermissionOverride()
+                    {
+                        Name = o.Key,
+                        RoleId = ulong.Parse(o["roleId"]),
+                        AllowedPermissions = ulong.Parse(o["allowed"]),
+                        DeniedPermissions = ulong.Parse(o["denied"])
+                    });
+                }
+            }
+            catch(Exception ex)
+            {
+                Log.Error("Failed to load role permission overrides from config. Please use a valid Discord permission value. See https://discordapi.com/permissions.html");
                 throw ex;
             }
         }

@@ -14,6 +14,11 @@ courses:
       everyone: 1024
       joined: 0
       verified: 0
+  channelRolePermissionOverrides:
+    example:
+      roleId: null
+      allowed: 0
+      denied: 0
   requireVerificationToJoin: false
 verification:
   emailPattern: "^([a-z0-9]{1,30})@(ecs\\.|my)?(vuw|wgtn)\\.ac\\.nz$"
