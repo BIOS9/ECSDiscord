@@ -1,9 +1,12 @@
 ﻿using Microsoft.Extensions.Configuration;
 using MySql.Data.MySqlClient;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Serilog;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -66,6 +69,20 @@ namespace ECSDiscord.Services
             {
                 USER,
                 ROLE
+            }
+
+            public struct VerificationRecord
+            {
+                public readonly ulong DiscordId;
+                public readonly byte[] EncryptedUsername;
+                public readonly DateTime VerificationTime;
+
+                public VerificationRecord(ulong discordId, byte[] encryptedUsername, DateTime verificationTime)
+                {
+                    DiscordId = discordId;
+                    EncryptedUsername = encryptedUsername;
+                    VerificationTime = verificationTime;
+                }
             }
 
             /// <summary>
@@ -145,6 +162,49 @@ namespace ECSDiscord.Services
 
                         Log.Debug("Failed to get pending verification from database, token does not exist.");
                         throw new RecordNotFoundException($"No pending verification with provided token was found.");
+                    }
+                }
+            }
+
+            public async Task<List<PendingVerification>> GetAllUserPendingVerifications(ulong user)
+            {
+                Log.Debug("Getting pending verifications from database for user {user}", user);
+                using (MySqlConnection con = _storageService.GetMySqlConnection())
+                using (MySqlCommand cmd = new MySqlCommand())
+                {
+                    await con.OpenAsync();
+                    cmd.Connection = con;
+
+                    cmd.CommandText = $"SELECT `token`, `encryptedUsername`, `discordSnowflake`, `creationTime` " +
+                        $"FROM `{PendingVerificationsTable}` WHERE `discordSnowflake` = @user;";
+                    cmd.Parameters.AddWithValue("@user", user);
+
+                    using (var reader = (MySqlDataReader)await cmd.ExecuteReaderAsync())
+                    {
+                        List<PendingVerification> pendingVerifications = new List<PendingVerification>();
+                        while(await reader.ReadAsync())
+                        {
+                            string token = reader.GetString(0);
+                            int length = (int)reader.GetBytes(1, 0, null, 0, 0);
+                            byte[] encryptedUsername = new byte[length];
+                            int index = 0;
+
+                            while (index < length)
+                            {
+                                int bytesRead = (int)reader.GetBytes(1, index,
+                                                                encryptedUsername, index, length - index);
+                                index += bytesRead;
+                            }
+
+                            ulong discordId = reader.GetUInt64(2);
+                            DateTime creationTime = Epoch.AddSeconds(reader.GetInt64(3));
+
+                            pendingVerifications.Add(new PendingVerification(token, encryptedUsername, discordId, creationTime));
+                        }
+
+                        Log.Debug("Successfully got pending verification from database.");
+
+                        return pendingVerifications;
                     }
                 }
             }
@@ -362,6 +422,49 @@ namespace ECSDiscord.Services
                 }
                 Log.Debug("Successfuly deleted old pending verification records from database. Rows affected: {rowsAffected}", rowsAffected);
             }
+
+            public async Task<List<VerificationRecord>> GetUserVerificationHistoryAsync(ulong user)
+            {
+                Log.Debug("Getting verification history records for user {user} from database.", user);
+                List<VerificationRecord> records = new List<VerificationRecord>();
+
+                using (MySqlConnection con = _storageService.GetMySqlConnection())
+                using (MySqlCommand cmd = new MySqlCommand())
+                {
+                    await con.OpenAsync();
+                    cmd.Connection = con;
+
+                    cmd.CommandText = $"SELECT `discordSnowflake`, `encryptedUsername`, `verificationTime`" +
+                        $"FROM `{VerificationHistoryTable}` WHERE `discordSnowflake` = @user;";
+
+                    cmd.Parameters.AddWithValue("@user", user);
+
+                    using (var reader = (MySqlDataReader)await cmd.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            int length = (int)reader.GetBytes(1, 0, null, 0, 0);
+                            byte[] encryptedUsername = new byte[length];
+                            int index = 0;
+
+                            while (index < length)
+                            {
+                                int bytesRead = (int)reader.GetBytes(1, index,
+                                                                encryptedUsername, index, length - index);
+                                index += bytesRead;
+                            }
+
+                            records.Add(new VerificationRecord(
+                                reader.GetUInt64(0),
+                                encryptedUsername,
+                                DateTimeOffset.FromUnixTimeSeconds(reader.GetInt64(2)).DateTime
+                                )); 
+                        }
+                    }
+                }
+                Log.Debug("Successfuly got verification history records from database.");
+                return records;
+            }
         }
 
 
@@ -526,7 +629,7 @@ namespace ECSDiscord.Services
                     using (var reader = (MySqlDataReader)await cmd.ExecuteReaderAsync())
                     {
                         List<string> courses = new List<string>();
-                        while(await reader.ReadAsync())
+                        while (await reader.ReadAsync())
                         {
                             courses.Add(reader.GetString(0));
                         }
@@ -692,7 +795,7 @@ namespace ECSDiscord.Services
                     using (var reader = (MySqlDataReader)await cmd.ExecuteReaderAsync())
                     {
                         List<Category> categories = new List<Category>();
-                        while(await reader.ReadAsync())
+                        while (await reader.ReadAsync())
                         {
                             if (await reader.IsDBNullAsync(1))
                                 categories.Add(new Category(reader.GetUInt64(0), null, reader.GetInt32(2)));
@@ -1017,7 +1120,7 @@ namespace ECSDiscord.Services
 
                     using (var reader = (MySqlDataReader)await cmd.ExecuteReaderAsync())
                     {
-                        if(await reader.ReadAsync())
+                        if (await reader.ReadAsync())
                         {
                             return new CourseAlias(
                                 reader.GetString(0),
@@ -1069,7 +1172,7 @@ namespace ECSDiscord.Services
                     cmd.Prepare();
 
                     rowsAffected = await cmd.ExecuteNonQueryAsync();
-                    if(rowsAffected == 0)
+                    if (rowsAffected == 0)
                     {
                         throw new Exception("Deletion failed, record not found.");
                     }
@@ -1083,6 +1186,23 @@ namespace ECSDiscord.Services
             }
         }
 
+        public async Task<string> GetUserDataAsync(ulong user)
+        {
+            var pendingVerifications = await Verification.GetAllUserPendingVerifications(user);
+            var courses = await Users.GetUserCoursesAsync(user);
+            var currentUsername = await Users.GetEncryptedUsernameAsync(user);
+            var verificationHistory = await Verification.GetUserVerificationHistoryAsync(user);
+
+            JObject o = JObject.FromObject(new
+            {
+                user_id = user,
+                current_username = currentUsername,
+                joined_courses = courses,
+                pending_verifications = pendingVerifications.Select(x => new { encrypted_username = x.EncryptedUsername, creation_time = x.CreationTime }),
+                verification_history = verificationHistory.Select(x => new { encrypted_username = x.EncryptedUsername, verification_time = x.VerificationTime })
+            });
+            return o.ToString(Formatting.Indented);
+        }
 
         protected MySqlConnection GetMySqlConnection()
         {
