@@ -97,6 +97,13 @@ namespace ECSDiscord.Services
                 SocketGuild guild = _discord.GetGuild(ulong.Parse(_config["guildId"]));
                 await _discord.DownloadUsersAsync(new List<IGuild> { guild });
 
+                StorageService.CourseStorage.CourseAlias alias = await _storage.Courses.GetAliasAsync(_courses.NormaliseCourseName(courseName));
+                Console.WriteLine(alias == null);
+                if (alias != null)
+                {
+                    courseName = alias.Target;
+                }
+
                 CourseService.Course course = await IsCourseValidAsync(courseName);
                 if (course == null)
                 {

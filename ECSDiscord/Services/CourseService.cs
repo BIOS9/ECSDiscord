@@ -419,6 +419,23 @@ namespace ECSDiscord.Services
             await _storage.Courses.DeleteAutoCreatePatternAsync(pattern);
         }
 
+
+        public async Task<List<StorageService.CourseStorage.CourseAlias>> GetAllAliasesAsync()
+        {
+            return await _storage.Courses.GetAliasesAsync();
+        }
+
+        public async Task AddAliasAsync(string name, string target, bool hidden)
+        {
+            await _storage.Courses.AddAliasAsync(name, target, hidden);
+        }
+
+        public async Task DeleteAliasAsync(string name)
+        {
+            await _storage.Courses.DeleteAliasAsync(name);
+        }
+
+
         /// <summary>
         /// Downloads the course list from the VUW web site and updates the local list.
         /// </summary>

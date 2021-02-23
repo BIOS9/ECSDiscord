@@ -575,6 +575,7 @@ namespace ECSDiscord.Services
             private const string CourseTable = "courses";
             private const string UserCoursesTable = "userCourses";
             private const string AutoCreatePatternTable = "autoCreatePatterns";
+            private const string AliasTable = "courseAliases";
 
             private StorageService _storageService;
 
@@ -594,6 +595,20 @@ namespace ECSDiscord.Services
                     DiscordId = discordId;
                     AutoImportPattern = autoImportPattern;
                     AutoImportPriority = autoImportPriority;
+                }
+            }
+
+            public class CourseAlias
+            {
+                public readonly string Name;
+                public readonly string Target;
+                public readonly bool Hidden;
+
+                public CourseAlias(string name, string target, bool hidden)
+                {
+                    Name = name;
+                    Target = target;
+                    Hidden = hidden;
                 }
             }
 
@@ -954,6 +969,111 @@ namespace ECSDiscord.Services
 
                     rowsAffected = await cmd.ExecuteNonQueryAsync();
                     Log.Debug("Successfully deleted pattern from database {pattern}. Rows affected: {rowsAffected}", pattern, rowsAffected);
+                }
+            }
+
+
+            public async Task<List<CourseAlias>> GetAliasesAsync()
+            {
+                Log.Debug("Getting aliases from database");
+                using (MySqlConnection con = _storageService.GetMySqlConnection())
+                using (MySqlCommand cmd = new MySqlCommand())
+                {
+                    await con.OpenAsync();
+                    cmd.Connection = con;
+
+                    cmd.CommandText = $"SELECT `name`,`target`,`hidden` FROM `{AliasTable}`;";
+                    cmd.Prepare();
+
+                    using (var reader = (MySqlDataReader)await cmd.ExecuteReaderAsync())
+                    {
+                        List<CourseAlias> aliases = new List<CourseAlias>();
+                        while (await reader.ReadAsync())
+                        {
+                            aliases.Add(new CourseAlias(
+                                reader.GetString(0),
+                                reader.GetString(1),
+                                reader.GetBoolean(2)
+                            ));
+                        }
+                        return aliases;
+                    }
+                }
+            }
+
+            public async Task<CourseAlias> GetAliasAsync(string name)
+            {
+                Log.Debug("Getting aliase from database {name}", name);
+                using (MySqlConnection con = _storageService.GetMySqlConnection())
+                using (MySqlCommand cmd = new MySqlCommand())
+                {
+                    await con.OpenAsync();
+                    cmd.Connection = con;
+
+                    cmd.CommandText = $"SELECT `name`,`target`,`hidden` FROM `{AliasTable}` WHERE `name` = @name;";
+                    cmd.Prepare();
+
+                    cmd.Parameters.AddWithValue("@name", name);
+
+                    using (var reader = (MySqlDataReader)await cmd.ExecuteReaderAsync())
+                    {
+                        if(await reader.ReadAsync())
+                        {
+                            return new CourseAlias(
+                                reader.GetString(0),
+                                reader.GetString(1),
+                                reader.GetBoolean(2)
+                            );
+                        }
+                        return null;
+                    }
+                }
+            }
+
+            public async Task AddAliasAsync(string name, string target, bool hidden)
+            {
+                Log.Debug("Adding alias to database {name}", name);
+                int rowsAffected = 0;
+                using (MySqlConnection con = _storageService.GetMySqlConnection())
+                using (MySqlCommand cmd = new MySqlCommand())
+                {
+                    await con.OpenAsync();
+                    cmd.Connection = con;
+
+                    cmd.CommandText = $"INSERT INTO `{AliasTable}` " +
+                        $"(`name`,`target`,`hidden`) " +
+                        $"VALUES (@name,@target,@hidden);";
+                    cmd.Prepare();
+
+                    cmd.Parameters.AddWithValue("@name", name);
+                    cmd.Parameters.AddWithValue("@target", target);
+                    cmd.Parameters.AddWithValue("@hidden", hidden);
+
+                    rowsAffected = await cmd.ExecuteNonQueryAsync();
+                    Log.Debug("Successfully added alias to database {name}. Rows affected: {rowsAffected}", name, rowsAffected);
+                }
+            }
+
+            public async Task DeleteAliasAsync(string name)
+            {
+                Log.Debug("Deleting alias from database {name}", name);
+                int rowsAffected = 0;
+                using (MySqlConnection con = _storageService.GetMySqlConnection())
+                using (MySqlCommand cmd = new MySqlCommand())
+                {
+                    await con.OpenAsync();
+                    cmd.Connection = con;
+
+                    cmd.CommandText = $"DELETE FROM `{AliasTable}` WHERE `name` = @name;";
+                    cmd.Parameters.AddWithValue("@name", name);
+                    cmd.Prepare();
+
+                    rowsAffected = await cmd.ExecuteNonQueryAsync();
+                    if(rowsAffected == 0)
+                    {
+                        throw new Exception("Deletion failed, record not found.");
+                    }
+                    Log.Debug("Successfully deleted alias from database {name}. Rows affected: {rowsAffected}", name, rowsAffected);
                 }
             }
 

@@ -365,6 +365,7 @@ namespace ECSDiscord.Modules
             HashSet<string> courseNames = new HashSet<string>();
             courseNames.UnionWith(await _courseService.GetAllAutoCreateCoursesAsync());
             courseNames.UnionWith((await _courseService.GetCourses()).Select(x => x.Code));
+            courseNames.UnionWith((await _courseService.GetAllAliasesAsync()).Where(x => !x.Hidden).Select(x => x.Name));
 
             if (courseNames.Count == 0)
             {
@@ -473,6 +474,60 @@ namespace ECSDiscord.Modules
             {
                 Log.Error(ex, "Failed to delet  auto create pattern {message}", ex.Message);
                 await ReplyAsync("Failed to delete pattern due to an error.");
+            }
+        }
+
+        [Command("listcoursealiases")]
+        [Alias("aliases", "listaliases")]
+        [Summary("Lists all course aliases.")]
+        [RequireUserPermission(GuildPermission.Administrator)]
+        public async Task ListAliasesAsync()
+        {
+            List<StorageService.CourseStorage.CourseAlias> aliases = await _courseService.GetAllAliasesAsync();
+            StringBuilder sb = new StringBuilder();
+            sb.Append("```");
+            foreach (var alias in aliases)
+            {
+                sb.Append("\n");
+                sb.Append($"{alias.Name} --> {alias.Target}, Hidden: {alias.Hidden}");
+            }
+            sb.Append("\n```");
+            await ReplyAsync(sb.ToString());
+        }
+
+        [Command("addcoursealias")]
+        [Alias("addalias")]
+        [Summary("Adds a course alias.")]
+        [RequireUserPermission(GuildPermission.Administrator)]
+        public async Task AddAliasAsync(string name, string target, bool hidden = false)
+        {
+            try
+            {
+                await _courseService.AddAliasAsync(name, target, hidden);
+                await ReplyAsync("Added.");
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Failed to add alias {message}", ex.Message);
+                await ReplyAsync("Failed to add alias due to an error.");
+            }
+        }
+
+        [Command("deletecoursealias")]
+        [Alias("deletealias")]
+        [Summary("Deletes a course alias.")]
+        [RequireUserPermission(GuildPermission.Administrator)]
+        public async Task DeleteAliasAsync(string name)
+        {
+            try
+            {
+                await _courseService.DeleteAliasAsync(name);
+                await ReplyAsync("Deleted.");
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Failed to delete alias {message}", ex.Message);
+                await ReplyAsync($"Failed to delete alias due to an error: {ex.Message}");
             }
         }
     }
