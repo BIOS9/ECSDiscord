@@ -291,6 +291,11 @@ namespace ECSDiscord.Services
             {
                 SocketGuild guild = _discord.GetGuild(_guildId);
                 SocketGuildUser guildUser = guild.GetUser(discordId);
+                if(guildUser == null)
+                {
+                    Log.Warning("User {user} not found in guild while checking verification status.", discordId);
+                    return false;
+                }
                 Dictionary<ulong, OverrideType> verificationOverrides = await _storageService.Verification.GetAllVerificationOverrides();
                 if (verificationOverrides.ContainsKey(discordId) || guildUser.Roles.Any(x => verificationOverrides.ContainsKey(x.Id)))
                     return true;
