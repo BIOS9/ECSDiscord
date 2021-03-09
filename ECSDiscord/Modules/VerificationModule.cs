@@ -59,7 +59,8 @@ namespace ECSDiscord.Modules
         public async Task VerifyAsync(string email)
         {
             await ReplyAsync("Processing...");
-            await Context.Guild?.DownloadUsersAsync();
+            if(Context.Guild != null)
+                await Context.Guild.DownloadUsersAsync();
             try
             {
                 await Context.Message.DeleteAsync();
@@ -123,7 +124,8 @@ namespace ECSDiscord.Modules
         public async Task ForceVerifyRoleAsync(SocketRole role)
         {
             await ReplyAsync("Processing...");
-            await Context.Guild?.DownloadUsersAsync();
+            if (Context.Guild != null)
+                await Context.Guild.DownloadUsersAsync();
             await _verification.AddRoleVerificationOverride(role);
             await ReplyAsync(":white_check_mark:  Role verification override added.");
         }
@@ -134,7 +136,8 @@ namespace ECSDiscord.Modules
         public async Task ForceVerifyUserAsync(SocketUser user)
         {
             await ReplyAsync("Processing...");
-            await Context.Guild?.DownloadUsersAsync();
+            if (Context.Guild != null)
+                await Context.Guild.DownloadUsersAsync();
             await _verification.AddUserVerificationOverride(user);
             await ReplyAsync(":white_check_mark:  User verification override added.");
         }

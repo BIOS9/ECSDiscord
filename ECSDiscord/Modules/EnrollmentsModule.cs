@@ -45,7 +45,8 @@ namespace ECSDiscord.BotModules
             }
 
             await ReplyAsync(_translator.T("COMMAND_PROCESSING"));
-            await Context.Guild?.DownloadUsersAsync();
+            if (Context.Guild != null)
+                await Context.Guild.DownloadUsersAsync();
             if (await _enrollments.RequiresVerification(Context.User))
             {
                 await ReplyAsync(_translator.T("ENROLLMENT_VERIFICATION_REQUIRED_ANY"));
@@ -109,7 +110,8 @@ namespace ECSDiscord.BotModules
             }
 
             await ReplyAsync(_translator.T("COMMAND_PROCESSING"));
-            await Context.Guild?.DownloadUsersAsync();
+            if (Context.Guild != null)
+                await Context.Guild.DownloadUsersAsync();
             // Add user to courses
             StringBuilder stringBuilder = new StringBuilder();
             foreach (string course in formattedCourses)
@@ -151,7 +153,8 @@ namespace ECSDiscord.BotModules
             }
 
             await ReplyAsync(_translator.T("COMMAND_PROCESSING"));
-            await Context.Guild?.DownloadUsersAsync();
+            if (Context.Guild != null)
+                await Context.Guild.DownloadUsersAsync();
             // Add user to courses
             StringBuilder stringBuilder = new StringBuilder();
             foreach (string course in courses)
@@ -194,7 +197,8 @@ namespace ECSDiscord.BotModules
             }
 
             await ReplyAsync(_translator.T("COMMAND_PROCESSING"));
-            await Context.Guild?.DownloadUsersAsync();
+            if (Context.Guild != null)
+                await Context.Guild.DownloadUsersAsync();
 
             if (await _enrollments.RequiresVerification(Context.User))
             {
@@ -262,7 +266,8 @@ namespace ECSDiscord.BotModules
         public async Task CoursesAsync(SocketUser user)
         {
             await ReplyAsync(_translator.T("COMMAND_PROCESSING"));
-            await Context.Guild?.DownloadUsersAsync();
+            if(Context.Guild != null)
+                await Context.Guild.DownloadUsersAsync();
             List<string> courses = await _enrollments.GetUserCourses(user);
             if (courses.Count == 0)
                 await ReplyAsync($"That user is not in any courses.");
@@ -281,7 +286,8 @@ namespace ECSDiscord.BotModules
         public async Task MembersAsync(string courseName)
         {
             await ReplyAsync(_translator.T("COMMAND_PROCESSING"));
-            await Context.Guild?.DownloadUsersAsync();
+            if (Context.Guild != null)
+                await Context.Guild.DownloadUsersAsync();
             if (!await _courses.CourseExists(courseName))
             {
                 await ReplyAsync(_translator.T("INVALID_COURSE"));
@@ -311,7 +317,8 @@ namespace ECSDiscord.BotModules
         public async Task MemberCountAsync(string courseName)
         {
             await ReplyAsync(_translator.T("COMMAND_PROCESSING"));
-            await Context.Guild?.DownloadUsersAsync();
+            if (Context.Guild != null)
+                await Context.Guild.DownloadUsersAsync();
             if (!await _courses.CourseExists(courseName))
             {
                 await ReplyAsync(_translator.T("INVALID_COURSE"));
