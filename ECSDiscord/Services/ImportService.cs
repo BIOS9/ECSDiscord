@@ -40,8 +40,8 @@ namespace ECSDiscord.Services
                     SocketGuildChannel discordChannel = guild.GetChannel(c.DiscordId);
                     foreach (SocketGuildUser user in discordChannel.Users)
                     {
-                        //if (user.GuildPermissions.Administrator) // Skip admins
-                        //continue;
+                        if (user.GuildPermissions.Administrator) // Skip admins
+                            continue;
                         if (user.IsBot) // Skip bots
                             continue;
 
