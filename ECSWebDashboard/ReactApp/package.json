@@ -1,0 +1,62 @@
+{
+  "name": "react-material-dashboard",
+  "author": "DeviasIO",
+  "licence": "MIT",
+  "version": "1.0.0",
+  "private": false,
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "eslintConfig": {
+    "extends": "react-app"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.4.0",
+    "@emotion/styled": "^11.3.0",
+    "@material-ui/core": "^5.0.0-alpha.32",
+    "@material-ui/icons": "^5.0.0-alpha.29",
+    "@material-ui/styles": "^4.11.4",
+    "chart.js": "^2.9.4",
+    "clsx": "^1.1.1",
+    "formik": "^2.1.5",
+    "history": "^5.0.0",
+    "install": "^0.13.0",
+    "jwt-decode": "^3.1.2",
+    "lodash": "^4.17.19",
+    "moment": "^2.27.0",
+    "npm": "^7.12.0",
+    "nprogress": "^0.2.0",
+    "prop-types": "^15.7.2",
+    "react": "^17.0.2",
+    "react-chartjs-2": "^2.11.2",
+    "react-dom": "^17.0.2",
+    "react-feather": "^2.0.8",
+    "react-helmet": "^6.1.0",
+    "react-oauth2-pkce": "file:../../../../../Documents/repos/react-oauth2-pkce",
+    "react-perfect-scrollbar": "^1.5.8",
+    "react-router": "^6.0.0-beta.0",
+    "react-router-dom": "^6.0.0-beta.0",
+    "react-scripts": "^4.0.0",
+    "uuid": "^8.3.0",
+    "yup": "^0.29.3"
+  },
+  "devDependencies": {
+    "eslint-config-airbnb": "^18.2.1",
+    "typescript": "^4.2.4"
+  }
+}
