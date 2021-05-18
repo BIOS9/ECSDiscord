@@ -6,6 +6,10 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System;
+using System.IO;
 
 namespace ECSWebDashboard
 {
@@ -40,13 +44,15 @@ namespace ECSWebDashboard
 
             services.AddTransient<IProfileService, ProfileService>();
             services.AddOidcStateDataFormatterCache();
+            Console.WriteLine(Directory.GetCurrentDirectory());
+            JObject secrets = JObject.Parse(File.ReadAllText(".secrets.json")); // janky
             services.AddAuthentication()
                 .AddCookie()
                 .AddDiscord(options =>
                 {
                     options.SignInScheme = IdentityServerConstants.ExternalCookieAuthenticationScheme;
-                    options.ClientId = "CLIENT_ID_HERE";
-                    options.ClientSecret = "CLIENT_SECRET_HERE";
+                    options.ClientId = secrets["client_id"].Value<string>();
+                    options.ClientSecret = secrets["client_secret"].Value<string>();
                 });
             services.AddLocalApiAuthentication();
         }
@@ -58,9 +64,12 @@ namespace ECSWebDashboard
             {
                 app.UseDeveloperExceptionPage();
             }
+            else
+            {
+                app.UseHttpsRedirection();
+            }
 
             app.UseIdentityServer();
-            app.UseHttpsRedirection();
             app.UseRouting();
             app.UseStaticFiles();
             app.UseAuthentication();

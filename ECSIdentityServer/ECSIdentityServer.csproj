@@ -9,5 +9,11 @@
     <PackageReference Include="Microsoft.AspNetCore.Authentication.OAuth" Version="2.2.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Update=".secrets.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
 
 </Project>
