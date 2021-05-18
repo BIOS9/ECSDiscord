@@ -14,12 +14,12 @@ namespace ECSDiscord
     /// <summary>
     /// Main application class.
     /// </summary>
-    class ECSDiscord
+    public class ECSDiscord
     {
-        private const string
+        public const string
             ConfigurationFile = "config.yml",
             LogFileName = "logs/log.txt";
-        private const RollingInterval
+        public const RollingInterval
             LogInterval = RollingInterval.Day;
 
         public IConfigurationRoot Configuration { get; }
@@ -52,38 +52,42 @@ namespace ECSDiscord
         /// <summary>
         /// Start application.
         /// </summary>
-        public async Task RunAsync()
+        public async Task RunStandaloneAsync()
+        {
+            var services = new ServiceCollection();
+            ConfigureServices(services);
+            await StartAsync(services.BuildServiceProvider());
+            await Task.Delay(-1); // Keep program from exiting
+        }
+
+        public async Task StartAsync(IServiceProvider serviceProvider)
         {
             if (!checkConfig())
             {
                 Log.Fatal("Invalid configuration. Exiting...");
-                return;
+                throw new Exception("Invalid config");
             }
 
-            var services = new ServiceCollection();
-            configureServices(services);
-
-            var provider = services.BuildServiceProvider();
-            provider.GetRequiredService<Services.CommandService>(); // Start command handler service
-            provider.GetRequiredService<Services.LoggingService>(); // Start logging service
-            provider.GetRequiredService<Services.EnrollmentsService>(); // Start enrollments service
-            provider.GetRequiredService<Services.CourseService>(); // Start course service
-            provider.GetRequiredService<Services.StorageService>(); // Start course service
-            provider.GetRequiredService<Services.VerificationService>(); // Start verification service
-            provider.GetRequiredService<Services.RemoteDataAccessService>(); // Start remote data access service
-            provider.GetRequiredService<Services.ImportService>(); // Start import service
-            if (!await provider.GetRequiredService<Services.StorageService>().TestConnection()) // Test DB connection
+            serviceProvider.GetRequiredService<Services.CommandService>(); // Start command handler service
+            serviceProvider.GetRequiredService<Services.LoggingService>(); // Start logging service
+            serviceProvider.GetRequiredService<Services.EnrollmentsService>(); // Start enrollments service
+            serviceProvider.GetRequiredService<Services.CourseService>(); // Start course service
+            serviceProvider.GetRequiredService<Services.StorageService>(); // Start course service
+            serviceProvider.GetRequiredService<Services.VerificationService>(); // Start verification service
+            serviceProvider.GetRequiredService<Services.RemoteDataAccessService>(); // Start remote data access service
+            serviceProvider.GetRequiredService<Services.ImportService>(); // Start import service
+            serviceProvider.GetRequiredService<Services.AdministrationService>(); // Start import service
+            if (!await serviceProvider.GetRequiredService<Services.StorageService>().TestConnection()) // Test DB connection
                 throw new Exception("Storage service init failed.");
-            await provider.GetRequiredService<Services.StartupService>().StartAsync(); // Run startup service
-            await Task.Delay(-1); // Keep program from exiting
+            await serviceProvider.GetRequiredService<Services.StartupService>().StartAsync(); // Run startup service
         }
 
         /// <summary>
         /// Configure services and add required shared objects.
         /// </summary>
-        private void configureServices(IServiceCollection services)
+        public IServiceCollection ConfigureServices(IServiceCollection services)
         {
-            services.AddSingleton(new DiscordSocketClient(new DiscordSocketConfig
+            return services.AddSingleton(new DiscordSocketClient(new DiscordSocketConfig
             {                                       // Add discord to the collection
                 LogLevel = LogSeverity.Info,     // Tell the logger to give Verbose amount of info
                 MessageCacheSize = 1000             // Cache 1,000 messages per channel
@@ -103,6 +107,8 @@ namespace ECSDiscord
             .AddSingleton<Services.VerificationService>()       // Add verificationservice to the collection
             .AddSingleton<Services.RemoteDataAccessService>()       // Add verificationservice to the collection
             .AddSingleton<Services.ImportService>()             // Add import service
+            .AddSingleton<Services.AdministrationService>()             // Add import service
+            .AddSingleton(this)
             .AddSingleton(Configuration);           // Add the configuration to the collection
         }
 
@@ -115,7 +121,7 @@ namespace ECSDiscord
                 .WriteTo.File(LogFileName, rollingInterval: LogInterval)
                 .CreateLogger();
 
-            return new ECSDiscord().RunAsync();
+            return new ECSDiscord().RunStandaloneAsync();
         }
     }
 }

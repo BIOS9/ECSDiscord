@@ -344,3 +344,5 @@ healthchecksdb
 ECSIdentityServer/.secrets.json
 
 ECSWebDashboard/config.yml
+
+ECSWebDashboard/logs/

@@ -3,6 +3,7 @@ using Discord.WebSocket;
 using Microsoft.Extensions.Configuration;
 using Serilog;
 using System;
+using System.Reflection;
 using System.Threading.Tasks;
 
 namespace ECSDiscord.Services
@@ -27,6 +28,7 @@ namespace ECSDiscord.Services
             _config = config;
             _provider = provider;
 
+            _commands.AddModulesAsync(assembly: Assembly.GetExecutingAssembly(), provider);
             _discord.MessageReceived += OnMessageReceivedAsync;
             Log.Debug("Command service loaded.");
         }
