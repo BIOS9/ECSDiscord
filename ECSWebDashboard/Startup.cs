@@ -38,17 +38,19 @@ namespace ECSWebDashboard
             services.AddControllers();
 
             services.AddAuthentication(options =>
-             {
-                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                 options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-             }).AddJwtBearer(options =>
-             {
-                 options.Authority = "http://localhost:5000";
-                 options.Audience = "ecsdiscord";
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            }).AddJwtBearer(options =>
+            {
+                options.Authority = "https://localhost:5001";
+                options.Audience = "ecsdiscord";
 #if DEBUG
-                 options.RequireHttpsMetadata = false;
+                options.RequireHttpsMetadata = false;
 #endif
-             });
+            });
+
+            services.AddCors();
 
             services.AddAuthorization(options =>
             {
@@ -83,6 +85,12 @@ namespace ECSWebDashboard
             app.UseAuthorization();
 
             app.UseFileServer();
+
+            app.UseCors(options => options
+                .AllowAnyMethod()
+                .AllowAnyHeader()
+                .SetIsOriginAllowed(origin => true)
+                .AllowCredentials());
 
             app.UseEndpoints(endpoints =>
             {

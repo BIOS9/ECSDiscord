@@ -3,7 +3,7 @@ import React from 'react';
 import DashboardLayout from './components/DashboardLayout';
 import MainLayout from './components/MainLayout';
 import Account from './pages/Account';
-import CustomerList from './pages/CustomerList';
+import ServerMessages from './pages/ServerMessages';
 import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
 import NotFound from './pages/NotFound';
@@ -20,7 +20,7 @@ const routes = [
       { path: 'courses', element: <Dashboard /> },
       { path: 'users', element: <Account /> },
       { path: 'verification', element: <Account /> },
-      { path: 'server-messages', element: <CustomerList /> },
+      { path: 'server-messages', element: <ServerMessages /> },
       { path: 'settings', element: <Settings /> },
       { path: 'products', element: <ProductList /> },
       { path: 'settings', element: <Settings /> },

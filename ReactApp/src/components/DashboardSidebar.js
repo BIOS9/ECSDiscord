@@ -85,7 +85,7 @@ const DashboardSidebar = ({ onMobileClose, openMobile }) => {
   };
 
   useEffect(() => {
-    if (1 - 1 === 10) {
+    if (authService.isAuthenticated()) {
       apiService.test();
     }
   }, []);

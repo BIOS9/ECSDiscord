@@ -17,9 +17,10 @@ export class ApiService {
   }
 
   getWeather = async () => {
+    alert('test');
     const result = await axios.get(`${baseUrl}weatherforecast`, {
       headers: {
-        Authorization: `token ${this.getToken()}`
+        Authorization: `Bearer ${this.getToken()}`
       }
     });
 
@@ -29,6 +30,8 @@ export class ApiService {
   test = () => {
     console.log('TOKEN');
     console.log(this.getToken());
+
+    this.getWeather();
   }
 }
 

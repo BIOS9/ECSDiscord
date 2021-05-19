@@ -25,12 +25,14 @@ namespace ECSDiscord.Services
 
         public bool IsMember(ulong discordId)
         {
-            return _discord.GetGuild(_guildId).GetUser(discordId) != null;
+            return _discord?.GetGuild(_guildId)?.GetUser(discordId) != null;
         }
 
         public bool IsAdmin(ulong discordId)
         {
-            return _discord.GetGuild(_guildId).GetUser(discordId).GuildPermissions.Administrator;
+            SocketGuild guild = _discord?.GetGuild(_guildId);
+            SocketGuildUser user = guild?.GetUser(discordId);
+            return user?.GuildPermissions.Administrator ?? false;
         }
 
         private void loadConfig()
