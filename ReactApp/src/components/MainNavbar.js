@@ -1,3 +1,4 @@
+import React from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import { AppBar, Toolbar } from '@material-ui/core';
 import Logo from './Logo';

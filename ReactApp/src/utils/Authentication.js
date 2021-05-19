@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useContext } from 'react';
 import { AuthContext, AuthService } from 'react-oauth2-pkce';
 import PropTypes from 'prop-types';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 
 const authedRoutes = [
   '/app/courses',
@@ -32,13 +32,30 @@ export const useAuth = () => {
 };
 
 export const redirectNoAuth = () => {
-  const navigate = useNavigate();
   const location = useLocation();
   const authService = useAuth();
 
   if (!authService.isAuthenticated() && doesRequireAuth(location.pathname)) {
-    navigate(noAuthRedirect);
+    window.location.replace(noAuthRedirect);
   }
+};
+
+const defaultUser = {
+  username: '',
+  avatar: ''
+};
+
+export const useUser = () => {
+  const authService = useAuth();
+  if (authService.isAuthenticated()) {
+    const identity = authService.getUser();
+    console.log(authService.getUser());
+    return {
+      username: identity['discord:username'],
+      avatar: `https://cdn.discordapp.com/avatars/${identity['discord:id']}/${identity['discord:avatar']}`,
+    };
+  }
+  return defaultUser;
 };
 
 const AuthProvider = (props) => {

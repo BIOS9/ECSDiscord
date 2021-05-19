@@ -1,3 +1,4 @@
+import React from 'react';
 import { Helmet } from 'react-helmet';
 import {
   Box,
@@ -10,7 +11,7 @@ import ProductCard from 'src/components/product//ProductCard';
 import products from 'src/__mocks__/products';
 
 const ProductList = () => (
-  <>
+  <span>
     <Helmet>
       <title>Products | Material Kit</title>
     </Helmet>
@@ -56,7 +57,7 @@ const ProductList = () => (
         </Box>
       </Container>
     </Box>
-  </>
+  </span>
 );
 
 export default ProductList;

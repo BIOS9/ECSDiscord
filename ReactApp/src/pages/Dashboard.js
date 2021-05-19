@@ -1,3 +1,4 @@
+import React from 'react';
 import { Helmet } from 'react-helmet';
 import {
   Box,
@@ -14,7 +15,7 @@ import TotalProfit from 'src/components/dashboard//TotalProfit';
 import TrafficByDevice from 'src/components/dashboard//TrafficByDevice';
 
 const Dashboard = () => (
-  <>
+  <span>
     <Helmet>
       <title>Dashboard | Material Kit</title>
     </Helmet>
@@ -105,7 +106,7 @@ const Dashboard = () => (
         </Grid>
       </Container>
     </Box>
-  </>
+  </span>
 );
 
 export default Dashboard;

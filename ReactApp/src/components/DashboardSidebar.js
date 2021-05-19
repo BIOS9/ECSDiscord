@@ -1,9 +1,11 @@
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import {
   useAuth,
+  useUser,
   doesRequireAuth,
   doesRequireAdmin
 } from 'src/utils/Authentication';
+import { useApi } from 'src/utils/Api';
 import { Link as RouterLink, useLocation } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import {
@@ -26,12 +28,6 @@ import {
   LogOut as LogoutIcon
 } from 'react-feather';
 import NavItem from './NavItem';
-
-const user = {
-  avatar: '/static/images/avatars/avatar_6.png',
-  jobTitle: 'Senior Developer',
-  name: 'Katarina Smith'
-};
 
 const items = [
   {
@@ -69,6 +65,8 @@ const items = [
 const DashboardSidebar = ({ onMobileClose, openMobile }) => {
   const location = useLocation();
   const authService = useAuth();
+  const apiService = useApi();
+  const user = useUser();
 
   const login = async () => {
     await authService.authorize();
@@ -85,6 +83,12 @@ const DashboardSidebar = ({ onMobileClose, openMobile }) => {
       .filter((x) => authed || !doesRequireAuth(x.href))
       .filter((x) => admin || !doesRequireAdmin(x.href));
   };
+
+  useEffect(() => {
+    if (1 - 1 === 10) {
+      apiService.test();
+    }
+  }, []);
 
   useEffect(() => {
     if (openMobile && onMobileClose) {
@@ -124,13 +128,13 @@ const DashboardSidebar = ({ onMobileClose, openMobile }) => {
               color="textPrimary"
               variant="h5"
             >
-              {user.name}
+              {user.username}
             </Typography>
             <Typography
               color="textSecondary"
               variant="body2"
             >
-              {user.jobTitle}
+              Administrator
             </Typography>
           </Box>
           <Divider />
@@ -170,7 +174,7 @@ const DashboardSidebar = ({ onMobileClose, openMobile }) => {
   );
 
   return (
-    <>
+    <span>
       <Hidden lgUp>
         <Drawer
           anchor="left"
@@ -202,7 +206,7 @@ const DashboardSidebar = ({ onMobileClose, openMobile }) => {
           {content}
         </Drawer>
       </Hidden>
-    </>
+    </span>
   );
 };
 

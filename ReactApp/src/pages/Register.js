@@ -1,3 +1,4 @@
+import React from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import * as Yup from 'yup';
@@ -17,7 +18,7 @@ const Register = () => {
   const navigate = useNavigate();
 
   return (
-    <>
+    <span>
       <Helmet>
         <title>Register | Material Kit</title>
       </Helmet>
@@ -192,7 +193,7 @@ const Register = () => {
           </Formik>
         </Container>
       </Box>
-    </>
+    </span>
   );
 };
 

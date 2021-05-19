@@ -1,3 +1,4 @@
+import React from 'react';
 import { Helmet } from 'react-helmet';
 import {
   Box,
@@ -6,7 +7,7 @@ import {
 } from '@material-ui/core';
 
 const NotFound = () => (
-  <>
+  <span>
     <Helmet>
       <title>404 | Material Kit</title>
     </Helmet>
@@ -49,7 +50,7 @@ const NotFound = () => (
         </Box>
       </Container>
     </Box>
-  </>
+  </span>
 );
 
 export default NotFound;

@@ -1,11 +1,13 @@
 import 'react-perfect-scrollbar/dist/css/styles.css';
+import React from 'react';
 import { useRoutes } from 'react-router-dom';
 import { ThemeProvider } from '@material-ui/core';
-import AuthProvider from 'src/utils/Authentication';
-import GlobalStyles from 'src/components/GlobalStyles';
-import 'src/mixins/chartjs';
-import theme from 'src/theme';
-import routes from 'src/routes';
+import AuthProvider from './utils/Authentication';
+import ApiProvider from './utils/Api';
+import GlobalStyles from './components/GlobalStyles';
+import './mixins/chartjs';
+import theme from './theme';
+import routes from './routes';
 
 const authServiceOptions = {
   clientId: 'public-dashboard',
@@ -22,10 +24,12 @@ const App = () => {
 
   return (
     <AuthProvider authServiceOptions={authServiceOptions}>
-      <ThemeProvider theme={theme}>
-        <GlobalStyles />
-        {routing}
-      </ThemeProvider>
+      <ApiProvider>
+        <ThemeProvider theme={theme}>
+          <GlobalStyles />
+          {routing}
+        </ThemeProvider>
+      </ApiProvider>
     </AuthProvider>
   );
 };
