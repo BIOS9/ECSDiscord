@@ -1203,12 +1203,13 @@ namespace ECSDiscord.Services
                 public readonly ulong MessageID;
                 public readonly ulong ChannelID;
                 public readonly string Content;
-                public readonly DateTime CreatedAt;
+                public readonly DateTimeOffset CreatedAt;
                 public readonly ulong Creator;
-                public readonly DateTime LastEditedAt;
+                public readonly DateTimeOffset LastEditedAt;
                 public readonly ulong LastEditor;
+                public readonly string Name;
 
-                public ServerMessage(ulong messageID, ulong channelID, string content, DateTime createdAt, ulong creator, DateTime lastEditedAt, ulong lastEditor)
+                public ServerMessage(ulong messageID, ulong channelID, string content, DateTimeOffset createdAt, ulong creator, DateTimeOffset lastEditedAt, ulong lastEditor, string name)
                 {
                     MessageID = messageID;
                     ChannelID = channelID;
@@ -1217,6 +1218,7 @@ namespace ECSDiscord.Services
                     Creator = creator;
                     LastEditedAt = lastEditedAt;
                     LastEditor = lastEditor;
+                    Name = name ?? throw new ArgumentNullException(nameof(name));
                 }
             }
 
@@ -1239,16 +1241,17 @@ namespace ECSDiscord.Services
                         cmd.Parameters.AddWithValue("@messageID", message.MessageID);
                         cmd.Parameters.AddWithValue("@channelID", message.ChannelID);
                         cmd.Parameters.AddWithValue("@content", message.Content);
-                        cmd.Parameters.AddWithValue("@created", ((DateTimeOffset)message.CreatedAt).ToUnixTimeSeconds());
+                        cmd.Parameters.AddWithValue("@created", message.CreatedAt.ToUnixTimeSeconds());
                         cmd.Parameters.AddWithValue("@creator", message.Creator);
-                        cmd.Parameters.AddWithValue("@lastEdited", ((DateTimeOffset)message.LastEditedAt).ToUnixTimeSeconds());
+                        cmd.Parameters.AddWithValue("@lastEdited", message.LastEditedAt.ToUnixTimeSeconds());
                         cmd.Parameters.AddWithValue("@editor", message.LastEditor);
+                        cmd.Parameters.AddWithValue("@name", message.Name);
                         cmd.Prepare();
                         await cmd.ExecuteNonQueryAsync();
 
                         cmd.CommandText = $"INSERT INTO `{ServerMessageTable}` " +
-                            $"(`messageID`, `channelID`, `content`, `created`, `creator`, `lastEdited`, `editor`) " +
-                            $"VALUES(@messageID, @channelID, @content, @created, @creator, @lastEdited, @editor);";
+                            $"(`messageID`, `channelID`, `content`, `created`, `creator`, `lastEdited`, `editor`, `name`) " +
+                            $"VALUES(@messageID, @channelID, @content, @created, @creator, @lastEdited, @editor, @name);";
                         cmd.Prepare();
 
                         rowsAffected = await cmd.ExecuteNonQueryAsync();
@@ -1308,7 +1311,7 @@ namespace ECSDiscord.Services
                     await con.OpenAsync();
                     cmd.Connection = con;
 
-                    cmd.CommandText = $"SELECT `messageID`, `channelID`, `content`, `created`, `creator`, `lastEdited`, `editor` " +
+                    cmd.CommandText = $"SELECT `messageID`, `channelID`, `content`, `created`, `creator`, `lastEdited`, `editor`, `name` " +
                         $"FROM `{ServerMessageTable}` " +
                         $"WHERE `messageID` = @messageID;";
                     cmd.Parameters.AddWithValue("@messageID", messageID);
@@ -1324,10 +1327,11 @@ namespace ECSDiscord.Services
                             reader.GetUInt64(0),  // messageID
                             reader.GetUInt64(1),  // ChannelID
                             reader.GetString(2),  // Content
-                            DateTimeOffset.FromUnixTimeSeconds(reader.GetInt64(3)).DateTime,   // Created
+                            DateTimeOffset.FromUnixTimeSeconds(reader.GetInt64(3)),   // Created
                             reader.GetUInt64(4),  // Creator
-                            DateTimeOffset.FromUnixTimeSeconds(reader.GetInt64(5)).DateTime,  // LastEdited
-                            reader.GetUInt64(6)); // Editor
+                            DateTimeOffset.FromUnixTimeSeconds(reader.GetInt64(5)),  // LastEdited
+                            reader.GetUInt64(6),  // Editor
+                            reader.GetString(7)); // Name
                     }
                 }
             }
@@ -1342,7 +1346,7 @@ namespace ECSDiscord.Services
                     await con.OpenAsync();
                     cmd.Connection = con;
 
-                    cmd.CommandText = $"SELECT `messageID`, `channelID`, `content`, `created`, `creator`, `lastEdited`, `editor` FROM `{ServerMessageTable}`;";
+                    cmd.CommandText = $"SELECT `messageID`, `channelID`, `content`, `created`, `creator`, `lastEdited`, `editor`, `name` FROM `{ServerMessageTable}`;";
                     cmd.Prepare();
 
                     using (var reader = (MySqlDataReader)await cmd.ExecuteReaderAsync())
@@ -1354,11 +1358,11 @@ namespace ECSDiscord.Services
                                 reader.GetUInt64(0),  // messageID
                                 reader.GetUInt64(1),  // ChannelID
                                 reader.GetString(2),  // Content
-                                DateTimeOffset.FromUnixTimeSeconds(reader.GetInt64(3)).DateTime,   // Created
+                                DateTimeOffset.FromUnixTimeSeconds(reader.GetInt64(3)),   // Created
                                 reader.GetUInt64(4),  // Creator
-                                DateTimeOffset.FromUnixTimeSeconds(reader.GetInt64(5)).DateTime,  // LastEdited
-                                reader.GetUInt64(6)   // Editor
-                                ));
+                                DateTimeOffset.FromUnixTimeSeconds(reader.GetInt64(5)),  // LastEdited
+                                reader.GetUInt64(6),  // Editor
+                                reader.GetString(7))); // Name
                         }
                         return serverMessages;
                     }

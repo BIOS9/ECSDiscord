@@ -7,7 +7,7 @@ namespace ECSWebDashboard.Models
 {
     public class DiscordUser
     {
-        public ulong ID { get; set; }
+        public string ID { get; set; }
         public string Username { get; set; }
         public string Avatar { get; set; }
 
@@ -15,7 +15,7 @@ namespace ECSWebDashboard.Models
 
         public DiscordUser(Discord.IUser user)
         {
-            ID = user.Id;
+            ID = user.Id.ToString();
             Username = user.Username;
             Avatar = user.GetAvatarUrl(Discord.ImageFormat.Auto);
         }

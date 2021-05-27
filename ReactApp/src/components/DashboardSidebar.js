@@ -5,7 +5,6 @@ import {
   doesRequireAuth,
   doesRequireAdmin
 } from 'src/utils/Authentication';
-import { useApi } from 'src/utils/Api';
 import { Link as RouterLink, useLocation } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import {
@@ -65,7 +64,6 @@ const items = [
 const DashboardSidebar = ({ onMobileClose, openMobile }) => {
   const location = useLocation();
   const authService = useAuth();
-  const apiService = useApi();
   const user = useUser();
 
   const login = async () => {
@@ -83,12 +81,6 @@ const DashboardSidebar = ({ onMobileClose, openMobile }) => {
       .filter((x) => authed || !doesRequireAuth(x.href))
       .filter((x) => admin || !doesRequireAdmin(x.href));
   };
-
-  useEffect(() => {
-    if (authService.isAuthenticated()) {
-      apiService.test();
-    }
-  }, []);
 
   useEffect(() => {
     if (openMobile && onMobileClose) {

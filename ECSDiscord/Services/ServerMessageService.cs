@@ -32,12 +32,13 @@ namespace ECSDiscord.Services
         {
             public readonly IMessage Message;
             public readonly IUser Creator;
-            public readonly DateTime CreatedAt;
+            public readonly DateTimeOffset CreatedAt;
             public readonly IUser Editor;
-            public readonly DateTime EditedAt;
+            public readonly DateTimeOffset EditedAt;
             public readonly string Content;
+            public readonly string Name;
 
-            public ServerMessage(IMessage message, IUser creator, DateTime createdAt, IUser editor, DateTime editedAt, string content)
+            public ServerMessage(IMessage message, IUser creator, DateTimeOffset createdAt, IUser editor, DateTimeOffset editedAt, string content, string name)
             {
                 Message = message; // Allowed to be null
                 Creator = creator ?? throw new ArgumentNullException(nameof(creator));
@@ -45,6 +46,7 @@ namespace ECSDiscord.Services
                 Editor = editor ?? throw new ArgumentNullException(nameof(editor));
                 EditedAt = editedAt;
                 Content = content ?? throw new ArgumentNullException(nameof(content));
+                Name = name ?? throw new ArgumentNullException(nameof(name));
             }
 
             public static async Task<ServerMessage> CreateFromStorageAsync(
@@ -63,7 +65,8 @@ namespace ECSDiscord.Services
                     storageMessage.CreatedAt,
                     editor,
                     storageMessage.LastEditedAt,
-                    storageMessage.Content);
+                    storageMessage.Content,
+                    storageMessage.Name);
             }
         }
 
@@ -76,7 +79,7 @@ namespace ECSDiscord.Services
                 _discord)));
         }
 
-        public async Task<ServerMessage> CreateMessageAsync(string content, IUser creator, SocketTextChannel channel)
+        public async Task<ServerMessage> CreateMessageAsync(string content, string name, IUser creator, SocketTextChannel channel)
         {
             if (channel == null)
                 throw new Exception("Channel not found.");
@@ -85,11 +88,11 @@ namespace ECSDiscord.Services
                 msg.Id,
                 msg.Channel.Id,
                 content,
-                DateTime.Now,
+                DateTimeOffset.Now,
                 creator.Id,
-                DateTime.Now,
-                creator.Id
-                ));
+                DateTimeOffset.Now,
+                creator.Id,
+                name));
             return await ServerMessage.CreateFromStorageAsync(
                 await _storage.ServerMessages.GetServerMessageAsync(msg.Id),
                 _discord.GetGuild(_guildId),
@@ -107,7 +110,7 @@ namespace ECSDiscord.Services
                 _discord);
         }
 
-        public async Task<ServerMessage> EditMessageAsync(ulong messageID, string content, IUser user)
+        public async Task<ServerMessage> EditMessageAsync(ulong messageID, string content, string name, IUser user)
         {
             var storageMsg = await _storage.ServerMessages.GetServerMessageAsync(messageID);
             var guild = _discord.GetGuild(_guildId);
@@ -115,7 +118,7 @@ namespace ECSDiscord.Services
             if (channel == null)
                 throw new Exception("Channel not found.");
             
-            var msg = (RestUserMessage)(await channel.GetMessageAsync(storageMsg.MessageID));
+            var msg = (IUserMessage)(await channel.GetMessageAsync(storageMsg.MessageID));
             if (msg == null)
                 throw new Exception("Message has been deleted/not found.");
 
@@ -130,9 +133,9 @@ namespace ECSDiscord.Services
                 content,
                 storageMsg.CreatedAt,
                 storageMsg.Creator,
-                DateTime.Now,
-                user.Id
-                ));
+                DateTimeOffset.Now,
+                user.Id,
+                name));
 
             return await ServerMessage.CreateFromStorageAsync(
                 await _storage.ServerMessages.GetServerMessageAsync(msg.Id),

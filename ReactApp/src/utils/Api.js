@@ -16,22 +16,26 @@ export class ApiService {
     return this.authService.getAuthTokens().access_token;
   }
 
-  getWeather = async () => {
-    alert('test');
-    const result = await axios.get(`${baseUrl}weatherforecast`, {
+  getServerMessages = async () => {
+    const result = await axios.get(`${baseUrl}api/ServerMessages`, {
       headers: {
         Authorization: `Bearer ${this.getToken()}`
       }
     });
 
     console.log(result.data);
+
+    return result.data;
   }
 
-  test = () => {
-    console.log('TOKEN');
-    console.log(this.getToken());
+  deleteServerMessage = async (id) => {
+    const result = await axios.delete(`${baseUrl}api/ServerMessages/${id}`, {
+      headers: {
+        Authorization: `Bearer ${this.getToken()}`
+      }
+    });
 
-    this.getWeather();
+    return result.data;
   }
 }
 

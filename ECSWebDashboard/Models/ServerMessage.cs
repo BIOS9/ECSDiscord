@@ -8,7 +8,9 @@ namespace ECSWebDashboard.Models
 {
     public class ServerMessage
     {
-        public ulong ID { get; set; }
+        public string ID { get; set; }
+        public string Name { get; set; }
+        public DiscordChannel Channel { get; set; }
         public long CreatedAt { get; set; }
         public DiscordUser Creator { get; set; }
         public long EditedAt { get; set; }
@@ -19,12 +21,14 @@ namespace ECSWebDashboard.Models
 
         public ServerMessage(ServerMessageService.ServerMessage serverMessage)
         {
-            ID = serverMessage.Message.Id;
-            CreatedAt = ((DateTimeOffset)serverMessage.CreatedAt).ToUnixTimeSeconds();
+            ID = serverMessage.Message.Id.ToString();
+            CreatedAt = serverMessage.CreatedAt.ToUnixTimeSeconds();
             Creator = new DiscordUser(serverMessage.Creator);
-            EditedAt = ((DateTimeOffset)serverMessage.EditedAt).ToUnixTimeSeconds();
+            EditedAt = serverMessage.EditedAt.ToUnixTimeSeconds();
             Editor = new DiscordUser(serverMessage.Editor);
             Content = serverMessage.Content;
+            Name = serverMessage.Name;
+            Channel = new DiscordChannel(serverMessage.Message.Channel);
         }
     }
 }

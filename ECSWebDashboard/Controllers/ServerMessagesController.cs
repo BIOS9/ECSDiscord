@@ -47,7 +47,7 @@ namespace ECSWebDashboard.Controllers
 
         // POST: api/ServerMessages
         [HttpPost]
-        public async Task<ServerMessage> Post(string content, ulong channelID)
+        public async Task<ServerMessage> Post(string name, string content, ulong channelID)
         {
             Discord.IUser discordUser = _discord.GetUser(ulong.Parse(User.FindFirst("discord:id").Value));
             if (discordUser == null)
@@ -59,18 +59,30 @@ namespace ECSWebDashboard.Controllers
             if (channel == null)
                 throw new ArgumentException("Discord channel not found.");
 
-            return new ServerMessage(await _messageService.CreateMessageAsync(content, discordUser, channel));
+            if (string.IsNullOrEmpty(name))
+                throw new ArgumentException("Name cannot be null.");
+
+            if (string.IsNullOrWhiteSpace(content))
+                throw new ArgumentException("Content cannot be null.");
+
+            return new ServerMessage(await _messageService.CreateMessageAsync(content, name, discordUser, channel));
         }
 
         // PUT: api/ServerMessages/5
         [HttpPut("{id}")]
-        public async Task<ServerMessage> Put(ulong id, string content)
+        public async Task<ServerMessage> Put(ulong id, string name, string content)
         {
             Discord.IUser discordUser = _discord.GetUser(ulong.Parse(User.FindFirst("discord:id").Value));
             if (discordUser == null)
                 throw new ArgumentException("Discord user not found.");
 
-            return new ServerMessage(await _messageService.EditMessageAsync(id, content, discordUser));
+            if (string.IsNullOrEmpty(name))
+                throw new ArgumentException("Name cannot be null.");
+
+            if (string.IsNullOrWhiteSpace(content))
+                throw new ArgumentException("Content cannot be null.");
+
+            return new ServerMessage(await _messageService.EditMessageAsync(id, content, name, discordUser));
         }
 
         // DELETE: api/ApiWithActions/5
