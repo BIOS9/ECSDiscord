@@ -6,7 +6,7 @@ import {
   useAuth
 } from 'src/utils/Authentication';
 import MessageList from 'src/components/servermessages/MessageListResults';
-import CustomerListToolbar from 'src/components/customer/CustomerListToolbar';
+import MessageListToolbar from 'src/components/servermessages/MessageListToolbar';
 
 const ServerMessages = () => {
   const authService = useAuth();
@@ -39,7 +39,7 @@ const ServerMessages = () => {
         }}
       >
         <Container maxWidth={false}>
-          <CustomerListToolbar />
+          <MessageListToolbar />
           <Box sx={{ pt: 3 }}>
             <MessageList messages={serverMessages} deleteMessage={deleteMessage} />
           </Box>
