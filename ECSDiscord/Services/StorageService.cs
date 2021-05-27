@@ -182,7 +182,7 @@ namespace ECSDiscord.Services
                     using (var reader = (MySqlDataReader)await cmd.ExecuteReaderAsync())
                     {
                         List<PendingVerification> pendingVerifications = new List<PendingVerification>();
-                        while(await reader.ReadAsync())
+                        while (await reader.ReadAsync())
                         {
                             string token = reader.GetString(0);
                             int length = (int)reader.GetBytes(1, 0, null, 0, 0);
@@ -458,7 +458,7 @@ namespace ECSDiscord.Services
                                 reader.GetUInt64(0),
                                 encryptedUsername,
                                 DateTimeOffset.FromUnixTimeSeconds(reader.GetInt64(2)).DateTime
-                                )); 
+                                ));
                         }
                     }
                 }
@@ -1186,6 +1186,191 @@ namespace ECSDiscord.Services
             }
         }
 
+        public ServerMessageStorage ServerMessages { get; private set; }
+        public class ServerMessageStorage
+        {
+            private const string ServerMessageTable = "serverMessages";
+
+            private StorageService _storageService;
+
+            public ServerMessageStorage(StorageService storageService)
+            {
+                _storageService = storageService;
+            }
+
+            public class ServerMessage
+            {
+                public readonly ulong MessageID;
+                public readonly ulong ChannelID;
+                public readonly string Content;
+                public readonly DateTime CreatedAt;
+                public readonly ulong Creator;
+                public readonly DateTime LastEditedAt;
+                public readonly ulong LastEditor;
+
+                public ServerMessage(ulong messageID, ulong channelID, string content, DateTime createdAt, ulong creator, DateTime lastEditedAt, ulong lastEditor)
+                {
+                    MessageID = messageID;
+                    ChannelID = channelID;
+                    Content = content ?? throw new ArgumentNullException(nameof(content));
+                    CreatedAt = createdAt;
+                    Creator = creator;
+                    LastEditedAt = lastEditedAt;
+                    LastEditor = lastEditor;
+                }
+            }
+
+            public async Task CreateServerMessageAsync(ServerMessage message)
+            {
+                Log.Debug("Adding/Update server message in database {id}", message.MessageID);
+                int rowsAffected = 0;
+                using (MySqlConnection con = _storageService.GetMySqlConnection())
+                using (MySqlCommand cmd = new MySqlCommand())
+                {
+                    await con.OpenAsync();
+                    cmd.Connection = con;
+
+                    using (MySqlTransaction transaction = await con.BeginTransactionAsync())
+                    {
+                        cmd.Transaction = transaction;
+
+                        // Delete any existing messages, we are in a transaction so it's ok
+                        cmd.CommandText = $"DELETE FROM `{ServerMessageTable}` WHERE `messageID` = @messageID;";
+                        cmd.Parameters.AddWithValue("@messageID", message.MessageID);
+                        cmd.Parameters.AddWithValue("@channelID", message.ChannelID);
+                        cmd.Parameters.AddWithValue("@content", message.Content);
+                        cmd.Parameters.AddWithValue("@created", ((DateTimeOffset)message.CreatedAt).ToUnixTimeSeconds());
+                        cmd.Parameters.AddWithValue("@creator", message.Creator);
+                        cmd.Parameters.AddWithValue("@lastEdited", ((DateTimeOffset)message.LastEditedAt).ToUnixTimeSeconds());
+                        cmd.Parameters.AddWithValue("@editor", message.LastEditor);
+                        cmd.Prepare();
+                        await cmd.ExecuteNonQueryAsync();
+
+                        cmd.CommandText = $"INSERT INTO `{ServerMessageTable}` " +
+                            $"(`messageID`, `channelID`, `content`, `created`, `creator`, `lastEdited`, `editor`) " +
+                            $"VALUES(@messageID, @channelID, @content, @created, @creator, @lastEdited, @editor);";
+                        cmd.Prepare();
+
+                        rowsAffected = await cmd.ExecuteNonQueryAsync();
+                        await transaction.CommitAsync();
+                        Log.Debug("Successfully added server message to database {id}. Rows affected: {rowsAffected}", message.MessageID, rowsAffected);
+                    }
+                }
+            }
+
+            public async Task DeleteServerMessageAsync(ulong messageID)
+            {
+                Log.Debug("Deleting server message from database {id}", messageID);
+                int rowsAffected = 0;
+                using (MySqlConnection con = _storageService.GetMySqlConnection())
+                using (MySqlCommand cmd = new MySqlCommand())
+                {
+                    await con.OpenAsync();
+                    cmd.Connection = con;
+
+                    cmd.CommandText = $"DELETE FROM `{ServerMessageTable}` WHERE `messageID` = @messageID;";
+                    cmd.Parameters.AddWithValue("@messageID", messageID);
+                    cmd.Prepare();
+
+                    rowsAffected = await cmd.ExecuteNonQueryAsync();
+                    Log.Debug("Successfully deleted server message from database {id}. Rows affected: {rowsAffected}", messageID, rowsAffected);
+                }
+            }
+
+            public async Task<bool> DoesServerMessageExistAsync(ulong messageID)
+            {
+                Log.Debug("Checking existance of server message from database {id}", messageID);
+
+                using (MySqlConnection con = _storageService.GetMySqlConnection())
+                using (MySqlCommand cmd = new MySqlCommand())
+                {
+                    await con.OpenAsync();
+                    cmd.Connection = con;
+
+                    cmd.CommandText = $"SELECT * FROM `{ServerMessageTable}` WHERE `messageID` = @messageID;";
+                    cmd.Parameters.AddWithValue("@messageID", messageID);
+                    cmd.Prepare();
+
+                    using (var reader = await cmd.ExecuteReaderAsync())
+                    {
+                        return await reader.ReadAsync();
+                    }
+                }
+            }
+
+            public async Task<ServerMessage> GetServerMessageAsync(ulong messageID)
+            {
+                Log.Debug("Getting server message from database.");
+
+                using (MySqlConnection con = _storageService.GetMySqlConnection())
+                using (MySqlCommand cmd = new MySqlCommand())
+                {
+                    await con.OpenAsync();
+                    cmd.Connection = con;
+
+                    cmd.CommandText = $"SELECT `messageID`, `channelID`, `content`, `created`, `creator`, `lastEdited`, `editor` " +
+                        $"FROM `{ServerMessageTable}` " +
+                        $"WHERE `messageID` = @messageID;";
+                    cmd.Parameters.AddWithValue("@messageID", messageID);
+                    cmd.Prepare();
+
+                    using (var reader = (MySqlDataReader)await cmd.ExecuteReaderAsync())
+                    {
+                        List<ServerMessage> serverMessages = new List<ServerMessage>();
+                        if (!await reader.ReadAsync())
+                            return null;
+
+                        return new ServerMessage(
+                            reader.GetUInt64(0),  // messageID
+                            reader.GetUInt64(1),  // ChannelID
+                            reader.GetString(2),  // Content
+                            DateTimeOffset.FromUnixTimeSeconds(reader.GetInt64(3)).DateTime,   // Created
+                            reader.GetUInt64(4),  // Creator
+                            DateTimeOffset.FromUnixTimeSeconds(reader.GetInt64(5)).DateTime,  // LastEdited
+                            reader.GetUInt64(6)); // Editor
+                    }
+                }
+            }
+
+            public async Task<IList<ServerMessage>> GetServerMessagesAsync()
+            {
+                Log.Debug("Getting all server messages from database.");
+
+                using (MySqlConnection con = _storageService.GetMySqlConnection())
+                using (MySqlCommand cmd = new MySqlCommand())
+                {
+                    await con.OpenAsync();
+                    cmd.Connection = con;
+
+                    cmd.CommandText = $"SELECT `messageID`, `channelID`, `content`, `created`, `creator`, `lastEdited`, `editor` FROM `{ServerMessageTable}`;";
+                    cmd.Prepare();
+
+                    using (var reader = (MySqlDataReader)await cmd.ExecuteReaderAsync())
+                    {
+                        List<ServerMessage> serverMessages = new List<ServerMessage>();
+                        while (await reader.ReadAsync())
+                        {
+                            serverMessages.Add(new ServerMessage(
+                                reader.GetUInt64(0),  // messageID
+                                reader.GetUInt64(1),  // ChannelID
+                                reader.GetString(2),  // Content
+                                DateTimeOffset.FromUnixTimeSeconds(reader.GetInt64(3)).DateTime,   // Created
+                                reader.GetUInt64(4),  // Creator
+                                DateTimeOffset.FromUnixTimeSeconds(reader.GetInt64(5)).DateTime,  // LastEdited
+                                reader.GetUInt64(6)   // Editor
+                                ));
+                        }
+                        return serverMessages;
+                    }
+                }
+            }
+
+            public async Task Cleanup()
+            {
+
+            }
+        }
+
         public async Task<string> GetUserDataAsync(ulong user)
         {
             var pendingVerifications = await Verification.GetAllUserPendingVerifications(user);
@@ -1265,6 +1450,7 @@ namespace ECSDiscord.Services
             Verification = new VerificationStorage(this);
             Users = new UserStorage(this);
             Courses = new CourseStorage(this);
+            ServerMessages = new ServerMessageStorage(this);
             startCleanupService();
             Log.Debug("Storage service loaded.");
         }

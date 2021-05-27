@@ -42,8 +42,11 @@ namespace ECSWebDashboard
             new Client
             {
                 ClientId = "public-dashboard",
-
+#if DEBUG
+                AccessTokenLifetime = 43200,
+#else
                 AccessTokenLifetime = 120, // Access token needs refreshed every 120s
+#endif
                 RefreshTokenUsage = TokenUsage.OneTimeOnly,
                 RefreshTokenExpiration = TokenExpiration.Sliding,
                 SlidingRefreshTokenLifetime = 1800, // If app is closed for half an hour, logout

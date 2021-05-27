@@ -77,6 +77,7 @@ namespace ECSDiscord
             serviceProvider.GetRequiredService<Services.RemoteDataAccessService>(); // Start remote data access service
             serviceProvider.GetRequiredService<Services.ImportService>(); // Start import service
             serviceProvider.GetRequiredService<Services.AdministrationService>(); // Start import service
+            serviceProvider.GetRequiredService<Services.ServerMessageService>(); // Start message service
             if (!await serviceProvider.GetRequiredService<Services.StorageService>().TestConnection()) // Test DB connection
                 throw new Exception("Storage service init failed.");
             await serviceProvider.GetRequiredService<Services.StartupService>().StartAsync(); // Run startup service
@@ -108,6 +109,7 @@ namespace ECSDiscord
             .AddSingleton<Services.RemoteDataAccessService>()       // Add verificationservice to the collection
             .AddSingleton<Services.ImportService>()             // Add import service
             .AddSingleton<Services.AdministrationService>()             // Add import service
+            .AddSingleton<Services.ServerMessageService>()             // Add message service
             .AddSingleton(this)
             .AddSingleton(Configuration);           // Add the configuration to the collection
         }
