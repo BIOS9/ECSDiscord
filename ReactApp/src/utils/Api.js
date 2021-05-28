@@ -3,7 +3,7 @@ import { useAuth } from 'src/utils/Authentication';
 import axios from 'axios';
 import PropTypes from 'prop-types';
 
-const baseUrl = 'https://localhost:6001/'; // Gonna fix this soon
+const baseUrl = 'https://localhost:6001/api/'; // Gonna fix this soon
 
 export const ApiContext = React.createContext();
 
@@ -17,7 +17,7 @@ export class ApiService {
   }
 
   getServerMessages = async () => {
-    const result = await axios.get(`${baseUrl}api/ServerMessages`, {
+    const result = await axios.get(`${baseUrl}ServerMessages`, {
       headers: {
         Authorization: `Bearer ${this.getToken()}`
       }
@@ -29,11 +29,46 @@ export class ApiService {
   }
 
   deleteServerMessage = async (id) => {
-    const result = await axios.delete(`${baseUrl}api/ServerMessages/${id}`, {
+    const result = await axios.delete(`${baseUrl}ServerMessages/${id}`, {
       headers: {
         Authorization: `Bearer ${this.getToken()}`
       }
     });
+
+    return result.data;
+  }
+
+  createServerMessage = async (name, content, channelID) => {
+    const result = await axios.post(`${baseUrl}ServerMessages`, {
+      name,
+      content,
+      channelID
+    }, {
+      headers: { Authorization: `Bearer ${this.getToken()}` }
+    });
+
+    return result.data;
+  }
+
+  editServerMessage = async (id, name, content) => {
+    const result = await axios.put(`${baseUrl}ServerMessages/${id}`, {
+      name,
+      content
+    }, {
+      headers: { Authorization: `Bearer ${this.getToken()}` }
+    });
+
+    return result.data;
+  }
+
+  getDiscordChannels = async () => {
+    const result = await axios.get(`${baseUrl}server/text-channels`, {
+      headers: {
+        Authorization: `Bearer ${this.getToken()}`
+      }
+    });
+
+    console.log(result.data);
 
     return result.data;
   }

@@ -155,7 +155,14 @@ namespace ECSDiscord.Services
                 .GetMessageAsync(storageMessage.MessageID);
             await message.DeleteAsync();
 
-            await _storage.ServerMessages.DeleteServerMessageAsync(messageID);
+            try
+            {
+                await _storage.ServerMessages.DeleteServerMessageAsync(messageID);
+            }
+            catch(Exception ex)
+            {
+                Log.Error(ex, "Failed to delete server message from Discord channel." + ex.Message);
+            }
         }
 
         /// <summary>

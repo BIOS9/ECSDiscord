@@ -44,7 +44,7 @@ namespace ECSWebDashboard
 
             services.AddTransient<IProfileService, ProfileService>();
             services.AddOidcStateDataFormatterCache();
-            Console.WriteLine(Directory.GetCurrentDirectory());
+            
             JObject secrets = JObject.Parse(File.ReadAllText(".secrets.json")); // janky
             services.AddAuthentication()
                 .AddCookie()

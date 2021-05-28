@@ -51,10 +51,6 @@ namespace ECSWebDashboard
 #endif
             });
 
-
-
-            services.AddCors();
-
             services.AddAuthorization(options =>
             {
                 options.AddPolicy("member", policy =>
@@ -70,6 +66,14 @@ namespace ECSWebDashboard
                     policy.RequireAssertion(DiscordServiceProvider.IsAdmin);
                 });
             });
+
+            services.AddCors(options =>
+            {
+                options.AddDefaultPolicy(builder => builder
+                    .WithOrigins("http://localhost:3000")
+                    .AllowAnyMethod()
+                    .AllowAnyHeader());
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -80,6 +84,9 @@ namespace ECSWebDashboard
                 app.UseDeveloperExceptionPage();
             }
 
+            app.UseOptions();
+            app.UseCors();
+
             app.UseHttpsRedirection();
 
             app.UseRouting();
@@ -88,12 +95,6 @@ namespace ECSWebDashboard
             app.UseAuthorization();
 
             app.UseFileServer();
-
-            app.UseCors(options => options
-                .AllowAnyMethod()
-                .AllowAnyHeader()
-                .SetIsOriginAllowed(origin => true)
-                .AllowCredentials());
 
             app.UseEndpoints(endpoints =>
             {

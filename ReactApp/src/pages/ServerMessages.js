@@ -7,15 +7,22 @@ import {
 } from 'src/utils/Authentication';
 import MessageList from 'src/components/servermessages/MessageListResults';
 import MessageListToolbar from 'src/components/servermessages/MessageListToolbar';
+import MessageCreate from 'src/components/servermessages/MessageCreate';
+import MessageEdit from 'src/components/servermessages/MessageEdit';
 
 const ServerMessages = () => {
   const authService = useAuth();
   const apiService = useApi();
   const [serverMessages, setServerMessages] = useState([]);
+  const [discordChannels, setDiscordChannels] = useState([]);
+  const [editMode, setEditMode] = useState(false);
+  const [createMode, setCreateMode] = useState(false);
+  const [selectedMessage, setSelectedMessage] = useState();
 
   useEffect(async () => {
     if (authService.isAuthenticated()) {
       setServerMessages(await apiService.getServerMessages());
+      setDiscordChannels(await apiService.getDiscordChannels());
     }
   }, []);
 
@@ -24,6 +31,50 @@ const ServerMessages = () => {
       await apiService.deleteServerMessage(id);
       setServerMessages(await apiService.getServerMessages());
     }
+  };
+
+  const edit = (id) => {
+    setSelectedMessage(serverMessages.filter((m) => m.id === id)[0]);
+    setEditMode(true);
+    setCreateMode(false);
+  };
+
+  const create = () => {
+    setEditMode(false);
+    setCreateMode(true);
+  };
+
+  const display = async () => {
+    setEditMode(false);
+    setCreateMode(false);
+    setServerMessages(await apiService.getServerMessages());
+  };
+
+  const selectInterface = () => {
+    if (editMode) {
+      return (
+        <Container maxWidth={false}>
+          <MessageEdit apiService={apiService} display={display} selectedMessage={selectedMessage} />
+        </Container>
+      );
+    }
+
+    if (createMode) {
+      return (
+        <Container maxWidth={false}>
+          <MessageCreate apiService={apiService} discordChannels={discordChannels} display={display} />
+        </Container>
+      );
+    }
+
+    return (
+      <Container maxWidth={false}>
+        <MessageListToolbar create={create} />
+        <Box sx={{ pt: 3 }}>
+          <MessageList messages={serverMessages} deleteMessage={deleteMessage} edit={edit} />
+        </Box>
+      </Container>
+    );
   };
 
   return (
@@ -38,12 +89,7 @@ const ServerMessages = () => {
           py: 3
         }}
       >
-        <Container maxWidth={false}>
-          <MessageListToolbar />
-          <Box sx={{ pt: 3 }}>
-            <MessageList messages={serverMessages} deleteMessage={deleteMessage} />
-          </Box>
-        </Container>
+        {selectInterface()}
       </Box>
     </span>
   );

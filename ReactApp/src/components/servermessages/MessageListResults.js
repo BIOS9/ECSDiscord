@@ -16,7 +16,12 @@ import {
   Button
 } from '@material-ui/core';
 
-const MessageListsResults = ({ messages, deleteMessage, ...rest }) => {
+const MessageListsResults = ({
+  messages,
+  deleteMessage,
+  edit,
+  ...rest
+}) => {
   const [limit, setLimit] = useState(10);
   const [page, setPage] = useState(0);
 
@@ -129,7 +134,7 @@ const MessageListsResults = ({ messages, deleteMessage, ...rest }) => {
                         display: 'flex'
                       }}
                     >
-                      <Button color="primary">Edit</Button>
+                      <Button color="primary" onClick={() => edit(message.id)}>Edit</Button>
                       <Button color="secondary" onClick={() => deleteMessage(message.id)}>Delete</Button>
                     </Box>
                   </TableCell>
@@ -154,7 +159,8 @@ const MessageListsResults = ({ messages, deleteMessage, ...rest }) => {
 
 MessageListsResults.propTypes = {
   messages: PropTypes.array.isRequired,
-  deleteMessage: PropTypes.func.isRequired
+  deleteMessage: PropTypes.func.isRequired,
+  edit: PropTypes.func.isRequired
 };
 
 export default MessageListsResults;

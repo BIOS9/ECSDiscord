@@ -7,6 +7,7 @@ using Discord.WebSocket;
 using ECSDiscord.Services;
 using ECSWebDashboard.Models;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
@@ -47,7 +48,7 @@ namespace ECSWebDashboard.Controllers
 
         // POST: api/ServerMessages
         [HttpPost]
-        public async Task<ServerMessage> Post(string name, string content, ulong channelID)
+        public async Task<ServerMessage> Post([FromBody]CreateServerMessageParams args)
         {
             Discord.IUser discordUser = _discord.GetUser(ulong.Parse(User.FindFirst("discord:id").Value));
             if (discordUser == null)
@@ -55,41 +56,41 @@ namespace ECSWebDashboard.Controllers
 
             SocketTextChannel channel = _discord
                 .GetGuild(_guildId)
-                .GetTextChannel(channelID);
+                .GetTextChannel(ulong.Parse(args.ChannelID));
             if (channel == null)
                 throw new ArgumentException("Discord channel not found.");
 
-            if (string.IsNullOrEmpty(name))
+            if (string.IsNullOrEmpty(args.Name))
                 throw new ArgumentException("Name cannot be null.");
 
-            if (string.IsNullOrWhiteSpace(content))
+            if (string.IsNullOrWhiteSpace(args.Content))
                 throw new ArgumentException("Content cannot be null.");
 
-            return new ServerMessage(await _messageService.CreateMessageAsync(content, name, discordUser, channel));
+            return new ServerMessage(await _messageService.CreateMessageAsync(args.Content, args.Name, discordUser, channel));
         }
 
         // PUT: api/ServerMessages/5
         [HttpPut("{id}")]
-        public async Task<ServerMessage> Put(ulong id, string name, string content)
+        public async Task<ServerMessage> Put(string id, [FromBody]EditServerMessageParams args)
         {
             Discord.IUser discordUser = _discord.GetUser(ulong.Parse(User.FindFirst("discord:id").Value));
             if (discordUser == null)
                 throw new ArgumentException("Discord user not found.");
 
-            if (string.IsNullOrEmpty(name))
+            if (string.IsNullOrEmpty(args.Name))
                 throw new ArgumentException("Name cannot be null.");
 
-            if (string.IsNullOrWhiteSpace(content))
+            if (string.IsNullOrWhiteSpace(args.Content))
                 throw new ArgumentException("Content cannot be null.");
 
-            return new ServerMessage(await _messageService.EditMessageAsync(id, content, name, discordUser));
+            return new ServerMessage(await _messageService.EditMessageAsync(ulong.Parse(id), args.Content, args.Name, discordUser));
         }
 
         // DELETE: api/ApiWithActions/5
         [HttpDelete("{id}")]
-        public async Task Delete(ulong id)
+        public async Task Delete(string id)
         {
-            await _messageService.DeleteMessageAsync(id);
+            await _messageService.DeleteMessageAsync(ulong.Parse(id));
         }
 
         private void loadConfig()

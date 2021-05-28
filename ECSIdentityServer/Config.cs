@@ -45,7 +45,7 @@ namespace ECSWebDashboard
 #if DEBUG
                 AccessTokenLifetime = 43200,
 #else
-                AccessTokenLifetime = 120, // Access token needs refreshed every 120s
+                AccessTokenLifetime = 300, // Access token needs refreshed every 300s
 #endif
                 RefreshTokenUsage = TokenUsage.OneTimeOnly,
                 RefreshTokenExpiration = TokenExpiration.Sliding,
@@ -63,11 +63,19 @@ namespace ECSWebDashboard
                 RedirectUris = { "https://localhost:44300/signin-oidc", "http://localhost:3000", "https://oauth.pstmn.io/v1/callback" },
                 FrontChannelLogoutUri = "https://localhost:44300/signout-oidc",
                 PostLogoutRedirectUris = { "https://localhost:44300/signout-callback-oidc" },
+#else
+                RedirectUris = { "https://ecsdashboard.nightfish.co" },
+                FrontChannelLogoutUri = "https://localhost:44300/signout-oidc",
+                PostLogoutRedirectUris = { "https://ecsdashboard.nightfish.co/loggedout" },
 #endif
 
                 AllowedScopes = { "openid", "profile", "ecsdiscord", StandardScopes.OfflineAccess },
 
+#if DEBUG
                 AllowedCorsOrigins = { "http://localhost:3000" },
+#else 
+                AllowedCorsOrigins = { "https://ecsdashboard.nightfish.co" },
+#endif
 
                 AlwaysIncludeUserClaimsInIdToken = true,
                 AlwaysSendClientClaims = true
