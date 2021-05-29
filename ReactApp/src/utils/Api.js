@@ -3,7 +3,7 @@ import { useAuth } from 'src/utils/Authentication';
 import axios from 'axios';
 import PropTypes from 'prop-types';
 
-const baseUrl = 'https://localhost:6001/api/'; // Gonna fix this soon
+const baseUrl = 'https://ecs.nightfish.co/api/'; // Gonna fix this soon
 
 export const ApiContext = React.createContext();
 

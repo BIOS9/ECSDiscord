@@ -5,6 +5,7 @@ import MainLayout from './components/MainLayout';
 import Account from './pages/Account';
 import ServerMessages from './pages/ServerMessages';
 import Dashboard from './pages/Dashboard';
+import Home from './pages/Home';
 import Login from './pages/Login';
 import NotFound from './pages/NotFound';
 import ProductList from './pages/ProductList';
@@ -16,7 +17,7 @@ const routes = [
     path: 'app',
     element: <DashboardLayout />,
     children: [
-      { path: 'home', element: <Dashboard /> },
+      { path: 'home', element: <Home /> },
       { path: 'courses', element: <Dashboard /> },
       { path: 'users', element: <Account /> },
       { path: 'verification', element: <Account /> },
@@ -33,7 +34,7 @@ const routes = [
     children: [
       { path: 'login', element: <Login /> },
       { path: 'register', element: <Register /> },
-      { path: '/', element: <Navigate to="/app/courses" /> },
+      { path: '/', element: <Navigate to="/app/home" /> },
       { path: '*', element: <NotFound /> }
     ]
   }

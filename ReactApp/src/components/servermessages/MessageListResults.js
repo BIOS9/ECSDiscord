@@ -121,7 +121,7 @@ const MessageListsResults = ({
                         {`${moment.unix(message.editedAt).fromNow()} by ${message.editor.username}`}
                       </Typography>
                       <Avatar
-                        src={message.creator.avatar}
+                        src={message.editor.avatar}
                         sx={{ ml: 1 }}
                       />
                     </Box>

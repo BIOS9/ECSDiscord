@@ -17,11 +17,11 @@ import {
   Typography
 } from '@material-ui/core';
 import {
-  BookOpen as BookIcon,
+  // BookOpen as BookIcon,
   MessageSquare as MessageSquareIcon,
-  Settings as SettingsIcon,
-  UserCheck as UserCheckIcon,
-  Users as UsersIcon,
+  // Settings as SettingsIcon,
+  // UserCheck as UserCheckIcon,
+  // Users as UsersIcon,
   Home as HomeIcon,
   LogIn as LoginIcon,
   LogOut as LogoutIcon
@@ -34,31 +34,31 @@ const items = [
     icon: HomeIcon,
     title: 'Home'
   },
-  {
-    href: '/app/courses',
-    icon: BookIcon,
-    title: 'Courses'
-  },
-  {
-    href: '/app/users',
-    icon: UsersIcon,
-    title: 'Users'
-  },
-  {
-    href: '/app/verification',
-    icon: UserCheckIcon,
-    title: 'Verification'
-  },
+  // {
+  //   href: '/app/courses',
+  //   icon: BookIcon,
+  //   title: 'Courses'
+  // },
+  // {
+  //   href: '/app/users',
+  //   icon: UsersIcon,
+  //   title: 'Users'
+  // },
+  // {
+  //   href: '/app/verification',
+  //   icon: UserCheckIcon,
+  //   title: 'Verification'
+  // },
   {
     href: '/app/server-messages',
     icon: MessageSquareIcon,
     title: 'Server Messages'
-  },
-  {
-    href: '/app/settings',
-    icon: SettingsIcon,
-    title: 'Settings'
   }
+  // {
+  //   href: '/app/settings',
+  //   icon: SettingsIcon,
+  //   title: 'Settings'
+  // }
 ];
 
 const DashboardSidebar = ({ onMobileClose, openMobile }) => {
