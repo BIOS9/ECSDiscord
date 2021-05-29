@@ -42,11 +42,11 @@ namespace ECSWebDashboard
             new Client
             {
                 ClientId = "public-dashboard",
-#if DEBUG
-                AccessTokenLifetime = 43200,
-#else
+//#if DEBUG
+//                AccessTokenLifetime = 43200,
+//#else
                 AccessTokenLifetime = 300, // Access token needs refreshed every 300s
-#endif
+//#endif
                 RefreshTokenUsage = TokenUsage.OneTimeOnly,
                 RefreshTokenExpiration = TokenExpiration.Sliding,
                 SlidingRefreshTokenLifetime = 1800, // If app is closed for half an hour, logout
@@ -59,23 +59,19 @@ namespace ECSWebDashboard
                     
                 AllowedGrantTypes = GrantTypes.Code,
 
-#if DEBUG
-                RedirectUris = { "https://localhost:44300/signin-oidc", "http://localhost:3000", "https://oauth.pstmn.io/v1/callback" },
-                FrontChannelLogoutUri = "https://localhost:44300/signout-oidc",
-                PostLogoutRedirectUris = { "https://localhost:44300/signout-callback-oidc" },
-#else
-                RedirectUris = { "https://ecsdashboard.nightfish.co" },
-                FrontChannelLogoutUri = "https://localhost:44300/signout-oidc",
-                PostLogoutRedirectUris = { "https://ecsdashboard.nightfish.co/loggedout" },
-#endif
+
+                //RedirectUris = { "https://localhost:44300/signin-oidc", "http://localhost:3000", "https://oauth.pstmn.io/v1/callback" },
+                //FrontChannelLogoutUri = "https://localhost:44300/signout-oidc",
+                //PostLogoutRedirectUris = { "https://localhost:44300/signout-callback-oidc" },
+
+                RedirectUris = { "https://ecs.nightfish.co" },
+                PostLogoutRedirectUris = { "https://ecs.nightfish.co/loggedout" },
+
 
                 AllowedScopes = { "openid", "profile", "ecsdiscord", StandardScopes.OfflineAccess },
-
-#if DEBUG
-                AllowedCorsOrigins = { "http://localhost:3000" },
-#else 
-                AllowedCorsOrigins = { "https://ecsdashboard.nightfish.co" },
-#endif
+                
+                //AllowedCorsOrigins = { "http://localhost:3000" },
+                AllowedCorsOrigins = { "https://ecs.nightfish.co" },
 
                 AlwaysIncludeUserClaimsInIdToken = true,
                 AlwaysSendClientClaims = true

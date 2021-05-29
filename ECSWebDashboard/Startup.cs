@@ -44,7 +44,12 @@ namespace ECSWebDashboard
                 options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
             }).AddJwtBearer(options =>
             {
-                options.Authority = "https://localhost:5001";
+#if DEBUG
+                //options.Authority = "https://localhost:5001";
+                options.Authority = "https://ecsauth.nightfish.co";
+#else
+                options.Authority = "https://ecsauth.nightfish.co";
+#endif
                 options.Audience = "ecsdiscord";
 #if DEBUG
                 options.RequireHttpsMetadata = false;
@@ -99,6 +104,7 @@ namespace ECSWebDashboard
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
+                endpoints.MapFallbackToFile("/index.html");
             });
             app.UseDiscord(new LoggerConfiguration()
                 .MinimumLevel.Information()
