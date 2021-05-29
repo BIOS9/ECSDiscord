@@ -14,8 +14,8 @@ namespace ECSWebDashboard.Models
 
         public DiscordChannel(Discord.IChannel channel)
         {
-            ID = channel.Id.ToString();
-            Name = channel.Name;
+            ID = channel?.Id.ToString() ?? string.Empty;
+            Name = channel?.Name ?? string.Empty;
         }
     }
 }

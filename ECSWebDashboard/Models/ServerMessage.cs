@@ -21,14 +21,14 @@ namespace ECSWebDashboard.Models
 
         public ServerMessage(ServerMessageService.ServerMessage serverMessage)
         {
-            ID = serverMessage.Message.Id.ToString();
+            ID = serverMessage.ID.ToString();
             CreatedAt = serverMessage.CreatedAt.ToUnixTimeSeconds();
             Creator = new DiscordUser(serverMessage.Creator);
             EditedAt = serverMessage.EditedAt.ToUnixTimeSeconds();
             Editor = new DiscordUser(serverMessage.Editor);
             Content = serverMessage.Content;
             Name = serverMessage.Name;
-            Channel = new DiscordChannel(serverMessage.Message.Channel);
+            Channel = new DiscordChannel(serverMessage.Message?.Channel);
         }
     }
 }

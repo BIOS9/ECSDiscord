@@ -3,7 +3,7 @@ import { useAuth } from 'src/utils/Authentication';
 import axios from 'axios';
 import PropTypes from 'prop-types';
 
-const baseUrl = 'https://ecs.nightfish.co/api/'; // Gonna fix this soon
+const baseUrl = (!process.env.NODE_ENV || process.env.NODE_ENV === 'development') ? 'https://localhost:6001/api/' : 'https://ecs.nightfish.co/api/';
 
 export const ApiContext = React.createContext();
 

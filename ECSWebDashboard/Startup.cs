@@ -45,8 +45,7 @@ namespace ECSWebDashboard
             }).AddJwtBearer(options =>
             {
 #if DEBUG
-                //options.Authority = "https://localhost:5001";
-                options.Authority = "https://ecsauth.nightfish.co";
+                options.Authority = "https://localhost:5001";
 #else
                 options.Authority = "https://ecsauth.nightfish.co";
 #endif
@@ -75,7 +74,9 @@ namespace ECSWebDashboard
             services.AddCors(options =>
             {
                 options.AddDefaultPolicy(builder => builder
+#if DEBUG
                     .WithOrigins("http://localhost:3000")
+#endif
                     .AllowAnyMethod()
                     .AllowAnyHeader());
             });

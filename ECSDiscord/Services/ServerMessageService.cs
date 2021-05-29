@@ -30,6 +30,8 @@ namespace ECSDiscord.Services
 
         public class ServerMessage
         {
+            public readonly ulong ID;
+            public readonly ulong ChannelID;
             public readonly IMessage Message;
             public readonly IUser Creator;
             public readonly DateTimeOffset CreatedAt;
@@ -38,8 +40,10 @@ namespace ECSDiscord.Services
             public readonly string Content;
             public readonly string Name;
 
-            public ServerMessage(IMessage message, IUser creator, DateTimeOffset createdAt, IUser editor, DateTimeOffset editedAt, string content, string name)
+            public ServerMessage(ulong id, ulong channelID, IMessage message, IUser creator, DateTimeOffset createdAt, IUser editor, DateTimeOffset editedAt, string content, string name)
             {
+                ID = id;
+                ChannelID = channelID;
                 Message = message; // Allowed to be null
                 Creator = creator ?? throw new ArgumentNullException(nameof(creator));
                 CreatedAt = createdAt;
@@ -50,16 +54,17 @@ namespace ECSDiscord.Services
             }
 
             public static async Task<ServerMessage> CreateFromStorageAsync(
-                StorageService.ServerMessageStorage.ServerMessage storageMessage, 
+                StorageService.ServerMessageStorage.ServerMessage storageMessage,
                 SocketGuild guild,
                 DiscordSocketClient discordClient)
             {
-                IMessage message = await guild
-                    .GetTextChannel(storageMessage.ChannelID)
-                    .GetMessageAsync(storageMessage.MessageID);
+                SocketTextChannel channel = guild?.GetTextChannel(storageMessage.ChannelID);
+                IMessage message = await (channel?.GetMessageAsync(storageMessage.MessageID) ?? Task.FromResult<IMessage>(null));
                 IUser creator = discordClient.GetUser(storageMessage.Creator);
                 IUser editor = discordClient.GetUser(storageMessage.LastEditor);
                 return new ServerMessage(
+                    storageMessage.MessageID,
+                    storageMessage.ChannelID,
                     message,
                     creator,
                     storageMessage.CreatedAt,
@@ -117,7 +122,7 @@ namespace ECSDiscord.Services
             var channel = guild.GetTextChannel(storageMsg.ChannelID);
             if (channel == null)
                 throw new Exception("Channel not found.");
-            
+
             var msg = (IUserMessage)(await channel.GetMessageAsync(storageMsg.MessageID));
             if (msg == null)
                 throw new Exception("Message has been deleted/not found.");
@@ -126,7 +131,7 @@ namespace ECSDiscord.Services
             {
                 m.Content = content;
             });
-            
+
             await _storage.ServerMessages.CreateServerMessageAsync(new StorageService.ServerMessageStorage.ServerMessage(
                 storageMsg.MessageID,
                 storageMsg.ChannelID,
@@ -145,24 +150,24 @@ namespace ECSDiscord.Services
 
         public async Task DeleteMessageAsync(ulong messageID)
         {
-            StorageService.ServerMessageStorage.ServerMessage storageMessage = 
+            StorageService.ServerMessageStorage.ServerMessage storageMessage =
                 await _storage.ServerMessages.GetServerMessageAsync(messageID);
             if (storageMessage == null)
                 throw new KeyNotFoundException("Server Message not found.");
 
-            IMessage message = await _discord.GetGuild(_guildId)
-                .GetTextChannel(storageMessage.ChannelID)
-                .GetMessageAsync(storageMessage.MessageID);
-            await message.DeleteAsync();
-
             try
             {
-                await _storage.ServerMessages.DeleteServerMessageAsync(messageID);
+                IMessage message = await _discord.GetGuild(_guildId)
+                .GetTextChannel(storageMessage.ChannelID)
+                .GetMessageAsync(storageMessage.MessageID);
+                await message.DeleteAsync();
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Log.Error(ex, "Failed to delete server message from Discord channel." + ex.Message);
             }
+
+            await _storage.ServerMessages.DeleteServerMessageAsync(messageID);
         }
 
         /// <summary>

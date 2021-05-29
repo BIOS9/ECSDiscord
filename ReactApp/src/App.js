@@ -12,7 +12,7 @@ import routes from './routes';
 const authServiceOptions = {
   clientId: 'public-dashboard',
   location: window.location,
-  provider: 'https://ecsauth.nightfish.co/connect',
+  provider: (!process.env.NODE_ENV || process.env.NODE_ENV === 'development') ? 'https://localhost:5001/connect' : 'https://ecsauth.nightfish.co/connect',
   redirectUri: window.location.origin,
   scopes: ['openid', 'profile', 'ecsdiscord', 'offline_access'],
   autoRefresh: true,
