@@ -341,3 +341,8 @@ ASALocalRun/
 
 # BeatPulse healthcheck temp database
 healthchecksdb
+ECSIdentityServer/.secrets.json
+
+ECSWebDashboard/config.yml
+
+ECSWebDashboard/logs/
