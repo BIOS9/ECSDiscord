@@ -10,6 +10,7 @@ using static ECSDiscord.Services.EnrollmentsService;
 using Discord;
 using Discord.WebSocket;
 using ECSDiscord.Core.Translations;
+using System.IO;
 
 namespace ECSDiscord.BotModules
 {
@@ -301,13 +302,35 @@ namespace ECSDiscord.BotModules
                 return;
             }
 
-            StringBuilder builder = new StringBuilder(_courses.NormaliseCourseName(courseName) + $" has the following {users.Count} members:```");
+            StringBuilder builder = new StringBuilder();
             foreach(SocketUser user in users)
             {
-                builder.Append("\n");
                 builder.Append($"{user.Username}#{user.Discriminator}  -  {user.Id}");
+                builder.Append("\n");
             }
-            await ReplyAsync(builder.ToString().SanitizeMentions() + "```");
+            string msg = builder.ToString();
+            if(msg.Length >= 2000) // Msg too long for discord
+            {
+                using(MemoryStream ms = new MemoryStream())
+                {
+                    using(StreamWriter sw = new StreamWriter(ms, leaveOpen: true))
+                    {
+                        sw.Write(msg);
+                    }
+                    ms.Seek(0, SeekOrigin.Begin);
+                    await ReplyAsync(_courses.NormaliseCourseName(courseName) +
+                        $" has the following {users.Count} members");
+                    await Context.Channel.SendFileAsync(ms, $"{courseName} users.txt");
+                }
+            }
+            else
+            {
+                await ReplyAsync(
+                    _courses.NormaliseCourseName(courseName) + 
+                    $" has the following {users.Count} members:```\n" + 
+                    builder.ToString().SanitizeMentions() + 
+                    "```");
+            }
         }
 
         [Command("membercount")]
