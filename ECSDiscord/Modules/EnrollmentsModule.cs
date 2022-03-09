@@ -56,17 +56,18 @@ namespace ECSDiscord.BotModules
 
             var userCourses = await _enrollments.GetUserCourses(Context.User);
             int courseCount = userCourses.Count;
-
+            const int maxCourses = 15;
+            
+            if (courseCount >= maxCourses)
+            {
+                await ReplyAsync(_translator.T("ENROLLMENT_MAX_COURSE_COUNT"));
+                return;
+            }
+            
             // Add user to courses
             StringBuilder stringBuilder = new StringBuilder();
             foreach (string course in formattedCourses)
             {
-                if (courseCount >= 15)
-                {
-                    await ReplyAsync(_translator.T("ENROLLMENT_MAX_COURSE_COUNT"));
-                    return;
-                }
-                
                 if(course.Equals("boomer", System.StringComparison.OrdinalIgnoreCase))
                 {
                     stringBuilder.Append(_translator.T("ENROLLMENT_OK_BOOMER"));
@@ -93,6 +94,12 @@ namespace ECSDiscord.BotModules
                     case EnrollmentResult.Unverified:
                         stringBuilder.Append(_translator.T("ENROLLMENT_VERIFICATION_REQUIRED", course));
                         break;
+                }
+                
+                if (courseCount >= maxCourses) // This one is here to allow joined courses to be printed out even if the max is reached.
+                {
+                    await ReplyAsync(_translator.T("ENROLLMENT_MAX_COURSE_COUNT"));
+                    return;
                 }
             }
 
