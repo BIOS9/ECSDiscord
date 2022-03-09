@@ -54,10 +54,19 @@ namespace ECSDiscord.BotModules
                 return;
             }
 
+            var userCourses = await _enrollments.GetUserCourses(Context.User);
+            int courseCount = userCourses.Count;
+
             // Add user to courses
             StringBuilder stringBuilder = new StringBuilder();
             foreach (string course in formattedCourses)
             {
+                if (courseCount >= 15)
+                {
+                    await ReplyAsync(_translator.T("ENROLLMENT_MAX_COURSE_COUNT"));
+                    return;
+                }
+                
                 if(course.Equals("boomer", System.StringComparison.OrdinalIgnoreCase))
                 {
                     stringBuilder.Append(_translator.T("ENROLLMENT_OK_BOOMER"));
@@ -78,6 +87,7 @@ namespace ECSDiscord.BotModules
                         stringBuilder.Append(_translator.T("ENROLLMENT_SERVER_ERROR", course));
                         break;
                     case EnrollmentResult.Success:
+                        ++courseCount;
                         stringBuilder.Append(_translator.T("ENROLLMENT_JOIN_SUCCESS", course));
                         break;
                     case EnrollmentResult.Unverified:

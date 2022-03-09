@@ -58,6 +58,7 @@ namespace ECSDiscord.Core.Translations
             { "ENROLLMENT_JOIN_SUCCESS",  ":inbox_tray:  **{0}** - Added you to {0} successfully.\n" },
             { "ENROLLMENT_OK_BOOMER",  ":boom:  **BOOMER** - Okay boomer.\n" },
             { "ENROLLMENT_LEAVE_SUCCESS",  ":outbox_tray:  **{0}** - Removed you from {0} successfully.\n" },
+            { "ENROLLMENT_MAX_COURSE_COUNT",  ":warning:  You have reached the maximum number of courses you can join.\n" },
             { "ENROLLMENT_VERIFICATION_REQUIRED",  ":warning:  **{0}** - Sorry you must be verified before you can join any courses.\n" +
                 "**Private message** me the following command to verify: ```+verify username@myvuw.ac.nz```" },
             { "ENROLLMENT_VERIFICATION_REQUIRED_ANY",  ":warning:  Sorry you must be verified before you can join any courses.\n" +
