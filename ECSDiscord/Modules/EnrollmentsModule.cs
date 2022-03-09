@@ -99,7 +99,7 @@ namespace ECSDiscord.BotModules
                 if (courseCount >= maxCourses) // This one is here to allow joined courses to be printed out even if the max is reached.
                 {
                     await ReplyAsync(_translator.T("ENROLLMENT_MAX_COURSE_COUNT"));
-                    return;
+                    break;
                 }
             }
 
