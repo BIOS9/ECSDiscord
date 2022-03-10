@@ -35,9 +35,9 @@ namespace ECSDiscord.Services
         public VerificationStorage Verification { get; private set; }
         public class VerificationStorage
         {
-            private const string PendingVerificationsTable = "pendingVerifications";
-            private const string VerificationHistoryTable = "verificationHistory";
-            private const string VerificationOverrideTable = "verificationOverrides";
+            private const string PendingVerificationsTable = "pendingverifications";
+            private const string VerificationHistoryTable = "verificationhistory";
+            private const string VerificationOverrideTable = "verificationoverrides";
             private const string UsersTable = "users";
             private static readonly TimeSpan PendingVerificationDeletionTime = TimeSpan.FromDays(14);
 
@@ -472,7 +472,7 @@ namespace ECSDiscord.Services
         public class UserStorage
         {
             private const string UsersTable = "users";
-            private const string UserCoursesTable = "userCourses";
+            private const string UserCoursesTable = "usercourses";
             private StorageService _storageService;
 
             public UserStorage(StorageService storageService)
@@ -674,11 +674,11 @@ namespace ECSDiscord.Services
         public CourseStorage Courses { get; private set; }
         public class CourseStorage
         {
-            private const string CategoryTable = "courseCategories";
+            private const string CategoryTable = "coursecategories";
             private const string CourseTable = "courses";
-            private const string UserCoursesTable = "userCourses";
-            private const string AutoCreatePatternTable = "autoCreatePatterns";
-            private const string AliasTable = "courseAliases";
+            private const string UserCoursesTable = "usercourses";
+            private const string AutoCreatePatternTable = "autocreatepatterns";
+            private const string AliasTable = "coursealiases";
 
             private StorageService _storageService;
 
@@ -1189,7 +1189,7 @@ namespace ECSDiscord.Services
         public ServerMessageStorage ServerMessages { get; private set; }
         public class ServerMessageStorage
         {
-            private const string ServerMessageTable = "serverMessages";
+            private const string ServerMessageTable = "servermessages";
 
             private StorageService _storageService;
 
