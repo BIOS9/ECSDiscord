@@ -54,6 +54,7 @@ namespace ECSDiscord.Core.Translations
             { "ENROLLMENT_ALREADY_ENROLLED", ":warning:  **{0}** - You are already in `{0}`.\n" },
             { "ENROLLMENT_ALREADY_LEFT", ":warning:  **{0}** - You are not in `{0}`.\n" },
             { "ENROLLMENT_INVALID_COURSE",  ":warning:  **{0}** - Sorry `{0}` does not exist.\n" },
+            { "ENROLLMENT_BLACKLISTED", ":no_entry_sign: You are not allowed to join any courses." },
             { "ENROLLMENT_SERVER_ERROR",  ":fire:  **{0}** - A server error occured. Please ask an admin to check the logs.\n" },
             { "ENROLLMENT_JOIN_SUCCESS",  ":inbox_tray:  **{0}** - Added you to {0} successfully.\n" },
             { "ENROLLMENT_OK_BOOMER",  ":boom:  **BOOMER** - Okay boomer.\n" },
@@ -69,6 +70,7 @@ namespace ECSDiscord.Core.Translations
             { "IMPORT_PERMISSIONS_START",  "**Import:** Converting role permissions to user override permissions on course channels.\n" +
                 "This may take a while." },
             { "IMPORT_PERMISSIONS_END",  "**Import:** Permission conversion finished." },
+            { "NO_DISALLOWED_USERS", "There are no users blacklisted from joining courses." }
         });
 
         private readonly IDictionary<string, string> _translationMap;

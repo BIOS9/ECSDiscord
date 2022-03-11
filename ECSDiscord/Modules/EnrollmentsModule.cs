@@ -21,13 +21,15 @@ namespace ECSDiscord.BotModules
         private readonly ITranslator _translator;
         private readonly EnrollmentsService _enrollments;
         private readonly CourseService _courses;
+        private readonly StorageService _storage;
 
-        public EnrollmentsModule(IConfigurationRoot config, ITranslator translator, EnrollmentsService enrollments, CourseService courses)
+        public EnrollmentsModule(IConfigurationRoot config, ITranslator translator, EnrollmentsService enrollments, CourseService courses, StorageService storage)
         {
             _config = config;
             _translator = translator;
             _enrollments = enrollments;
             _courses = courses;
+            _storage = storage;
         }
 
         [Command("join")]
@@ -83,6 +85,9 @@ namespace ECSDiscord.BotModules
                     case EnrollmentResult.CourseNotExist:
                         stringBuilder.Append(_translator.T("ENROLLMENT_INVALID_COURSE", course));
                         break;
+                    case EnrollmentResult.Blacklisted:
+                        await ReplyAsync(_translator.T("ENROLLMENT_BLACKLISTED"));
+                        return;
                     default:
                     case EnrollmentResult.Failure:
                         stringBuilder.Append(_translator.T("ENROLLMENT_SERVER_ERROR", course));
@@ -240,6 +245,9 @@ namespace ECSDiscord.BotModules
                     case EnrollmentResult.CourseNotExist:
                         stringBuilder.Append(_translator.T("ENROLLMENT_INVALID_COURSE", course));
                         break;
+                    case EnrollmentResult.Blacklisted:
+                        await ReplyAsync(_translator.T("ENROLLMENT_BLACKLISTED"));
+                        return;
                     default:
                     case EnrollmentResult.Failure:
                         stringBuilder.Append(_translator.T("ENROLLMENT_SERVER_ERROR", course));
@@ -373,6 +381,151 @@ namespace ECSDiscord.BotModules
             }
 
             await ReplyAsync(_courses.NormaliseCourseName(courseName) + $" has {users.Count} members.".SanitizeMentions());
+        }
+        
+        [Command("removecourse")]
+        [Alias("remove")]
+        [Summary("Removes a user from a course")]
+        [RequireUserPermission(GuildPermission.Administrator)]
+        public async Task RemoveCourseAsync(SocketUser user, params string[] courses)
+        {
+            // Ensure course list is valid
+            if (!checkCourses(courses, true, out string errorMessage, out ISet<string> formattedCourses))
+            {
+                await ReplyAsync(errorMessage.SanitizeMentions());
+                return;
+            }
+
+            await ReplyAsync(_translator.T("COMMAND_PROCESSING"));
+            if (Context.Guild != null)
+                await Context.Guild.DownloadUsersAsync();
+            // Add user to courses
+            StringBuilder stringBuilder = new StringBuilder();
+            foreach (string course in formattedCourses)
+            {
+                EnrollmentResult result = await _enrollments.DisenrollUser(course, user);
+                switch (result)
+                {
+                    case EnrollmentResult.AlreadyLeft:
+                        stringBuilder.Append(_translator.T("ENROLLMENT_ALREADY_LEFT", course));
+                        break;
+                    case EnrollmentResult.CourseNotExist:
+                        stringBuilder.Append(_translator.T("ENROLLMENT_INVALID_COURSE", course));
+                        break;
+                    default:
+                    case EnrollmentResult.Failure:
+                        stringBuilder.Append(_translator.T("ENROLLMENT_SERVER_ERROR", course));
+                        break;
+                    case EnrollmentResult.Success:
+                        stringBuilder.Append(_translator.T("ENROLLMENT_LEAVE_SUCCESS", course));
+                        break;
+                }
+            }
+
+            await ReplyAsync(stringBuilder.ToString().Trim().SanitizeMentions());
+        }
+        
+        [Command("removeallcourses")]
+        [Alias("removeall")]
+        [Summary("Removes a user from all of their courses.")]
+        [RequireUserPermission(GuildPermission.Administrator)]
+        public async Task RemoveAllCourseesAsync(SocketUser user)
+        {
+            List<string> courses = await _enrollments.GetUserCourses(user);
+            if (courses.Count == 0)
+            {
+                await ReplyAsync(_translator.T("ENROLLMENT_NO_COURSES_JOINED"));
+                return;
+            }
+
+            await ReplyAsync(_translator.T("COMMAND_PROCESSING"));
+            if (Context.Guild != null)
+                await Context.Guild.DownloadUsersAsync();
+            // Add user to courses
+            StringBuilder stringBuilder = new StringBuilder();
+            foreach (string course in courses)
+            {
+                EnrollmentResult result = await _enrollments.DisenrollUser(course, user);
+                switch (result)
+                {
+                    case EnrollmentResult.AlreadyLeft:
+                        stringBuilder.Append(_translator.T("ENROLLMENT_ALREADY_LEFT", course));
+                        break;
+                    case EnrollmentResult.CourseNotExist:
+                        stringBuilder.Append(_translator.T("ENROLLMENT_INVALID_COURSE", course));
+                        break;
+                    default:
+                    case EnrollmentResult.Failure:
+                        stringBuilder.Append(_translator.T("ENROLLMENT_SERVER_ERROR", course));
+                        break;
+                    case EnrollmentResult.Success:
+                        stringBuilder.Append(_translator.T("ENROLLMENT_LEAVE_SUCCESS", course));
+                        break;
+                }
+            }
+
+            await ReplyAsync(stringBuilder.ToString().Trim().SanitizeMentions());
+        }
+        
+        [Command("viewcourseblacklist")]
+        [Alias("viewblacklist")]
+        [Summary("Returns a list of users who are blacklisted from joining courses.")]
+        [RequireUserPermission(GuildPermission.Administrator)]
+        public async Task ViewCourseBlacklist()
+        {
+            await ReplyAsync(_translator.T("COMMAND_PROCESSING"));
+            if (Context.Guild != null)
+                await Context.Guild.DownloadUsersAsync();
+
+            IList<ulong> users = await _storage.Users.GetAllDisallowedUsersAsync();
+            if(users == null || users.Count == 0)
+            {
+                await ReplyAsync(_translator.T("NO_DISALLOWED_USERS"));
+                return;
+            }
+
+            StringBuilder builder = new StringBuilder();
+            foreach(SocketUser user in users.Select(user => Context.Guild.GetUser(user)))
+            {
+                builder.Append($"{user.Username}#{user.Discriminator}  -  {user.Id}");
+                builder.Append("\n");
+            }
+            
+            string msg = builder.ToString();
+            await ReplyAsync(
+                $"The following users are disallowed from joining any courses ```\n" + 
+                    builder.ToString().SanitizeMentions() + 
+                    "```");
+        }
+        
+        [Command("blacklistuser")]
+        [Alias("blacklist", "courseblacklistuser")]
+        [Summary("Blacklists a user from joining courses.")]
+        [RequireUserPermission(GuildPermission.Administrator)]
+        public async Task BlacklistUser(SocketUser user)
+        {
+            await ReplyAsync(_translator.T("COMMAND_PROCESSING"));
+            if (Context.Guild != null)
+                await Context.Guild.DownloadUsersAsync();
+
+            await _storage.Users.AllowUserCourseJoinAsync(user.Id, false);
+            await ReplyAsync($"Course joining disallowed for {user.Username}\nRemoving from courses...");
+            await RemoveAllCourseesAsync(user);
+            await ReplyAsync("Done.");
+        }
+        
+        [Command("unblacklistuser")]
+        [Alias("unblacklist", "uncourseblacklistuser", "courseunblacklistuser")]
+        [Summary("Unblacklists a user from joining courses.")]
+        [RequireUserPermission(GuildPermission.Administrator)]
+        public async Task UnblacklistUser(SocketUser user)
+        {
+            await ReplyAsync(_translator.T("COMMAND_PROCESSING"));
+            if (Context.Guild != null)
+                await Context.Guild.DownloadUsersAsync();
+
+            await _storage.Users.AllowUserCourseJoinAsync(user.Id, true);
+            await ReplyAsync("Done.");
         }
 
         private bool checkCourses(string[] courses, bool ignoreDuplicates, out string errorMessage, out ISet<string> formattedCourses)
