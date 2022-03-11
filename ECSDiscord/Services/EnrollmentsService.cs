@@ -29,6 +29,7 @@ namespace ECSDiscord.Services
             AlreadyJoined,
             AlreadyLeft,
             Unverified,
+            Blacklisted,
             Failure
         }
 
@@ -92,6 +93,11 @@ namespace ECSDiscord.Services
                         Log.Error(ex, "Error checking user verification {user} while joining a course.", user.Id);
                         return EnrollmentResult.Failure;
                     }
+                }
+
+                if (await _storage.Users.IsDisallowCourseJoinSetAsync(user.Id))
+                {
+                    return EnrollmentResult.Blacklisted;
                 }
 
                 SocketGuild guild = _discord.GetGuild(ulong.Parse(_config["guildId"]));

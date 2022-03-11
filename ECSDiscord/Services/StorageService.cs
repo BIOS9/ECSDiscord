@@ -481,6 +481,86 @@ namespace ECSDiscord.Services
             }
 
 
+            public async Task<bool> IsDisallowCourseJoinSetAsync(ulong discordId)
+            {
+                Log.Debug("Getting disallow course join status for Discord ID {discordId}", discordId);
+                using (MySqlConnection con = _storageService.GetMySqlConnection())
+                using (MySqlCommand cmd = new MySqlCommand())
+                {
+                    await con.OpenAsync();
+                    cmd.Connection = con;
+
+                    cmd.CommandText = $"SELECT `disallowCourseJoin` FROM `{UsersTable}` WHERE `discordSnowflake` = @discordId;";
+                    cmd.Prepare();
+                    cmd.Parameters.AddWithValue("@discordId", discordId);
+
+                    using (var reader = await cmd.ExecuteReaderAsync())
+                    {
+                        if (await reader.ReadAsync()) // Read one row
+                        {
+
+                            if (await reader.IsDBNullAsync(0))
+                                return false;
+
+                            Log.Debug("Successfully got disallow course join status for  Discord ID {discordId}", discordId);
+                            return (reader.GetByte(0) > 0);
+                        }
+
+                        Log.Debug("Failed to get disallow course join status for Discord ID {discordId} user not found.", discordId);
+                        throw new RecordNotFoundException($"No user with discordId \"{discordId}\" was found.");
+                    }
+                }
+            }
+            
+            public async Task<List<ulong>> GetAllDisallowedUsersAsync()
+            {
+                Log.Debug("Getting list of users disallowed from joining courses.");
+
+                using (MySqlConnection con = _storageService.GetMySqlConnection())
+                using (MySqlCommand cmd = new MySqlCommand())
+                {
+                    await con.OpenAsync();
+                    cmd.Connection = con;
+
+                    cmd.CommandText = $"SELECT `discordSnowflake` FROM `{UsersTable}` WHERE `disallowCourseJoin` = 1;";
+                    cmd.Prepare();
+
+                    using (var reader = (MySqlDataReader)await cmd.ExecuteReaderAsync())
+                    {
+                        List<ulong> users = new List<ulong>();
+                        while (await reader.ReadAsync())
+                        {
+                            users.Add(reader.GetUInt64(0));
+                        }
+                        return users;
+                    }
+                }
+            }
+            
+            public async Task AllowUserCourseJoinAsync(ulong discordId, bool allowed)
+            {
+                Log.Debug("Setting user course join disallow flag: {id}", discordId);
+
+                int rowsAffected = 0;
+                using (MySqlConnection con = _storageService.GetMySqlConnection())
+                {
+                    await con.OpenAsync();
+                    await CreateUserIfNotExistAsync(discordId, con);
+                    using (MySqlCommand cmd = new MySqlCommand())
+                    {
+                        cmd.Connection = con;
+
+                        cmd.CommandText = $"UPDATE `{UsersTable}` SET `disallowCourseJoin` = @allowed WHERE `discordSnowflake` = @discordId;";
+                        cmd.Prepare();
+                        cmd.Parameters.AddWithValue("@discordId", discordId);
+                        cmd.Parameters.AddWithValue("@allowed", allowed ? 0 : 1);
+
+                        rowsAffected = await cmd.ExecuteNonQueryAsync();
+                    }
+                }
+                Log.Debug("Successfully set join disallowed status for Discord ID {discordId}. Rows affected: {rowsAffected}", discordId, rowsAffected);
+            }
+            
             public async Task<byte[]> GetEncryptedUsernameAsync(ulong discordId)
             {
                 Log.Debug("Getting encrypted username for Discord ID {discordId}", discordId);

@@ -34,6 +34,13 @@ namespace ECSWebDashboard.Controllers
         {
             return _discord.GetGuild(_guildId).TextChannels.Select(x => new DiscordChannel(x));
         }
+        
+        // GET: api/text-channels
+        [HttpGet("users")]
+        public IEnumerable<DiscordUser> GetUsers()
+        {
+            return _discord.GetGuild(_guildId).Users.Select(x => new DiscordUser(x));
+        }
 
         private void loadConfig()
         {
