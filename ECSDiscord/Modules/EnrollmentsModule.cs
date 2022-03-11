@@ -374,6 +374,92 @@ namespace ECSDiscord.BotModules
 
             await ReplyAsync(_courses.NormaliseCourseName(courseName) + $" has {users.Count} members.".SanitizeMentions());
         }
+        
+        [Command("removecourse")]
+        [Alias("remove")]
+        [Summary("Removes a user from a course")]
+        [RequireUserPermission(GuildPermission.Administrator)]
+        public async Task RemoveCourseAsync(SocketUser user, params string[] courses)
+        {
+            // Ensure course list is valid
+            if (!checkCourses(courses, true, out string errorMessage, out ISet<string> formattedCourses))
+            {
+                await ReplyAsync(errorMessage.SanitizeMentions());
+                return;
+            }
+
+            await ReplyAsync(_translator.T("COMMAND_PROCESSING"));
+            if (Context.Guild != null)
+                await Context.Guild.DownloadUsersAsync();
+            // Add user to courses
+            StringBuilder stringBuilder = new StringBuilder();
+            foreach (string course in formattedCourses)
+            {
+                EnrollmentResult result = await _enrollments.DisenrollUser(course, user);
+                switch (result)
+                {
+                    case EnrollmentResult.AlreadyLeft:
+                        stringBuilder.Append(_translator.T("ENROLLMENT_ALREADY_LEFT", course));
+                        break;
+                    case EnrollmentResult.CourseNotExist:
+                        stringBuilder.Append(_translator.T("ENROLLMENT_INVALID_COURSE", course));
+                        break;
+                    default:
+                    case EnrollmentResult.Failure:
+                        stringBuilder.Append(_translator.T("ENROLLMENT_SERVER_ERROR", course));
+                        break;
+                    case EnrollmentResult.Success:
+                        stringBuilder.Append(_translator.T("ENROLLMENT_LEAVE_SUCCESS", course));
+                        break;
+                }
+            }
+
+            await ReplyAsync(stringBuilder.ToString().Trim().SanitizeMentions());
+        }
+        
+        [Command("removeallcourses")]
+        [Alias("removeall")]
+        [Summary("Removes a user from all of their courses.")]
+        [RequireUserPermission(GuildPermission.Administrator)]
+        public async Task RemoveAllCourseesAsync(SocketUser user)
+        {
+            List<string> courses = await _enrollments.GetUserCourses(user);
+            if (courses.Count == 0)
+            {
+                await ReplyAsync(_translator.T("ENROLLMENT_NO_COURSES_JOINED"));
+                return;
+            }
+
+            await ReplyAsync(_translator.T("COMMAND_PROCESSING"));
+            if (Context.Guild != null)
+                await Context.Guild.DownloadUsersAsync();
+            // Add user to courses
+            StringBuilder stringBuilder = new StringBuilder();
+            foreach (string course in courses)
+            {
+                EnrollmentResult result = await _enrollments.DisenrollUser(course, user);
+                switch (result)
+                {
+                    case EnrollmentResult.AlreadyLeft:
+                        stringBuilder.Append(_translator.T("ENROLLMENT_ALREADY_LEFT", course));
+                        break;
+                    case EnrollmentResult.CourseNotExist:
+                        stringBuilder.Append(_translator.T("ENROLLMENT_INVALID_COURSE", course));
+                        break;
+                    default:
+                    case EnrollmentResult.Failure:
+                        stringBuilder.Append(_translator.T("ENROLLMENT_SERVER_ERROR", course));
+                        break;
+                    case EnrollmentResult.Success:
+                        stringBuilder.Append(_translator.T("ENROLLMENT_LEAVE_SUCCESS", course));
+                        break;
+                }
+            }
+
+            await ReplyAsync(stringBuilder.ToString().Trim().SanitizeMentions());
+        }
+        
+        
 
         private bool checkCourses(string[] courses, bool ignoreDuplicates, out string errorMessage, out ISet<string> formattedCourses)
         {
