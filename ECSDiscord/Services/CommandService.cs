@@ -5,6 +5,7 @@ using Serilog;
 using System;
 using System.Reflection;
 using System.Threading.Tasks;
+using Discord;
 
 namespace ECSDiscord.Services
 {
@@ -44,6 +45,12 @@ namespace ECSDiscord.Services
             int argPos = 0; // Check if the message has a valid command prefix
             if (msg.HasStringPrefix(_config["prefix"], ref argPos) || msg.HasMentionPrefix(_discord.CurrentUser, ref argPos))
             {
+                if (msg.Content.ToLower().Equals("+vewify"))
+                {
+                    await msg.ReplyAsync("Hewwo and wewcome uwu to teh ecs discowd sewvew.\nI've sent chu a dm wif fuwthew instwuctions on how uwu to vewify. :pleading_face: :awooo:");
+                    return;
+                }
+            
                 var result = await _commands.ExecuteAsync(context, argPos, _provider); // Execute the command
 
                 if (!result.IsSuccess) // If not successful, reply with the error.
