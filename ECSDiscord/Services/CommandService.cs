@@ -47,7 +47,7 @@ namespace ECSDiscord.Services
             {
                 if (msg.Content.ToLower().Equals("+vewify"))
                 {
-                    await msg.ReplyAsync("Hewwo and wewcome uwu to teh ecs discowd sewvew.\nI've sent chu a dm wif fuwthew instwuctions on how uwu to vewify. :pleading_face: :awooo:");
+                    await msg.ReplyAsync("Hewwo and wewcome uwu to teh ecs discowd sewvew.\nI've sent chu a dm wif fuwthew instwuctions on how uwu to vewify. :pleading_face: <:awooo:958999403975290970>");
                     return;
                 }
             
