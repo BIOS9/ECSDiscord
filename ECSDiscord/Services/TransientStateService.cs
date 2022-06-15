@@ -1,4 +1,5 @@
-﻿using System.Collections.Concurrent;
+﻿using System;
+using System.Collections.Concurrent;
 
 namespace ECSDiscord.Services
 {
@@ -9,25 +10,35 @@ namespace ECSDiscord.Services
             public readonly ulong UserId;
             public readonly bool Real;
             public readonly bool Exists;
+            public readonly DateTime? LeftExistenceTime; // Really should not use nullable here. Constructor will not null this.
+            public readonly int RealityState;
 
             public UserState(
                 ulong userId,
                 bool real = true,
-                bool exists = true)
+                bool exists = true,
+                DateTime? leftExistenceTime = null,
+                int realityState = 0)
             {
                 UserId = userId;
                 Real = real;
                 Exists = exists;
+                LeftExistenceTime = leftExistenceTime;
+                RealityState = realityState;
             }
 
             public UserState(
                 UserState oldState,
-                bool? real,
-                bool? exists) :
+                bool? real = null,
+                bool? exists = null,
+                DateTime? leftExistenceTime = null,
+                int? realityState = null) :
                 this(
                 oldState.UserId,
                 real ?? oldState.Real,
-                exists ?? oldState.Exists)
+                exists ?? oldState.Exists,
+                leftExistenceTime ?? oldState.LeftExistenceTime,
+                realityState ?? oldState.RealityState)
             { }
 
         }

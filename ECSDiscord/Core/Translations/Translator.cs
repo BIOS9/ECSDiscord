@@ -70,7 +70,16 @@ namespace ECSDiscord.Core.Translations
             { "IMPORT_PERMISSIONS_START",  "**Import:** Converting role permissions to user override permissions on course channels.\n" +
                 "This may take a while." },
             { "IMPORT_PERMISSIONS_END",  "**Import:** Permission conversion finished." },
-            { "NO_DISALLOWED_USERS", "There are no users blacklisted from joining courses." }
+            { "NO_DISALLOWED_USERS", "There are no users blacklisted from joining courses." },
+            { "ALREADY_IN_REALITY", ":warning:  **Reality** - You are already in reality." },
+            { "CANNOT_JOIN_REALITY", ":warning:  **Reality** - It is not currently possible to re-enter reality once you have left." },
+            { "ALREADY_LEFT_REALITY", ":warning:  **Reality** - You've already left reality." },
+            { "REALITY_LOCATION", "You are here:" },
+            { "REMOVING_FROM_REALITY", "Welcome. This is where you end up when you leave reality.\nYou can ue `+whereami` to see where you are out of reality." },
+            { "WHEREAMI", "You're in reality of course.\n*Make sure you don't leave reality, that would be bad.*" },
+            { "YOU_ALREADY_EXIST", ":warning:  **Existence** - You cannot enter existence more than once." },
+            { "YOU_DO_NOT_EXIST", ":fire:  Server error: User not found **{0}**" },
+            { "REMOVING_FROM_EXISTENCE", "Bye." },
         });
 
         private readonly IDictionary<string, string> _translationMap;
