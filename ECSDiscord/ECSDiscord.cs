@@ -107,6 +107,7 @@ namespace ECSDiscord
             .AddSingleton<Services.StorageService>()          // Add storageservice to the collection
             .AddSingleton<Services.VerificationService>()       // Add verificationservice to the collection
             .AddSingleton<Services.RemoteDataAccessService>()       // Add verificationservice to the collection
+            .AddSingleton<Services.TransientStateService>()
             .AddSingleton<Services.ImportService>()             // Add import service
             .AddSingleton<Services.AdministrationService>()             // Add import service
             .AddSingleton<Services.ServerMessageService>()             // Add message service
