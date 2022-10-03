@@ -507,7 +507,7 @@ namespace ECSDiscord.Services
                         }
 
                         Log.Debug("Failed to get disallow course join status for Discord ID {discordId} user not found.", discordId);
-                        throw new RecordNotFoundException($"No user with discordId \"{discordId}\" was found.");
+                        return false; // If no record for the user, they have not been disallowed.
                     }
                 }
             }
