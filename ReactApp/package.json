@@ -39,7 +39,7 @@
     "install": "^0.13.0",
     "jwt-decode": "^3.1.2",
     "lodash": "^4.17.19",
-    "moment": "^2.27.0",
+    "moment": "^2.29.4",
     "npm": "^8.11.0",
     "nprogress": "^0.2.0",
     "prop-types": "^15.7.2",
