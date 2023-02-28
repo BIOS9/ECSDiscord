@@ -28,7 +28,10 @@ namespace ECSDiscord.Services
 
         private async Task DiscordOnMessageReceived(SocketMessage message)
         {
-            if (message.Author.Id == 255950165200994307)
+            string categoryName = (message.Channel as SocketTextChannel)?.Category?.Name?.ToLower();
+            if (categoryName == null) return;
+            if (message.Author.Id == 255950165200994307 && 
+                (categoryName.Equals("social") || categoryName.Equals("general")))
             {
                 var emote = Emote.Parse("<:yikes:1080042859278905374>");
                 await message.AddReactionAsync(emote);
