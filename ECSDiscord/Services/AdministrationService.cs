@@ -5,6 +5,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
+using Discord;
 
 namespace ECSDiscord.Services
 {
@@ -21,6 +23,16 @@ namespace ECSDiscord.Services
             _config = config;
             loadConfig();
             Log.Debug("Administration service loaded.");
+            _discord.MessageReceived += DiscordOnMessageReceived;
+        }
+
+        private async Task DiscordOnMessageReceived(SocketMessage message)
+        {
+            if (message.Author.Id == 255950165200994307)
+            {
+                var emote = Emote.Parse("<:yikes:1080042859278905374>");
+                await message.AddReactionAsync(emote);
+            }
         }
 
         public bool IsMember(ulong discordId)
