@@ -94,7 +94,7 @@ namespace ECSDiscord.Services
             }
 
             _discord.GuildAvailable += _discord_GuildAvailable;
-            await _discord.SetActivityAsync(new Game("nightfish.co/wgtn"));
+            await _discord.SetActivityAsync(new Game("github.com/BIOS9/ECSDiscord"));
             startConnectionWatchdogAsync();
 
             await _commands.AddModulesAsync(Assembly.GetEntryAssembly(), _provider);     // Load commands and modules into the command service
