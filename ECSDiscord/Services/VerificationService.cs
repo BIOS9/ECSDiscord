@@ -2,6 +2,8 @@
 using Discord.WebSocket;
 using ECSDiscord.Util;
 using Microsoft.Extensions.Configuration;
+using SendGrid;
+using SendGrid.Helpers.Mail;
 using Serilog;
 using System;
 using System.Collections.Generic;
@@ -32,16 +34,14 @@ namespace ECSDiscord.Services
         private int _emailUsernameGroup;
 
         private string
-            _smtpHost,
-            _smtpFromEmail,
-            _smtpFromName,
-            _smtpSubjectTemplate,
-            _smtpBodyTemplate,
+            _sendgridFromAddress,
+            _sendgridFromName,
+            _sendgridSubjectTemplate,
+            _sendgridBodyTemplate,
+            _sendgridApiKey,
+
             _publicKeyCertPath;
-        private int _smtpPort;
         private bool
-            _smtpUseSsl,
-            _bodyIsHtml,
             _skipBots;
         private X509Certificate2 _publicKeyCert;
         private ulong _guildId;
@@ -140,31 +140,20 @@ namespace ECSDiscord.Services
                 // Create persistent verification code
                 string verificationCode = await CreateVerificationCodeAsync(user.Id, username);
 
-                SmtpClient client = new SmtpClient(_smtpHost, _smtpPort);
-                client.EnableSsl = _smtpUseSsl;
-
-                // To and from addresses
-                MailAddress from = new MailAddress(_smtpFromEmail, _smtpFromName, Encoding.UTF8);
-                MailAddress to = new MailAddress(email);
-
-                // Create message
                 SocketGuild guild = _discord.GetGuild(_guildId);
-                MailMessage message = new MailMessage(from, to);
-                message.IsBodyHtml = _bodyIsHtml;
-                message.Body = fillTemplate(_smtpBodyTemplate, email, username, verificationCode, user, guild);
-                message.BodyEncoding = Encoding.UTF8;
-                message.Subject = fillTemplate(_smtpSubjectTemplate, email, username, verificationCode, user, guild);
-                message.SubjectEncoding = Encoding.UTF8;
 
                 Log.Information("Sending verification email for {username} {id}", user.Username, user.Id);
-                await client.SendMailAsync(message);
-                Log.Debug("Verification email successfuly sent for {id}", user.Id);
+                var client = new SendGridClient(_sendgridApiKey);
+                var msg = new SendGridMessage
+                {
+                    From = new EmailAddress(_sendgridFromAddress, _sendgridFromName),
+                    Subject = fillTemplate(_sendgridSubjectTemplate, email, username, verificationCode, user, guild),
+                    HtmlContent = fillTemplate(_sendgridBodyTemplate, email, username, verificationCode, user, guild)
+                };
+                msg.AddTo(new EmailAddress(email));
+                var response = await client.SendEmailAsync(msg);
 
-                // Clean up
-                message.Dispose();
-                client.Dispose();
-
-                return EmailResult.Success;
+                return response.IsSuccessStatusCode ? EmailResult.Success : EmailResult.Failure;
             }
             catch (Exception ex)
             {
@@ -484,7 +473,7 @@ namespace ECSDiscord.Services
             catch (Exception ex)
             {
                 Log.Error(ex, "Invalid emailPattern regex configured in verification settings.");
-                throw ex;
+                throw;
             }
 
             // Ensure the username group is configured
@@ -496,21 +485,8 @@ namespace ECSDiscord.Services
 
             _guildId = ulong.Parse(_config["guildId"]);
 
-            _smtpHost = _config["verification:smtpServer"];
-            if (!int.TryParse(_config["verification:smtpPort"], out _smtpPort))
-            {
-                Log.Error("Invalid smtpPort configured in verification settings.");
-                throw new ArgumentException("Invalid smtpPort configured in verification settings.");
-            }
-
-            _smtpFromEmail = _config["verification:smtpFromAddress"];
-            _smtpFromName = _config["verification:smtpFromName"];
-
-            if (!bool.TryParse(_config["verification:smtpUseSsl"], out _smtpUseSsl))
-            {
-                Log.Error("Invalid smtpUseSsl configured in verification settings.");
-                throw new ArgumentException("Invalid smtpUseSsl configured in verification settings.");
-            }
+            _sendgridFromAddress = _config["verification:fromAddress"];
+            _sendgridFromName = _config["verification:fromName"];
 
             if (!bool.TryParse(_config["verification:skipBots"], out _skipBots))
             {
@@ -518,17 +494,24 @@ namespace ECSDiscord.Services
                 throw new ArgumentException("Invalid skipBots configured in verification settings.");
             }
 
-            _smtpSubjectTemplate = _config["verification:subjectTemplate"];
-            if (string.IsNullOrWhiteSpace(_smtpSubjectTemplate))
+            _sendgridSubjectTemplate = _config["verification:subjectTemplate"];
+            if (string.IsNullOrWhiteSpace(_sendgridSubjectTemplate))
             {
                 Log.Error("Verification email subject cannot be empty!");
                 throw new ArgumentException("Verification email subject cannot be empty!");
             }
-            _smtpBodyTemplate = _config["verification:bodyTemplate"];
-            if (string.IsNullOrWhiteSpace(_smtpBodyTemplate))
+            _sendgridBodyTemplate = _config["verification:bodyTemplate"];
+            if (string.IsNullOrWhiteSpace(_sendgridBodyTemplate))
             {
                 Log.Error("Verification email subject cannot be empty!");
                 throw new ArgumentException("Verification email subject cannot be empty!");
+            }
+
+            _sendgridApiKey = _config["verification:sendgridApiKey"];
+            if (string.IsNullOrWhiteSpace(_sendgridApiKey))
+            {
+                Log.Error("Verification sendgrid API Key cannot be empty!");
+                throw new ArgumentException("Verification sendgrid API Key cannot be empty!");
             }
 
             if (!ulong.TryParse(_config["verification:verifiedRoleId"], out _verifiedRoleId))
@@ -562,12 +545,6 @@ namespace ECSDiscord.Services
                 throw new FileNotFoundException("Could not find public key certificate file using the path specified in verification settings.");
             }
 
-            if (!bool.TryParse(_config["verification:bodyHtml"], out _bodyIsHtml))
-            {
-                Log.Error("Invalid bodyHtml boolean in verification settings.");
-                throw new ArgumentException("Invalid bodyHtml boolean in verification settings.");
-            }
-
             try
             {
                 _publicKeyCert = new X509Certificate2(_publicKeyCertPath);
@@ -575,7 +552,7 @@ namespace ECSDiscord.Services
             catch (Exception ex)
             {
                 Log.Error(ex, "Error loading verification certificate file {message}", ex.Message);
-                throw ex;
+                throw;
             }
         }
     }
