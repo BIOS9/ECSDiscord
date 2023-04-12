@@ -24,20 +24,6 @@ namespace ECSDiscord.Services
             loadConfig();
             Log.Debug("Administration service loaded.");
             _discord.MessageReceived += DiscordOnMessageReceived;
-            _discord.ReactionAdded += _discord_ReactionAdded;
-        }
-
-        private async Task _discord_ReactionAdded(Cacheable<IUserMessage, ulong> cachedMessage, ISocketMessageChannel channel, SocketReaction reaction)
-        {
-            if (reaction.Emote.Name.Equals("📌"))
-            {
-                var message = await cachedMessage.GetOrDownloadAsync();
-                var emotes = await message.GetReactionUsersAsync(new Emoji("📌"), 3).FlattenAsync();
-                if (emotes.Count() >= 3 && ! message.IsPinned)
-                {
-                    await message.PinAsync();
-                }
-            }
         }
 
         private async Task DiscordOnMessageReceived(SocketMessage message)
