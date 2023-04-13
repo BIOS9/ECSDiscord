@@ -1,7 +1,7 @@
 FROM mcr.microsoft.com/dotnet/runtime:7.0 AS base
 FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build
+COPY /ECSDiscord/* /ECSDiscord
 WORKDIR /ECSDiscord
-COPY /ECSDiscord/* ./
 RUN dotnet restore ECSDiscord.csproj
 RUN dotnet build ECSDiscord.csproj -c Release -o /app/build
 
@@ -11,5 +11,5 @@ RUN dotnet publish ECSDiscord.csproj -c Release -o /app/publish
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-COPY --from=build /ECSDiscord/Resources .
+COPY --from=publish /ECSDiscord/Resources .
 ENTRYPOINT ["dotnet", "ECSDiscord.dll"]
