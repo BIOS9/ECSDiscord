@@ -1,5 +1,5 @@
 ﻿using Microsoft.Extensions.Configuration;
-using MySql.Data.MySqlClient;
+using MySqlConnector;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Serilog;
