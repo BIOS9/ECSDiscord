@@ -7,6 +7,7 @@ using ECSDiscord.Core.Translations;
 using Microsoft.Extensions.Configuration;
 using Serilog;
 using Microsoft.Extensions.Hosting;
+using ECSDiscord;
 
 await Host.CreateDefaultBuilder(args)
     .ConfigureAppConfiguration(config =>
@@ -44,25 +45,10 @@ await Host.CreateDefaultBuilder(args)
         builder.RegisterType<ECSDiscord.Services.ImportService>().SingleInstance();
         builder.RegisterType<ECSDiscord.Services.AdministrationService>().SingleInstance();
         builder.RegisterType<ECSDiscord.Services.ServerMessageService>().SingleInstance();
+        builder.RegisterType<Startup>()
+        .As<IHostedService>()
+        .SingleInstance()
+        .PropertiesAutowired();
     })
     .Build()
     .RunAsync();
-
-
-        //public async Task StartAsync(IServiceProvider serviceProvider)
-        //{
-
-        //    serviceProvider.GetRequiredService<Services.CommandService>(); // Start command handler service
-        //    serviceProvider.GetRequiredService<Services.LoggingService>(); // Start logging service
-        //    serviceProvider.GetRequiredService<Services.EnrollmentsService>(); // Start enrollments service
-        //    serviceProvider.GetRequiredService<Services.CourseService>(); // Start course service
-        //    serviceProvider.GetRequiredService<Services.StorageService>(); // Start course service
-        //    serviceProvider.GetRequiredService<Services.VerificationService>(); // Start verification service
-        //    serviceProvider.GetRequiredService<Services.RemoteDataAccessService>(); // Start remote data access service
-        //    serviceProvider.GetRequiredService<Services.ImportService>(); // Start import service
-        //    serviceProvider.GetRequiredService<Services.AdministrationService>(); // Start import service
-        //    serviceProvider.GetRequiredService<Services.ServerMessageService>(); // Start message service
-        //    if (!await serviceProvider.GetRequiredService<Services.StorageService>().TestConnection()) // Test DB connection
-        //        throw new Exception("Storage service init failed.");
-        //    await serviceProvider.GetRequiredService<Services.StartupService>().StartAsync(); // Run startup service
-        //}
