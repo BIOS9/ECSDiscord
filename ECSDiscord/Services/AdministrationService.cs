@@ -13,10 +13,10 @@ namespace ECSDiscord.Services
     public class AdministrationService
     {
         private readonly DiscordSocketClient _discord;
-        private readonly IConfigurationRoot _config;
+        private readonly IConfiguration _config;
         private ulong _guildId;
 
-        public AdministrationService(DiscordSocketClient discord, IConfigurationRoot config)
+        public AdministrationService(DiscordSocketClient discord, IConfiguration config)
         {
             Log.Debug("Administration service loading.");
             _discord = discord;

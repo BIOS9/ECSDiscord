@@ -12,9 +12,9 @@ namespace ECSDiscord.Modules
     public class HelpModule : ModuleBase<SocketCommandContext>
     {
         private readonly Discord.Commands.CommandService _service;
-        private readonly IConfigurationRoot _config;
+        private readonly IConfiguration _config;
 
-        public HelpModule(Discord.Commands.CommandService service, IConfigurationRoot config)
+        public HelpModule(Discord.Commands.CommandService service, IConfiguration config)
         {
             _service = service;
             _config = config;

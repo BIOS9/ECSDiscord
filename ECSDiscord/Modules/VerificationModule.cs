@@ -15,11 +15,11 @@ namespace ECSDiscord.Modules
     [Name("Verification")]
     public class VerificationModule : ModuleBase<SocketCommandContext>
     {
-        private readonly IConfigurationRoot _config;
+        private readonly IConfiguration _config;
         private VerificationService _verification;
         private readonly StorageService _storage;
 
-        public VerificationModule(VerificationService verification, IConfigurationRoot config, StorageService storage)
+        public VerificationModule(VerificationService verification, IConfiguration config, StorageService storage)
         {
             _verification = verification;
             _config = config;

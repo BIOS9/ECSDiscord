@@ -16,11 +16,11 @@ namespace ECSDiscord.Modules
     public class ImportModule : ModuleBase<SocketCommandContext>
     {
         private readonly Discord.Commands.CommandService _service;
-        private readonly IConfigurationRoot _config;
+        private readonly IConfiguration _config;
         private readonly ImportService _importService;
         private readonly ITranslator _translator;
 
-        public ImportModule(ITranslator translator, Discord.Commands.CommandService service, ImportService importService, IConfigurationRoot config)
+        public ImportModule(ITranslator translator, Discord.Commands.CommandService service, ImportService importService, IConfiguration config)
         {
             _service = service;
             _config = config;

@@ -21,9 +21,9 @@ namespace ECSDiscord.Modules
         private readonly StorageService _storage;
         private readonly CourseService _courses;
         private readonly VerificationService _verification;
-        private readonly IConfigurationRoot _config;
+        private readonly IConfiguration _config;
 
-        public AdministrationModule(Discord.Commands.CommandService service, IConfigurationRoot config, CourseService courses, VerificationService verification, StorageService storage)
+        public AdministrationModule(Discord.Commands.CommandService service, IConfiguration config, CourseService courses, VerificationService verification, StorageService storage)
         {
             _storage = storage;
             _service = service;

@@ -18,12 +18,12 @@ namespace ECSDiscord.Modules
     [Name("Courses")]
     public class CoursesModule : ModuleBase<SocketCommandContext>
     {
-        private readonly IConfigurationRoot _config;
+        private readonly IConfiguration _config;
         private readonly ITranslator _translator;
         private readonly CourseService _courseService;
         private readonly EnrollmentsService _enrollments;
 
-        public CoursesModule(IConfigurationRoot config, ITranslator translator, CourseService courseService, EnrollmentsService enrollments)
+        public CoursesModule(IConfiguration config, ITranslator translator, CourseService courseService, EnrollmentsService enrollments)
         {
             _config = config;
             _translator = translator;

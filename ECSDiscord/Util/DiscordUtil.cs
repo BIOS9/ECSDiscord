@@ -12,7 +12,7 @@ namespace ECSDiscord.Util
         /// <summary>
         /// Ensure command is only executed in allowed channels.
         /// </summary>
-        public static bool CheckConfigChannel(this SocketCommandContext context, string category, IConfigurationRoot config)
+        public static bool CheckConfigChannel(this SocketCommandContext context, string category, IConfiguration config)
         {
             if (context.IsPrivate || (context.User as IGuildUser).GuildPermissions.Administrator) // Allow administrators to use any command in any channel
                 return true;

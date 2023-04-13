@@ -19,7 +19,7 @@ namespace ECSDiscord.BotModules
     [Name("Enrollments")]
     public class EnrollmentsModule : ModuleBase<SocketCommandContext>
     {
-        private readonly IConfigurationRoot _config;
+        private readonly IConfiguration _config;
         private readonly ITranslator _translator;
         private readonly EnrollmentsService _enrollments;
         private readonly CourseService _courses;
@@ -27,7 +27,7 @@ namespace ECSDiscord.BotModules
         private readonly TransientStateService _transientState;
 
         public EnrollmentsModule(
-            IConfigurationRoot config,
+            IConfiguration config,
             ITranslator translator,
             EnrollmentsService enrollments,
             CourseService courses,
