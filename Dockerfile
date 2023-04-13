@@ -1,7 +1,7 @@
 FROM mcr.microsoft.com/dotnet/runtime:7.0 AS base
 FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build
-COPY /ECSDiscord/* /ECSDiscord
 WORKDIR /ECSDiscord
+COPY /ECSDiscord .
 RUN pwd
 RUN ls -la
 RUN dotnet restore ECSDiscord.csproj
