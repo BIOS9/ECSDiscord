@@ -52,3 +52,8 @@ remoteDataAccess:
   port: 12036
   pkcs12Bundle: null
   pkcs12Password: null
+Serilog:
+  WriteTo:
+    - Console
+  MinimumLevel:
+    Default: Verbose
