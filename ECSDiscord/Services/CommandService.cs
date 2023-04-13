@@ -14,7 +14,7 @@ namespace ECSDiscord.Services
     {
         private readonly DiscordSocketClient _discord;
         private readonly Discord.Commands.CommandService _commands;
-        private readonly IConfigurationRoot _config;
+        private readonly IConfiguration _config;
         private readonly IServiceProvider _provider;
         private readonly TransientStateService _transientState;
         private readonly ITranslator _translator;
@@ -23,7 +23,7 @@ namespace ECSDiscord.Services
         public CommandService(
             DiscordSocketClient discord,
             Discord.Commands.CommandService commands,
-            IConfigurationRoot config,
+            IConfiguration config,
             IServiceProvider provider,
             TransientStateService transientState,
             ITranslator translator)

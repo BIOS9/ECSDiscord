@@ -14,11 +14,11 @@ namespace ECSDiscord.Services
     public class ServerMessageService
     {
         private readonly DiscordSocketClient _discord;
-        private readonly IConfigurationRoot _config;
+        private readonly IConfiguration _config;
         private readonly StorageService _storage;
         private ulong _guildId;
 
-        public ServerMessageService(DiscordSocketClient discord, IConfigurationRoot config, StorageService storage)
+        public ServerMessageService(DiscordSocketClient discord, IConfiguration config, StorageService storage)
         {
             Log.Debug("Server Message service loading.");
             _discord = discord;

@@ -17,7 +17,7 @@ namespace ECSDiscord.Services
 {
     public class RemoteDataAccessService
     {
-        private readonly IConfigurationRoot _config;
+        private readonly IConfiguration _config;
         private readonly StorageService _storageService;
         private bool _enable;
         private int _port;
@@ -40,7 +40,7 @@ namespace ECSDiscord.Services
 
         public class ClientDisconnectedException : Exception { }
 
-        public RemoteDataAccessService(IConfigurationRoot config, StorageService storageService)
+        public RemoteDataAccessService(IConfiguration config, StorageService storageService)
         {
             Log.Debug("Remote data access service loading.");
             _config = config;

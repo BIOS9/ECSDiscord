@@ -29,7 +29,7 @@ namespace ECSDiscord.Services
 
         private readonly DiscordSocketClient _discord;
         private readonly StorageService _storageService;
-        private readonly IConfigurationRoot _config;
+        private readonly IConfiguration _config;
         private Regex _emailPattern;
         private int _emailUsernameGroup;
 
@@ -52,7 +52,7 @@ namespace ECSDiscord.Services
             _logChannelId;
 
 
-        public VerificationService(IConfigurationRoot config, DiscordSocketClient discord, StorageService storageService)
+        public VerificationService(IConfiguration config, DiscordSocketClient discord, StorageService storageService)
         {
             Log.Debug("Verification service loading.");
             _config = config;

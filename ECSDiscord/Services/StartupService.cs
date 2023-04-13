@@ -13,7 +13,7 @@ namespace ECSDiscord.Services
         private readonly IServiceProvider _provider;
         private readonly DiscordSocketClient _discord;
         private readonly Discord.Commands.CommandService _commands;
-        private readonly IConfigurationRoot _config;
+        private readonly IConfiguration _config;
 
         private bool _dmOnJoin;
         private string
@@ -25,7 +25,7 @@ namespace ECSDiscord.Services
             IServiceProvider provider,
             DiscordSocketClient discord,
             Discord.Commands.CommandService commands,
-            IConfigurationRoot config)
+            IConfiguration config)
         {
             Log.Debug("Startup service loading.");
             _provider = provider;

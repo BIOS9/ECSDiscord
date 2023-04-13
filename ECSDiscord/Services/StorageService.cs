@@ -14,7 +14,7 @@ namespace ECSDiscord.Services
 {
     public class StorageService
     {
-        private readonly IConfigurationRoot _config;
+        private readonly IConfiguration _config;
         private string _mysqlConnectionString;
         private static readonly DateTime Epoch = new DateTime(1970, 1, 1);
         private static readonly TimeSpan CleanupPeriod = TimeSpan.FromDays(1);
@@ -1525,7 +1525,7 @@ namespace ECSDiscord.Services
             }
         }
 
-        public StorageService(IConfigurationRoot config)
+        public StorageService(IConfiguration config)
         {
             Log.Debug("Storage service loading.");
             _config = config;

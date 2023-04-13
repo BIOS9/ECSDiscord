@@ -47,7 +47,7 @@ namespace ECSDiscord.Services
             DiscordChannelRegex = new Regex("<#[0-9]{1,20}>");
 
 
-        private readonly IConfigurationRoot _config;
+        private readonly IConfiguration _config;
         private readonly DiscordSocketClient _discord;
         private readonly StorageService _storage;
         private ulong _guildId;
@@ -75,7 +75,7 @@ namespace ECSDiscord.Services
 
         private Dictionary<string, CachedCourse> _cachedCourses = new Dictionary<string, CachedCourse>();
 
-        public CourseService(IConfigurationRoot config, DiscordSocketClient discord, StorageService storage)
+        public CourseService(IConfiguration config, DiscordSocketClient discord, StorageService storage)
         {
             Log.Debug("Course service loading.");
             _config = config;

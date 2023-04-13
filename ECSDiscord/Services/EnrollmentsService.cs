@@ -17,7 +17,7 @@ namespace ECSDiscord.Services
         private readonly CourseService _courses;
         private readonly StorageService _storage;
         private readonly VerificationService _verification;
-        private readonly IConfigurationRoot _config;
+        private readonly IConfiguration _config;
 
         private ulong _guildId;
         private bool _requireVerificationToJoin;
@@ -33,7 +33,7 @@ namespace ECSDiscord.Services
             Failure
         }
 
-        public EnrollmentsService(DiscordSocketClient discord, CourseService courses, StorageService storage, VerificationService verification, IConfigurationRoot config)
+        public EnrollmentsService(DiscordSocketClient discord, CourseService courses, StorageService storage, VerificationService verification, IConfiguration config)
         {
             Log.Debug("Enrollments service loading.");
             _discord = discord;
