@@ -12,7 +12,8 @@ using ECSDiscord;
 await Host.CreateDefaultBuilder(args)
     .ConfigureAppConfiguration(config =>
     {
-        config.AddYamlFile("config.yml");
+        config.AddYamlFile("config.yml", true);
+        config.AddYamlFile("/config/config.yml", true);
         config.AddEnvironmentVariables();
         config.AddUserSecrets<Program>();
     })
