@@ -34,6 +34,8 @@ namespace ECSDiscord
 
             // Add configuration from yaml file.
             Configuration = new ConfigurationBuilder()
+                .AddEnvironmentVariables()
+                .AddUserSecrets<ECSDiscord>()
                 .AddYamlFile(ConfigurationFile)
                 .Build();
         }
