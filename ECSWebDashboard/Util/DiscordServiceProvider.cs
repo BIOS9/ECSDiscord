@@ -16,14 +16,14 @@ namespace ECSWebDashboard.Util
 
         public static IServiceCollection AddDiscord(this IServiceCollection collection)
         {
-            ECSDiscord.ECSDiscord discord = new ECSDiscord.ECSDiscord();
+            ECSDiscord.Program discord = new ECSDiscord.Program();
             return discord.ConfigureServices(collection);
         }
 
         public static void UseDiscord(this IApplicationBuilder builder, LoggerConfiguration loggerConfiguration)
         {
             Log.Logger = loggerConfiguration.CreateLogger();
-            ECSDiscord.ECSDiscord discord = builder.ApplicationServices.GetRequiredService<ECSDiscord.ECSDiscord>();
+            ECSDiscord.Program discord = builder.ApplicationServices.GetRequiredService<ECSDiscord.Program>();
             _serviceProvider = builder.ApplicationServices;
             Task.Run(() => discord.StartAsync(builder.ApplicationServices));
         }

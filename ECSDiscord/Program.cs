@@ -1,4 +1,6 @@
-﻿using Discord;
+﻿using Autofac.Extensions.DependencyInjection;
+using Autofac;
+using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
 using ECSDiscord.Core.Translations;
@@ -8,23 +10,31 @@ using Serilog;
 using System;
 using System.IO;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Hosting;
+
+await Host.CreateDefaultBuilder(args)
+    .ConfigureAppConfiguration(config =>
+    {
+        config.AddEnvironmentVariables();
+        config.AddUserSecrets<Program>();
+    })
+    .UseSerilog((context, config) => { config.ReadFrom.Configuration(context.Configuration); })
+    .UseServiceProviderFactory(new AutofacServiceProviderFactory())
+    .ConfigureContainer<ContainerBuilder>((context, builder) =>
+    {
+
+    })
+    .Build()
+    .RunAsync();
 
 namespace ECSDiscord
 {
-    /// <summary>
-    /// Main application class.
-    /// </summary>
-    public class ECSDiscord
+    public class Program
     {
-        public const string
-            ConfigurationFile = "config.yml",
-            LogFileName = "logs/log.txt";
-        public const RollingInterval
-            LogInterval = RollingInterval.Day;
 
         public IConfigurationRoot Configuration { get; }
 
-        public ECSDiscord()
+        public Program()
         {
             if (!File.Exists(ConfigurationFile)) // Check that config file exists
             {
@@ -35,7 +45,7 @@ namespace ECSDiscord
             // Add configuration from yaml file.
             Configuration = new ConfigurationBuilder()
                 .AddEnvironmentVariables()
-                .AddUserSecrets<ECSDiscord>()
+                .AddUserSecrets<Program>()
                 .AddYamlFile(ConfigurationFile)
                 .Build();
         }
@@ -126,7 +136,7 @@ namespace ECSDiscord
                 .WriteTo.File(LogFileName, rollingInterval: LogInterval)
                 .CreateLogger();
 
-            return new ECSDiscord().RunStandaloneAsync();
+            return new Program().RunStandaloneAsync();
         }
     }
 }

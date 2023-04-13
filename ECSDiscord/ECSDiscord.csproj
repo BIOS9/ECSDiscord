@@ -6,6 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Autofac.Extensions.DependencyInjection" Version="8.0.0" />
     <PackageReference Include="Discord.Net" Version="2.3.0" />
     <PackageReference Include="HtmlAgilityPack" Version="1.11.31" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="7.0.0" />
