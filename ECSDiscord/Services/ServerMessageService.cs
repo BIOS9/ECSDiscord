@@ -1,6 +1,7 @@
 ﻿using Discord;
 using Discord.Rest;
 using Discord.WebSocket;
+using ECSDiscord.Services.Bot;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Serilog;
@@ -20,10 +21,10 @@ namespace ECSDiscord.Services
         private readonly StorageService _storage;
         private ulong _guildId;
 
-        public ServerMessageService(DiscordSocketClient discord, IConfiguration config, StorageService storage)
+        public ServerMessageService(DiscordBot discordBot, IConfiguration config, StorageService storage)
         {
             Log.Debug("Server Message service loading.");
-            _discord = discord;
+            _discord = discordBot.DiscordClient;
             _config = config;
             _storage = storage;
             Log.Debug("Server Message service loaded.");

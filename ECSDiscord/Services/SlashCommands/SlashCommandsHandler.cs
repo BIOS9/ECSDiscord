@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using ECSDiscord.Services.Bot;
 
 namespace ECSDiscord.Services.SlashCommands;
 
@@ -21,11 +22,11 @@ public class SlashCommandsHandler : IHostedService
         _registeredCommands = new(); // I am aware that this is still mutable.
 
     public SlashCommandsHandler(
-        DiscordSocketClient discordBot,
+        DiscordBot discordBot,
         ILogger<SlashCommandsHandler> logger,
         IEnumerable<ISlashCommand> commands)
     {
-        _discordClient = discordBot ?? throw new ArgumentNullException(nameof(discordBot));
+        _discordClient = discordBot.DiscordClient ?? throw new ArgumentNullException(nameof(discordBot));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _commands = commands ?? throw new ArgumentNullException(nameof(commands));
     }

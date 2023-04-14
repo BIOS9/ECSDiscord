@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Discord;
 using Microsoft.Extensions.Hosting;
 using System.Threading;
+using ECSDiscord.Services.Bot;
 
 namespace ECSDiscord.Services
 {
@@ -18,9 +19,9 @@ namespace ECSDiscord.Services
         private readonly IConfiguration _config;
         private ulong _guildId;
 
-        public AdministrationService(DiscordSocketClient discord, IConfiguration config)
+        public AdministrationService(DiscordBot discord, IConfiguration config)
         {
-            _discord = discord;
+            _discord = discord.DiscordClient;
             _config = config;            
         }
 

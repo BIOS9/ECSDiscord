@@ -1,6 +1,7 @@
 ﻿using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
+using ECSDiscord.Services.Bot;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Serilog;
@@ -35,10 +36,10 @@ namespace ECSDiscord.Services
             Failure
         }
 
-        public EnrollmentsService(DiscordSocketClient discord, CourseService courses, StorageService storage, VerificationService verification, IConfiguration config)
+        public EnrollmentsService(DiscordBot discordBot, CourseService courses, StorageService storage, VerificationService verification, IConfiguration config)
         {
             Log.Debug("Enrollments service loading.");
-            _discord = discord;
+            _discord = discordBot.DiscordClient;
             _courses = courses;
             _config = config;
             _storage = storage;

@@ -1,5 +1,6 @@
 ﻿using Discord;
 using Discord.WebSocket;
+using ECSDiscord.Services.Bot;
 using ECSDiscord.Util;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
@@ -54,11 +55,11 @@ namespace ECSDiscord.Services
             _logChannelId;
 
 
-        public VerificationService(IConfiguration config, DiscordSocketClient discord, StorageService storageService)
+        public VerificationService(IConfiguration config, DiscordBot discordBot, StorageService storageService)
         {
             Log.Debug("Verification service loading.");
             _config = config;
-            _discord = discord;
+            _discord = discordBot.DiscordClient;
             _storageService = storageService;
             Log.Debug("Verification service loaded.");
         }

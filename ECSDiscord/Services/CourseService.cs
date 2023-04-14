@@ -1,6 +1,7 @@
 ﻿using Discord;
 using Discord.Rest;
 using Discord.WebSocket;
+using ECSDiscord.Services.Bot;
 using HtmlAgilityPack;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
@@ -76,11 +77,11 @@ namespace ECSDiscord.Services
 
         private Dictionary<string, CachedCourse> _cachedCourses = new Dictionary<string, CachedCourse>();
 
-        public CourseService(IConfiguration config, DiscordSocketClient discord, StorageService storage)
+        public CourseService(IConfiguration config, DiscordBot discordBot, StorageService storage)
         {
             Log.Debug("Course service loading.");
             _config = config;
-            _discord = discord;
+            _discord = discordBot.DiscordClient;
             _storage = storage;
             Log.Debug("Course service loaded.");
         }
