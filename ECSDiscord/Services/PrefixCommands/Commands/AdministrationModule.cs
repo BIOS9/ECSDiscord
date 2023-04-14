@@ -1,7 +1,6 @@
 ﻿using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
-using ECSDiscord.Services;
 using ECSDiscord.Util;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
@@ -12,18 +11,18 @@ using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ECSDiscord.Modules
+namespace ECSDiscord.Services.PrefixCommands.Commands
 {
     [Name("Administration")]
     public class AdministrationModule : ModuleBase<SocketCommandContext>
     {
-        private readonly Discord.Commands.CommandService _service;
+        private readonly CommandService _service;
         private readonly StorageService _storage;
         private readonly CourseService _courses;
         private readonly VerificationService _verification;
         private readonly IConfiguration _config;
 
-        public AdministrationModule(Discord.Commands.CommandService service, IConfiguration config, CourseService courses, VerificationService verification, StorageService storage)
+        public AdministrationModule(CommandService service, IConfiguration config, CourseService courses, VerificationService verification, StorageService storage)
         {
             _storage = storage;
             _service = service;
@@ -40,7 +39,7 @@ namespace ECSDiscord.Modules
             try
             {
                 await ReplyAsync("Processing...");
-                if(!Context.IsPrivate)
+                if (!Context.IsPrivate)
                 {
                     await ReplyAsync(":warning:  This command must be sent via **Direct Messages**");
                     return;

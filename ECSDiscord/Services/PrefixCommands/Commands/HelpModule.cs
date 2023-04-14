@@ -6,15 +6,15 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace ECSDiscord.Modules
+namespace ECSDiscord.Services.PrefixCommands.Commands
 {
     [Name("Help")]
     public class HelpModule : ModuleBase<SocketCommandContext>
     {
-        private readonly Discord.Commands.CommandService _service;
+        private readonly CommandService _service;
         private readonly IConfiguration _config;
 
-        public HelpModule(Discord.Commands.CommandService service, IConfiguration config)
+        public HelpModule(CommandService service, IConfiguration config)
         {
             _service = service;
             _config = config;

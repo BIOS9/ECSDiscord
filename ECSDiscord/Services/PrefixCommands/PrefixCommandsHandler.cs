@@ -9,27 +9,28 @@ using Discord;
 using ECSDiscord.Core.Translations;
 using Microsoft.Extensions.Hosting;
 using System.Threading;
+using ECSDiscord.Services.Bot;
 
-namespace ECSDiscord.Services
+namespace ECSDiscord.Services.PrefixCommands
 {
-    public class CommandService : IHostedService
+    public class PrefixCommandsHandler : IHostedService
     {
         private readonly DiscordSocketClient _discord;
-        private readonly Discord.Commands.CommandService _commands;
+        private readonly CommandService _commands;
         private readonly IConfiguration _config;
         private readonly IServiceProvider _provider;
         private readonly ITranslator _translator;
 
         // DiscordSocketClient, CommandService, IConfigurationRoot, and IServiceProvider are injected automatically from the IServiceProvider
-        public CommandService(
-            DiscordSocketClient discord,
-            Discord.Commands.CommandService commands,
+        public PrefixCommandsHandler(
+            DiscordBot discordBot,
+            CommandService commands,
             IConfiguration config,
             IServiceProvider provider,
             ITranslator translator)
         {
             Log.Debug("Command service loading.");
-            _discord = discord;
+            _discord = discordBot.DiscordClient;
             _commands = commands;
             _config = config;
             _provider = provider;
@@ -67,7 +68,7 @@ namespace ECSDiscord.Services
                     await msg.ReplyAsync("Hewwo and wewcome uwu to teh ecs discowd sewvew.\nI've sent chu a dm wif fuwthew instwuctions on how uwu to vewify. :pleading_face: <:awooo:958999403975290970>");
                     return;
                 }
-            
+
                 var result = await _commands.ExecuteAsync(context, argPos, _provider); // Execute the command
 
                 if (!result.IsSuccess) // If not successful, reply with the error.

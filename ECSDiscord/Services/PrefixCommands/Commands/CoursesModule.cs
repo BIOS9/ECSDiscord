@@ -1,6 +1,5 @@
 ﻿using Discord;
 using Discord.Commands;
-using ECSDiscord.Services;
 using Microsoft.Extensions.Configuration;
 using Serilog;
 using System;
@@ -13,7 +12,7 @@ using Discord.WebSocket;
 using ECSDiscord.Util;
 using ECSDiscord.Core.Translations;
 
-namespace ECSDiscord.Modules
+namespace ECSDiscord.Services.PrefixCommands.Commands
 {
     [Name("Courses")]
     public class CoursesModule : ModuleBase<SocketCommandContext>
@@ -401,7 +400,7 @@ namespace ECSDiscord.Modules
                 foreach (string c in courseList)
                 {
                     stringBuilder.Append(c);
-                    stringBuilder.Append((count % 4 == 0) ? '\n' : '\t');
+                    stringBuilder.Append(count % 4 == 0 ? '\n' : '\t');
                 }
                 stringBuilder.Append("\n```");
                 return stringBuilder.ToString();
@@ -410,7 +409,7 @@ namespace ECSDiscord.Modules
             // Credit to VicBot for this style of course listing tinyurl.com/VicBot
             EmbedBuilder builder = new EmbedBuilder();
             builder.WithTitle("Courses");
-            builder.AddField("Usage", 
+            builder.AddField("Usage",
                 "You can manage your courses using the `+join` and `+leave` commands.\n" +
                 "e.g. `+join comp102 engr101 engr121 cybr171`", false);
             if (await _enrollments.RequiresVerification(Context.User))

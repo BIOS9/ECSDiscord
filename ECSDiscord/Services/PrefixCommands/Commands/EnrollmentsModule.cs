@@ -1,7 +1,6 @@
 ﻿using System;
 using Discord.Commands;
 using ECSDiscord.Util;
-using ECSDiscord.Services;
 using Microsoft.Extensions.Configuration;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,7 +13,7 @@ using ECSDiscord.Core.Translations;
 using System.IO;
 using Discord.Rest;
 
-namespace ECSDiscord.BotModules
+namespace ECSDiscord.Services.PrefixCommands.Commands
 {
     [Name("Enrollments")]
     public class EnrollmentsModule : ModuleBase<SocketCommandContext>
@@ -66,25 +65,25 @@ namespace ECSDiscord.BotModules
             var userCourses = await _enrollments.GetUserCourses(Context.User);
             int courseCount = userCourses.Count;
             const int maxCourses = 15;
-            
+
             if (courseCount >= maxCourses)
             {
                 await ReplyAsync(_translator.T("ENROLLMENT_MAX_COURSE_COUNT"));
                 return;
             }
-            
+
             // Add user to courses
             StringBuilder stringBuilder = new StringBuilder();
             foreach (string course in formattedCourses)
             {
-                if(course.Equals("boomer", System.StringComparison.OrdinalIgnoreCase))
+                if (course.Equals("boomer", StringComparison.OrdinalIgnoreCase))
                 {
                     stringBuilder.Append(_translator.T("ENROLLMENT_OK_BOOMER"));
                     continue;
                 }
 
                 EnrollmentResult result = await _enrollments.EnrollUser(course, Context.User);
-                switch(result)
+                switch (result)
                 {
                     case EnrollmentResult.AlreadyJoined:
                         stringBuilder.Append(_translator.T("ENROLLMENT_ALREADY_ENROLLED", course));
@@ -107,7 +106,7 @@ namespace ECSDiscord.BotModules
                         stringBuilder.Append(_translator.T("ENROLLMENT_VERIFICATION_REQUIRED", course));
                         break;
                 }
-                
+
                 if (courseCount >= maxCourses) // This one is here to allow joined courses to be printed out even if the max is reached.
                 {
                     await ReplyAsync(_translator.T("ENROLLMENT_MAX_COURSE_COUNT"));
@@ -126,7 +125,7 @@ namespace ECSDiscord.BotModules
             // Ensure command is only executed in allowed channels
             if (!Context.CheckConfigChannel("enrollments", _config)) return;
 
-            if(courses.Length == 1 && courses[0].Equals("all", System.StringComparison.OrdinalIgnoreCase))
+            if (courses.Length == 1 && courses[0].Equals("all", StringComparison.OrdinalIgnoreCase))
             {
                 await LeaveAllAsync();
                 return;
@@ -260,7 +259,7 @@ namespace ECSDiscord.BotModules
                         stringBuilder.Append(_translator.T("ENROLLMENT_SERVER_ERROR", course));
                         break;
                     case EnrollmentResult.Success:
-                        if(alreadyInCourse)
+                        if (alreadyInCourse)
                             stringBuilder.Append(_translator.T("ENROLLMENT_LEAVE_SUCCESS", course));
                         else
                             stringBuilder.Append(_translator.T("ENROLLMENT_JOIN_SUCCESS", course));
@@ -299,7 +298,7 @@ namespace ECSDiscord.BotModules
         public async Task CoursesAsync(SocketUser user)
         {
             await ReplyAsync(_translator.T("COMMAND_PROCESSING"));
-            if(Context.Guild != null)
+            if (Context.Guild != null)
                 await Context.Guild.DownloadUsersAsync();
             List<string> courses = await _enrollments.GetUserCourses(user);
             if (courses.Count == 0)
@@ -328,24 +327,24 @@ namespace ECSDiscord.BotModules
             }
 
             IList<SocketUser> users = await _enrollments.GetCourseMembers(courseName);
-            if(users == null || users.Count == 0)
+            if (users == null || users.Count == 0)
             {
                 await ReplyAsync(_translator.T("COURSE_EMPTY"));
                 return;
             }
 
             StringBuilder builder = new StringBuilder();
-            foreach(SocketUser user in users)
+            foreach (SocketUser user in users)
             {
                 builder.Append($"{user.Username}#{user.Discriminator}  -  {user.Id}");
                 builder.Append("\n");
             }
             string msg = builder.ToString();
-            if(msg.Length >= 2000) // Msg too long for discord
+            if (msg.Length >= 2000) // Msg too long for discord
             {
-                using(MemoryStream ms = new MemoryStream())
+                using (MemoryStream ms = new MemoryStream())
                 {
-                    using(StreamWriter sw = new StreamWriter(ms, leaveOpen: true))
+                    using (StreamWriter sw = new StreamWriter(ms, leaveOpen: true))
                     {
                         sw.Write(msg);
                     }
@@ -358,9 +357,9 @@ namespace ECSDiscord.BotModules
             else
             {
                 await ReplyAsync(
-                    _courses.NormaliseCourseName(courseName) + 
-                    $" has the following {users.Count} members:```\n" + 
-                    builder.ToString().SanitizeMentions() + 
+                    _courses.NormaliseCourseName(courseName) +
+                    $" has the following {users.Count} members:```\n" +
+                    builder.ToString().SanitizeMentions() +
                     "```");
             }
         }
@@ -389,7 +388,7 @@ namespace ECSDiscord.BotModules
 
             await ReplyAsync(_courses.NormaliseCourseName(courseName) + $" has {users.Count} members.".SanitizeMentions());
         }
-        
+
         [Command("removecourse")]
         [Alias("remove")]
         [Summary("Removes a user from a course")]
@@ -431,7 +430,7 @@ namespace ECSDiscord.BotModules
 
             await ReplyAsync(stringBuilder.ToString().Trim().SanitizeMentions());
         }
-        
+
         [Command("removeallcourses")]
         [Alias("removeall")]
         [Summary("Removes a user from all of their courses.")]
@@ -473,7 +472,7 @@ namespace ECSDiscord.BotModules
 
             await ReplyAsync(stringBuilder.ToString().Trim().SanitizeMentions());
         }
-        
+
         [Command("viewcourseblacklist")]
         [Alias("viewblacklist")]
         [Summary("Returns a list of users who are blacklisted from joining courses.")]
@@ -485,26 +484,26 @@ namespace ECSDiscord.BotModules
                 await Context.Guild.DownloadUsersAsync();
 
             IList<ulong> users = await _storage.Users.GetAllDisallowedUsersAsync();
-            if(users == null || users.Count == 0)
+            if (users == null || users.Count == 0)
             {
                 await ReplyAsync(_translator.T("NO_DISALLOWED_USERS"));
                 return;
             }
 
             StringBuilder builder = new StringBuilder();
-            foreach(SocketUser user in users.Select(user => Context.Guild.GetUser(user)))
+            foreach (SocketUser user in users.Select(user => Context.Guild.GetUser(user)))
             {
                 builder.Append($"{user.Username}#{user.Discriminator}  -  {user.Id}");
                 builder.Append("\n");
             }
-            
+
             string msg = builder.ToString();
             await ReplyAsync(
-                $"The following users are disallowed from joining any courses ```\n" + 
-                    builder.ToString().SanitizeMentions() + 
+                $"The following users are disallowed from joining any courses ```\n" +
+                    builder.ToString().SanitizeMentions() +
                     "```");
         }
-        
+
         [Command("blacklistuser")]
         [Alias("blacklist", "courseblacklistuser")]
         [Summary("Blacklists a user from joining courses.")]
@@ -520,7 +519,7 @@ namespace ECSDiscord.BotModules
             await RemoveAllCourseesAsync(user);
             await ReplyAsync("Done.");
         }
-        
+
         [Command("unblacklistuser")]
         [Alias("unblacklist", "uncourseblacklistuser", "courseunblacklistuser")]
         [Summary("Unblacklists a user from joining courses.")]
@@ -548,7 +547,7 @@ namespace ECSDiscord.BotModules
 
             HashSet<string> distinctCourses = new HashSet<string>();
             HashSet<string> duplicateCourses = new HashSet<string>();
-            
+
             foreach (string course in courses)
             {
                 string normalised = _courses.NormaliseCourseName(course);
@@ -561,7 +560,7 @@ namespace ECSDiscord.BotModules
             {
                 string s = duplicateCourses.Count > 1 ? "s" : "";
                 string courseList = duplicateCourses.Aggregate((x, y) => $"{x}, {y}");
-                errorMessage = $"\nDuplicate course{s} found: {courseList}.Please ensure there are no duplicate course.";;
+                errorMessage = $"\nDuplicate course{s} found: {courseList}.Please ensure there are no duplicate course."; ;
                 formattedCourses = null;
                 return false;
             }

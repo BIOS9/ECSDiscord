@@ -1,7 +1,6 @@
 ﻿using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
-using ECSDiscord.Services;
 using ECSDiscord.Util;
 using Microsoft.Extensions.Configuration;
 using System;
@@ -10,7 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using static ECSDiscord.Services.VerificationService;
 
-namespace ECSDiscord.Modules
+namespace ECSDiscord.Services.PrefixCommands.Commands
 {
     [Name("Verification")]
     public class VerificationModule : ModuleBase<SocketCommandContext>
@@ -38,12 +37,12 @@ namespace ECSDiscord.Modules
                     await Context.User.SendMessageAsync($"Please provide your uni student email address e.g.\n" +
                     $"```{_config["prefix"]}verify username@myvuw.ac.nz```");
                     await ReplyAsync($"I've sent you a DM with further instructions on how to verify.");
-                } 
+                }
                 catch (Discord.Net.HttpException)
                 {
                     await ReplyAsync($":warning: Your privacy settings have prevented me from sending you a DM.\n" +
                         $"You can **Allow direct messages from server members.** under the **Privacy settings** in the server drop down on desktop or in the server menu on mobile.");
-                }   
+                }
             }
             else
             {
@@ -59,7 +58,7 @@ namespace ECSDiscord.Modules
         public async Task VerifyAsync(string email)
         {
             await ReplyAsync("Processing...");
-            if(Context.Guild != null)
+            if (Context.Guild != null)
                 await Context.Guild.DownloadUsersAsync();
             try
             {
@@ -96,7 +95,7 @@ namespace ECSDiscord.Modules
                     case VerificationResult.NotInServer:
                         stringBuilder.Append($":warning:  You are not in the Discord server!\n");
                         break;
-                }   
+                }
             }
             else
             {
