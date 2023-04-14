@@ -8,6 +8,7 @@ using Microsoft.Extensions.Configuration;
 using Serilog;
 using Microsoft.Extensions.Hosting;
 using ECSDiscord;
+using ECSDiscord.Services.SlashCommands;
 
 await Host.CreateDefaultBuilder(args)
     .ConfigureAppConfiguration(config =>
@@ -47,6 +48,8 @@ await Host.CreateDefaultBuilder(args)
         builder.RegisterType<ECSDiscord.Services.ServerMessageService>().AsSelf().As<IHostedService>().SingleInstance();
         builder.RegisterType<ECSDiscord.Services.TransientStateService>().SingleInstance();
         builder.RegisterType<ECSDiscord.Services.ImportService>().SingleInstance();
+
+        builder.RegisterModule<SlashCommandsModule>();
     })
     .Build()
     .RunAsync();
