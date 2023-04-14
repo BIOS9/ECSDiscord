@@ -11,18 +11,18 @@ using System.Threading.Tasks;
 
 namespace ECSDiscord.Services.SlashCommands;
 
-public class SlashCommandHandler : IHostedService
+public class SlashCommandsHandler : IHostedService
 {
     private readonly DiscordSocketClient _discordClient;
-    private readonly ILogger<SlashCommandHandler> _logger;
+    private readonly ILogger<SlashCommandsHandler> _logger;
     private readonly IEnumerable<ISlashCommand> _commands;
 
     private readonly Dictionary<ulong, ISlashCommand>
         _registeredCommands = new(); // I am aware that this is still mutable.
 
-    public SlashCommandHandler(
+    public SlashCommandsHandler(
         DiscordSocketClient discordBot,
-        ILogger<SlashCommandHandler> logger,
+        ILogger<SlashCommandsHandler> logger,
         IEnumerable<ISlashCommand> commands)
     {
         _discordClient = discordBot ?? throw new ArgumentNullException(nameof(discordBot));
