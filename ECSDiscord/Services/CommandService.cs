@@ -7,10 +7,12 @@ using System.Reflection;
 using System.Threading.Tasks;
 using Discord;
 using ECSDiscord.Core.Translations;
+using Microsoft.Extensions.Hosting;
+using System.Threading;
 
 namespace ECSDiscord.Services
 {
-    public class CommandService
+    public class CommandService : IHostedService
     {
         private readonly DiscordSocketClient _discord;
         private readonly Discord.Commands.CommandService _commands;
@@ -35,10 +37,21 @@ namespace ECSDiscord.Services
             _provider = provider;
             _transientState = transientState;
             _translator = translator;
+        }
 
-            _commands.AddModulesAsync(assembly: Assembly.GetExecutingAssembly(), provider);
+        public Task StartAsync(CancellationToken cancellationToken)
+        {
+            Log.Debug("Loading command service");
+            _commands.AddModulesAsync(assembly: Assembly.GetExecutingAssembly(), _provider);
             _discord.MessageReceived += OnMessageReceivedAsync;
-            Log.Debug("Command service loaded.");
+            return Task.CompletedTask;
+        }
+
+        public Task StopAsync(CancellationToken cancellationToken)
+        {
+            //_commands.RemoveModulesAsync(assembly: Assembly.GetExecutingAssembly(), _provider); // Will remove this when switching to slash commands
+            _discord.MessageReceived -= OnMessageReceivedAsync;
+            return Task.CompletedTask;
         }
 
         private async Task OnMessageReceivedAsync(SocketMessage s)

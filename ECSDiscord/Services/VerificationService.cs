@@ -2,6 +2,7 @@
 using Discord.WebSocket;
 using ECSDiscord.Util;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
 using SendGrid;
 using SendGrid.Helpers.Mail;
 using Serilog;
@@ -14,13 +15,14 @@ using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using static ECSDiscord.Services.StorageService;
 using static ECSDiscord.Services.StorageService.VerificationStorage;
 
 namespace ECSDiscord.Services
 {
-    public class VerificationService
+    public class VerificationService : IHostedService
     {
         public static readonly TimeSpan TokenExpiryTime = TimeSpan.FromDays(7);
         private static readonly Regex CodePattern = new Regex("^\\$[A-Z0-9]+$");
@@ -58,12 +60,6 @@ namespace ECSDiscord.Services
             _config = config;
             _discord = discord;
             _storageService = storageService;
-            _discord.UserJoined += _discord_UserJoined;
-            _discord.GuildMemberUpdated += _discord_GuildMemberUpdated;
-            _discord.GuildAvailable += _discord_GuildAvailable;
-            _discord.RoleDeleted += _discord_RoleDeleted;
-            _discord.MessageReceived += _discord_MessageReceived;
-            loadConfig();
             Log.Debug("Verification service loaded.");
         }
 
@@ -554,6 +550,27 @@ namespace ECSDiscord.Services
                 Log.Error(ex, "Error loading verification certificate file {message}", ex.Message);
                 throw;
             }
+        }
+
+        public Task StartAsync(CancellationToken cancellationToken)
+        {
+            _discord.UserJoined += _discord_UserJoined;
+            _discord.GuildMemberUpdated += _discord_GuildMemberUpdated;
+            _discord.GuildAvailable += _discord_GuildAvailable;
+            _discord.RoleDeleted += _discord_RoleDeleted;
+            _discord.MessageReceived += _discord_MessageReceived;
+            loadConfig();
+            return Task.CompletedTask;
+        }
+
+        public Task StopAsync(CancellationToken cancellationToken)
+        {
+            _discord.UserJoined -= _discord_UserJoined;
+            _discord.GuildMemberUpdated -= _discord_GuildMemberUpdated;
+            _discord.GuildAvailable -= _discord_GuildAvailable;
+            _discord.RoleDeleted -= _discord_RoleDeleted;
+            _discord.MessageReceived -= _discord_MessageReceived;
+            return Task.CompletedTask;
         }
     }
 }

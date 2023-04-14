@@ -7,10 +7,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Discord;
+using Microsoft.Extensions.Hosting;
+using System.Threading;
 
 namespace ECSDiscord.Services
 {
-    public class AdministrationService
+    public class AdministrationService : IHostedService
     {
         private readonly DiscordSocketClient _discord;
         private readonly IConfiguration _config;
@@ -18,12 +20,21 @@ namespace ECSDiscord.Services
 
         public AdministrationService(DiscordSocketClient discord, IConfiguration config)
         {
-            Log.Debug("Administration service loading.");
             _discord = discord;
-            _config = config;
+            _config = config;            
+        }
+
+        public Task StartAsync(CancellationToken cancellationToken)
+        {
+            Log.Debug("Administration service loading.");
             loadConfig();
-            Log.Debug("Administration service loaded.");
             _discord.MessageReceived += DiscordOnMessageReceived;
+            return Task.CompletedTask;
+        }
+
+        public Task StopAsync(CancellationToken cancellationToken)
+        {
+            return Task.CompletedTask;
         }
 
         private async Task DiscordOnMessageReceived(SocketMessage message)

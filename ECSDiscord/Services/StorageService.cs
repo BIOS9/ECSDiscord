@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
 using MySqlConnector;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -8,11 +9,13 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace ECSDiscord.Services
 {
-    public class StorageService
+    public class StorageService : IHostedService
     {
         private readonly IConfiguration _config;
         private string _mysqlConnectionString;
@@ -1482,13 +1485,7 @@ namespace ECSDiscord.Services
         {
             try
             {
-                Log.Debug("Testing MySql connection.");
-                using (MySqlConnection con = GetMySqlConnection())
-                {
-                    await con.OpenAsync();
-                    Log.Information("Connected to MySql version: {version}", con.ServerVersion);
-                }
-                Log.Debug("MySql connection test succeeded.");
+                
                 return true;
             }
             catch (Exception ex)
@@ -1496,6 +1493,24 @@ namespace ECSDiscord.Services
                 Log.Error(ex, "Failed to connect to MySql {message}", ex.Message);
                 return false;
             }
+        }
+
+        public async Task StartAsync(CancellationToken cancellationToken)
+        {
+            loadConfig();
+            Log.Debug("Testing MySql connection.");
+            using (MySqlConnection con = GetMySqlConnection())
+            {
+                await con.OpenAsync();
+                Log.Information("Connected to MySql version: {version}", con.ServerVersion);
+            }
+            Log.Debug("MySql connection test succeeded.");
+            startCleanupService();
+        }
+
+        public Task StopAsync(CancellationToken cancellationToken)
+        {
+            return Task.CompletedTask;
         }
 
         public async Task Cleanup()
@@ -1529,13 +1544,11 @@ namespace ECSDiscord.Services
         {
             Log.Debug("Storage service loading.");
             _config = config;
-            loadConfig();
 
             Verification = new VerificationStorage(this);
             Users = new UserStorage(this);
             Courses = new CourseStorage(this);
             ServerMessages = new ServerMessageStorage(this);
-            startCleanupService();
             Log.Debug("Storage service loaded.");
         }
 

@@ -1,14 +1,16 @@
 ﻿using Discord;
 using Discord.WebSocket;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
 using Serilog;
 using System;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace ECSDiscord.Services
 {
-    public class StartupService
+    public class StartupService : IHostedService
     {
         private readonly IServiceProvider _provider;
         private readonly DiscordSocketClient _discord;
@@ -32,8 +34,6 @@ namespace ECSDiscord.Services
             _config = config;
             _discord = discord;
             _commands = commands;
-            _discord.UserJoined += _discord_UserJoined;
-            loadConfig();
             Log.Debug("Startup service loaded.");
         }
 
@@ -80,29 +80,6 @@ namespace ECSDiscord.Services
             }
         }
 
-        /// <summary>
-        /// Start the service and add 
-        /// </summary>
-        /// <returns></returns>
-        public async Task StartAsync()
-        {
-            string discordToken = _config["secrets:discordBotToken"];     // Get the discord token from the config file
-            if (string.IsNullOrWhiteSpace(discordToken))
-            {
-                Log.Fatal($"Cannot find bot token in configuration file. Exiting...");
-                throw new Exception("Bot token not found in configuration file.");
-            }
-
-            _discord.GuildAvailable += _discord_GuildAvailable;
-            await _discord.SetActivityAsync(new Game("github.com/BIOS9/ECSDiscord"));
-            startConnectionWatchdogAsync();
-
-            await _commands.AddModulesAsync(Assembly.GetEntryAssembly(), _provider);     // Load commands and modules into the command service
-
-            await _discord.LoginAsync(TokenType.Bot, discordToken);     // Login to discord
-            await _discord.StartAsync();                               // Connect to the websocket
-        }
-
         private async Task _discord_GuildAvailable(SocketGuild arg)
         {
             if (!ulong.TryParse(_config["guildId"], out ulong guildId))
@@ -137,6 +114,34 @@ namespace ECSDiscord.Services
                 Log.Warning("DM on join is enabled, but the DM template is empty. DM on join is now disabled.");
             }
             _prefix = _config["prefix"];
+        }
+
+        public async Task StartAsync(CancellationToken cancellationToken)
+        {
+            _discord.GuildAvailable += _discord_GuildAvailable;
+            _discord.UserJoined += _discord_UserJoined;
+            loadConfig();
+            string discordToken = _config["secrets:discordBotToken"];     // Get the discord token from the config file
+            if (string.IsNullOrWhiteSpace(discordToken))
+            {
+                Log.Fatal($"Cannot find bot token in configuration file. Exiting...");
+                throw new Exception("Bot token not found in configuration file.");
+            }
+
+            await _discord.SetActivityAsync(new Game("github.com/BIOS9/ECSDiscord"));
+            startConnectionWatchdogAsync();
+
+            await _commands.AddModulesAsync(Assembly.GetEntryAssembly(), _provider);     // Load commands and modules into the command service
+
+            await _discord.LoginAsync(TokenType.Bot, discordToken);     // Login to discord
+            await _discord.StartAsync();                               // Connect to the websocket
+        }
+
+        public Task StopAsync(CancellationToken cancellationToken)
+        {
+            _discord.GuildAvailable -= _discord_GuildAvailable;
+            _discord.UserJoined -= _discord_UserJoined;
+            return Task.CompletedTask;
         }
     }
 }

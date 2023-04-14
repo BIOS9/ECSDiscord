@@ -2,16 +2,18 @@
 using Discord.Commands;
 using Discord.WebSocket;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
 using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace ECSDiscord.Services
 {
-    public class EnrollmentsService
+    public class EnrollmentsService : IHostedService
     {
         private readonly DiscordSocketClient _discord;
         private readonly CourseService _courses;
@@ -41,9 +43,21 @@ namespace ECSDiscord.Services
             _config = config;
             _storage = storage;
             _verification = verification;
+            
+            Log.Debug("Enrollments service loaded.");
+        }
+
+        public Task StartAsync(CancellationToken cancellationToken)
+        {
             _discord.UserJoined += _discord_UserJoined;
             loadConfig();
-            Log.Debug("Enrollments service loaded.");
+            return Task.CompletedTask;
+        }
+
+        public Task StopAsync(CancellationToken cancellationToken)
+        {
+            _discord.UserJoined -= _discord_UserJoined;
+            return Task.CompletedTask;
         }
 
         private async Task _discord_UserJoined(SocketGuildUser arg)

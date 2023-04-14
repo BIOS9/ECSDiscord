@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json;
 using Serilog;
 using System;
@@ -11,11 +12,12 @@ using System.Security.Authentication;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace ECSDiscord.Services
 {
-    public class RemoteDataAccessService
+    public class RemoteDataAccessService : IHostedService
     {
         private readonly IConfiguration _config;
         private readonly StorageService _storageService;
@@ -45,16 +47,6 @@ namespace ECSDiscord.Services
             Log.Debug("Remote data access service loading.");
             _config = config;
             _storageService = storageService;
-            loadConfig();
-            if (_enable)
-            {
-                startServer();
-                Log.Debug("Remote data access service loaded.");
-            }
-            else
-            {
-                Log.Debug("Remote data access service unloaded (Service is disabled).");
-            }
         }
 
         private async void startServer()
@@ -243,6 +235,26 @@ namespace ECSDiscord.Services
                 Log.Error(ex, "Failed to import verification public key certificate certificate.", ex.Message);
                 throw new ArgumentException("Failed to import verification public key certificate certificate.", ex);
             }
+        }
+
+        public Task StartAsync(CancellationToken cancellationToken)
+        {
+            loadConfig();
+            if (_enable)
+            {
+                startServer();
+                Log.Debug("Remote data access service loaded.");
+            }
+            else
+            {
+                Log.Debug("Remote data access service unloaded (Service is disabled).");
+            }
+            return Task.CompletedTask;
+        }
+
+        public Task StopAsync(CancellationToken cancellationToken)
+        {
+            return Task.CompletedTask;
         }
     }
 }

@@ -2,16 +2,18 @@
 using Discord.Rest;
 using Discord.WebSocket;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
 using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace ECSDiscord.Services
 {
-    public class ServerMessageService
+    public class ServerMessageService : IHostedService
     {
         private readonly DiscordSocketClient _discord;
         private readonly IConfiguration _config;
@@ -24,8 +26,18 @@ namespace ECSDiscord.Services
             _discord = discord;
             _config = config;
             _storage = storage;
-            loadConfig();
             Log.Debug("Server Message service loaded.");
+        }
+
+        public Task StartAsync(CancellationToken cancellationToken)
+        {
+            loadConfig();
+            return Task.CompletedTask;
+        }
+
+        public Task StopAsync(CancellationToken cancellationToken)
+        {
+            return Task.CompletedTask;
         }
 
         public class ServerMessage

@@ -3,6 +3,7 @@ using Discord.Rest;
 using Discord.WebSocket;
 using HtmlAgilityPack;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
 using Serilog;
 using System;
 using System.Collections.Generic;
@@ -16,7 +17,7 @@ using System.Threading.Tasks;
 
 namespace ECSDiscord.Services
 {
-    public class CourseService
+    public class CourseService : IHostedService
     {
         public class Course
         {
@@ -81,9 +82,6 @@ namespace ECSDiscord.Services
             _config = config;
             _discord = discord;
             _storage = storage;
-            _discord.ChannelDestroyed += _discord_ChannelDestroyed;
-            loadConfig();
-            Task.Run(DownloadCourseList);
             Log.Debug("Course service loaded.");
         }
 
@@ -550,6 +548,19 @@ namespace ECSDiscord.Services
                 Log.Error("Failed to load role permission overrides from config. Please use a valid Discord permission value. See https://discordapi.com/permissions.html");
                 throw ex;
             }
+        }
+
+        public async Task StartAsync(CancellationToken cancellationToken)
+        {
+            _discord.ChannelDestroyed += _discord_ChannelDestroyed;
+            loadConfig();
+            await DownloadCourseList();
+        }
+
+        public Task StopAsync(CancellationToken cancellationToken)
+        {
+            _discord.ChannelDestroyed -= _discord_ChannelDestroyed;
+            return Task.CompletedTask;
         }
     }
 }

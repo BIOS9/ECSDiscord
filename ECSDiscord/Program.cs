@@ -33,24 +33,20 @@ await Host.CreateDefaultBuilder(args)
             DefaultRunMode = RunMode.Async,     // Force all commands to run async by default
         })).SingleInstance();
 
-
+        // all very ugly right now, will clean soon
         builder.RegisterInstance((ITranslator)Translator.DefaultTranslations).SingleInstance();
-        builder.RegisterType<ECSDiscord.Services.CommandService>().SingleInstance();
-        builder.RegisterType<ECSDiscord.Services.StartupService>().SingleInstance();
-        builder.RegisterType<ECSDiscord.Services.LoggingService>().SingleInstance();
-        builder.RegisterType<ECSDiscord.Services.EnrollmentsService>().SingleInstance();
-        builder.RegisterType<ECSDiscord.Services.CourseService>().SingleInstance();
-        builder.RegisterType<ECSDiscord.Services.StorageService>().SingleInstance();
-        builder.RegisterType<ECSDiscord.Services.VerificationService>().SingleInstance();
-        builder.RegisterType<ECSDiscord.Services.RemoteDataAccessService>().SingleInstance();
+        builder.RegisterType<ECSDiscord.Services.CommandService>().AsSelf().As<IHostedService>().SingleInstance();
+        builder.RegisterType<ECSDiscord.Services.StartupService>().AsSelf().As<IHostedService>().SingleInstance();
+        builder.RegisterType<ECSDiscord.Services.LoggingService>().AsSelf().As<IHostedService>().SingleInstance();
+        builder.RegisterType<ECSDiscord.Services.EnrollmentsService>().AsSelf().As<IHostedService>().SingleInstance();
+        builder.RegisterType<ECSDiscord.Services.CourseService>().AsSelf().As<IHostedService>().SingleInstance();
+        builder.RegisterType<ECSDiscord.Services.StorageService>().AsSelf().As<IHostedService>().SingleInstance();
+        builder.RegisterType<ECSDiscord.Services.VerificationService>().AsSelf().As<IHostedService>().SingleInstance();
+        builder.RegisterType<ECSDiscord.Services.RemoteDataAccessService>().AsSelf().As<IHostedService>().SingleInstance();
+        builder.RegisterType<ECSDiscord.Services.AdministrationService>().AsSelf().As<IHostedService>().SingleInstance();
+        builder.RegisterType<ECSDiscord.Services.ServerMessageService>().AsSelf().As<IHostedService>().SingleInstance();
         builder.RegisterType<ECSDiscord.Services.TransientStateService>().SingleInstance();
         builder.RegisterType<ECSDiscord.Services.ImportService>().SingleInstance();
-        builder.RegisterType<ECSDiscord.Services.AdministrationService>().SingleInstance();
-        builder.RegisterType<ECSDiscord.Services.ServerMessageService>().SingleInstance();
-        builder.RegisterType<Startup>()
-        .As<IHostedService>()
-        .SingleInstance()
-        .PropertiesAutowired();
     })
     .Build()
     .RunAsync();
