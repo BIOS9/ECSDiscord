@@ -18,7 +18,6 @@ namespace ECSDiscord.Services
         private readonly Discord.Commands.CommandService _commands;
         private readonly IConfiguration _config;
         private readonly IServiceProvider _provider;
-        private readonly TransientStateService _transientState;
         private readonly ITranslator _translator;
 
         // DiscordSocketClient, CommandService, IConfigurationRoot, and IServiceProvider are injected automatically from the IServiceProvider
@@ -27,7 +26,6 @@ namespace ECSDiscord.Services
             Discord.Commands.CommandService commands,
             IConfiguration config,
             IServiceProvider provider,
-            TransientStateService transientState,
             ITranslator translator)
         {
             Log.Debug("Command service loading.");
@@ -35,7 +33,6 @@ namespace ECSDiscord.Services
             _commands = commands;
             _config = config;
             _provider = provider;
-            _transientState = transientState;
             _translator = translator;
         }
 
@@ -65,21 +62,6 @@ namespace ECSDiscord.Services
             int argPos = 0; // Check if the message has a valid command prefix
             if (msg.HasStringPrefix(_config["prefix"], ref argPos) || msg.HasMentionPrefix(_discord.CurrentUser, ref argPos))
             {
-                var userState = _transientState.GetUserState(msg.Author.Id);
-                if (!userState.Exists)
-                {
-                    if (DateTime.Now - userState.LeftExistenceTime > TimeSpan.FromMinutes(10))
-                    {
-                        var newUserState = new TransientStateService.UserState(userState, exists: true, real: true, realityState: 0);
-                        _transientState.SetUserState(msg.Author.Id, newUserState);
-                    }
-                    else
-                    {
-                        await msg.Channel.SendMessageAsync(_translator.T("YOU_DO_NOT_EXIST", msg.Author.Username + "#" + msg.Author.Discriminator));
-                        return;
-                    }
-                }
-
                 if (msg.Content.ToLower().Equals("+vewify"))
                 {
                     await msg.ReplyAsync("Hewwo and wewcome uwu to teh ecs discowd sewvew.\nI've sent chu a dm wif fuwthew instwuctions on how uwu to vewify. :pleading_face: <:awooo:958999403975290970>");

@@ -24,22 +24,19 @@ namespace ECSDiscord.BotModules
         private readonly EnrollmentsService _enrollments;
         private readonly CourseService _courses;
         private readonly StorageService _storage;
-        private readonly TransientStateService _transientState;
 
         public EnrollmentsModule(
             IConfiguration config,
             ITranslator translator,
             EnrollmentsService enrollments,
             CourseService courses,
-            StorageService storage,
-            TransientStateService transientState)
+            StorageService storage)
         {
             _config = config;
             _translator = translator;
             _enrollments = enrollments;
             _courses = courses;
             _storage = storage;
-            _transientState = transientState;
         }
 
         [Command("join")]
@@ -56,8 +53,6 @@ namespace ECSDiscord.BotModules
                 await ReplyAsync(errorMessage.SanitizeMentions());
                 return;
             }
-
-            TransientStateService.UserState userState = _transientState.GetUserState(Context.User.Id);
 
             await ReplyAsync(_translator.T("COMMAND_PROCESSING"));
             if (Context.Guild != null)
@@ -85,20 +80,6 @@ namespace ECSDiscord.BotModules
                 if(course.Equals("boomer", System.StringComparison.OrdinalIgnoreCase))
                 {
                     stringBuilder.Append(_translator.T("ENROLLMENT_OK_BOOMER"));
-                    continue;
-                }
-
-                if(course.Equals("reality", System.StringComparison.OrdinalIgnoreCase))
-                {
-                    stringBuilder.Append(userState.Real
-                        ? _translator.T("ALREADY_IN_REALITY")
-                        : _translator.T("CANNOT_JOIN_REALITY"));
-                    continue;
-                }
-
-                if(course.Equals("existence", System.StringComparison.OrdinalIgnoreCase))
-                {
-                    stringBuilder.Append(_translator.T("YOU_ALREADY_EXIST"));
                     continue;
                 }
 
@@ -137,31 +118,6 @@ namespace ECSDiscord.BotModules
             await ReplyAsync(stringBuilder.ToString().Trim().SanitizeMentions());
         }
 
-        [Command("whereami")]
-        [Summary("Tells you where you are.")]
-        public async Task WhereAmI()
-        {
-            TransientStateService.UserState userState = _transientState.GetUserState(Context.User.Id);
-            if (userState.Real)
-            {
-                await ReplyAsync(_translator.T("WHEREAMI"));
-            }
-            else
-            {
-                var message = await Context.Channel.SendFileAsync(ResourceReaderService.OpenBackroomsImage(userState.RealityState), "snapshot.jpg", _translator.T("REALITY_LOCATION"));
-                _transientState.SetUserState(Context.User.Id,
-                    new TransientStateService.UserState(userState, realityState: userState.RealityState + 1));
-                if (userState.RealityState == 18)
-                {
-                    _transientState.SetUserState(Context.User.Id,
-                        new TransientStateService.UserState(userState, exists: false, leftExistenceTime: DateTime.Now));
-                }
-                await Task.Delay(TimeSpan.FromSeconds(30));
-                await message.DeleteAsync();
-                await Context.Message.DeleteAsync();
-            }
-        }
-
         [Command("leave")]
         [Alias("unenroll", "unenrol", "disenroll", "disenrol")]
         [Summary("Leave a uni course channel.")]
@@ -181,40 +137,6 @@ namespace ECSDiscord.BotModules
             {
                 await ReplyAsync(errorMessage.SanitizeMentions());
                 return;
-            }
-
-            TransientStateService.UserState userState = _transientState.GetUserState(Context.User.Id);
-
-            if(formattedCourses.Any(x => x.Equals("reality", StringComparison.OrdinalIgnoreCase)))
-            {
-                RestUserMessage message;
-                if (!userState.Real)
-                {
-                    message = await Context.Channel.SendMessageAsync(_translator.T("ALREADY_LEFT_REALITY"));
-                    await Task.Delay(TimeSpan.FromSeconds(30));
-                    await message.DeleteAsync();
-                    await Context.Message.DeleteAsync();
-                    return;
-                }
-
-                message = await Context.Channel.SendFileAsync(ResourceReaderService.OpenBackroomsImage(userState.RealityState), "snapshot.jpg", _translator.T("REMOVING_FROM_REALITY"));
-                _transientState.SetUserState(Context.User.Id,
-                    new TransientStateService.UserState(userState, real: false, realityState: 1));
-                await Task.Delay(TimeSpan.FromSeconds(60));
-                await message.DeleteAsync();
-                await Context.Message.DeleteAsync();
-                return;
-            }
-
-            if(formattedCourses.Any(x => x.Equals("existence", StringComparison.OrdinalIgnoreCase)))
-            {
-                if (userState.Exists)
-                {
-                    var newUserState = new TransientStateService.UserState(userState, exists: false, leftExistenceTime: DateTime.Now);
-                    _transientState.SetUserState(Context.User.Id, newUserState);
-                    await ReplyAsync(_translator.T("REMOVING_FROM_EXISTENCE"));
-                    return;
-                }
             }
 
             await ReplyAsync(_translator.T("COMMAND_PROCESSING"));
