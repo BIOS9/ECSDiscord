@@ -78,7 +78,7 @@ namespace ECSDiscord.Services
             //await ApplyAllUserVerificationAsync();
         }
 
-        private async Task _discord_GuildMemberUpdated(SocketGuildUser arg1, SocketGuildUser arg2)
+        private async Task _discord_GuildMemberUpdated(Cacheable<SocketGuildUser, ulong> arg1, SocketGuildUser arg2)
         {
             try
             {
