@@ -10,6 +10,7 @@ using Microsoft.Extensions.Hosting;
 using ECSDiscord;
 using ECSDiscord.Services.SlashCommands;
 using ECSDiscord.Services.Bot;
+using ECSDiscord.Services.PrefixCommands;
 
 await Host.CreateDefaultBuilder(args)
     .ConfigureAppConfiguration(config =>
@@ -31,9 +32,6 @@ await Host.CreateDefaultBuilder(args)
 
         // all very ugly right now, will clean soon
         builder.RegisterInstance((ITranslator)Translator.DefaultTranslations).SingleInstance();
-        builder.RegisterType<ECSDiscord.Services.CommandService>().AsSelf().As<IHostedService>().SingleInstance();
-        builder.RegisterType<DiscordBot>().AsSelf().As<IHostedService>().SingleInstance();
-        builder.RegisterType<ECSDiscord.Services.LoggingService>().AsSelf().As<IHostedService>().SingleInstance();
         builder.RegisterType<ECSDiscord.Services.EnrollmentsService>().AsSelf().As<IHostedService>().SingleInstance();
         builder.RegisterType<ECSDiscord.Services.CourseService>().AsSelf().As<IHostedService>().SingleInstance();
         builder.RegisterType<ECSDiscord.Services.StorageService>().AsSelf().As<IHostedService>().SingleInstance();
@@ -44,6 +42,7 @@ await Host.CreateDefaultBuilder(args)
 
         builder.RegisterModule(new BotModule(context.Configuration));
         builder.RegisterModule<SlashCommandsModule>();
+        builder.RegisterModule<PrefixCommandsModule>();
     })
     .Build()
     .RunAsync();
