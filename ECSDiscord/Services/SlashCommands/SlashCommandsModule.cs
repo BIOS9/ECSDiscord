@@ -7,7 +7,7 @@ public class SlashCommandsModule : Module
 {
     protected override void Load(ContainerBuilder builder)
     {
-        builder.RegisterType<SlashCommandHandler>()
+        builder.RegisterType<SlashCommandsHandler>()
             .AsSelf()
             .As<IHostedService>()
             .SingleInstance();
