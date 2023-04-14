@@ -9,6 +9,7 @@ using Serilog;
 using Microsoft.Extensions.Hosting;
 using ECSDiscord;
 using ECSDiscord.Services.SlashCommands;
+using ECSDiscord.Services.Bot;
 
 await Host.CreateDefaultBuilder(args)
     .ConfigureAppConfiguration(config =>
@@ -22,12 +23,6 @@ await Host.CreateDefaultBuilder(args)
     .UseServiceProviderFactory(new AutofacServiceProviderFactory())
     .ConfigureContainer<ContainerBuilder>((context, builder) =>
     {
-        builder.RegisterInstance(new DiscordSocketClient(new DiscordSocketConfig
-        {                                       // Add discord to the collection
-            LogLevel = LogSeverity.Info,     // Tell the logger to give Verbose amount of info
-            MessageCacheSize = 1000             // Cache 1,000 messages per channel
-        })).SingleInstance();
-
         builder.RegisterInstance(new Discord.Commands.CommandService(new CommandServiceConfig
         {                                       // Add the command service to the collection
             LogLevel = LogSeverity.Verbose,     // Tell the logger to give Verbose amount of info
@@ -37,7 +32,7 @@ await Host.CreateDefaultBuilder(args)
         // all very ugly right now, will clean soon
         builder.RegisterInstance((ITranslator)Translator.DefaultTranslations).SingleInstance();
         builder.RegisterType<ECSDiscord.Services.CommandService>().AsSelf().As<IHostedService>().SingleInstance();
-        builder.RegisterType<ECSDiscord.Services.StartupService>().AsSelf().As<IHostedService>().SingleInstance();
+        builder.RegisterType<DiscordBot>().AsSelf().As<IHostedService>().SingleInstance();
         builder.RegisterType<ECSDiscord.Services.LoggingService>().AsSelf().As<IHostedService>().SingleInstance();
         builder.RegisterType<ECSDiscord.Services.EnrollmentsService>().AsSelf().As<IHostedService>().SingleInstance();
         builder.RegisterType<ECSDiscord.Services.CourseService>().AsSelf().As<IHostedService>().SingleInstance();
@@ -47,6 +42,7 @@ await Host.CreateDefaultBuilder(args)
         builder.RegisterType<ECSDiscord.Services.AdministrationService>().AsSelf().As<IHostedService>().SingleInstance();
         builder.RegisterType<ECSDiscord.Services.ServerMessageService>().AsSelf().As<IHostedService>().SingleInstance();
 
+        builder.RegisterModule(new BotModule(context.Configuration));
         builder.RegisterModule<SlashCommandsModule>();
     })
     .Build()

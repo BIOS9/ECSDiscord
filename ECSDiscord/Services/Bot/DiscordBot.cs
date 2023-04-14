@@ -2,19 +2,22 @@
 using Discord.WebSocket;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Serilog;
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace ECSDiscord.Services
+namespace ECSDiscord.Services.Bot
 {
-    public class StartupService : IHostedService
+    public class DiscordBot : IHostedService
     {
-        private readonly IServiceProvider _provider;
-        private readonly DiscordSocketClient _discord;
-        private readonly Discord.Commands.CommandService _commands;
+        public readonly DiscordSocketClient DiscordClient;
+
+        private readonly ILogger<DiscordSocketClient> _botLogger;
+        private readonly ILogger<DiscordBot> _logger;
         private readonly IConfiguration _config;
 
         private bool _dmOnJoin;
@@ -22,19 +25,44 @@ namespace ECSDiscord.Services
             _joinDmTemplate,
             _prefix;
 
-        // DiscordSocketClient, CommandService, and IConfigurationRoot are injected automatically from the IServiceProvider
-        public StartupService(
-            IServiceProvider provider,
-            DiscordSocketClient discord,
-            Discord.Commands.CommandService commands,
-            IConfiguration config)
+        private readonly IReadOnlyDictionary<LogSeverity, LogLevel> _logLevelMap = // Maps Discord.NET logging levels to Microsoft extensions logging levels.
+            new Dictionary<LogSeverity, LogLevel>
+            {
+                { LogSeverity.Debug, LogLevel.Trace },
+                { LogSeverity.Verbose, LogLevel.Debug },
+                { LogSeverity.Info, LogLevel.Information },
+                { LogSeverity.Warning, LogLevel.Warning },
+                { LogSeverity.Error, LogLevel.Error },
+                { LogSeverity.Critical, LogLevel.Critical }
+            };
+
+        public DiscordBot(IConfiguration config, ILoggerFactory loggerFactory)
         {
-            Log.Debug("Startup service loading.");
-            _provider = provider;
             _config = config;
-            _discord = discord;
-            _commands = commands;
-            Log.Debug("Startup service loaded.");
+
+            if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
+            _logger = loggerFactory.CreateLogger<DiscordBot>();
+            _botLogger = loggerFactory.CreateLogger<DiscordSocketClient>();
+
+            DiscordClient = new DiscordSocketClient(new DiscordSocketConfig
+            {
+                LogLevel = LogSeverity.Verbose,
+                LogGatewayIntentWarnings = true,
+                AlwaysDownloadUsers = true,
+                MessageCacheSize = 1000,
+                GatewayIntents = GatewayIntents.Guilds
+                             | GatewayIntents.MessageContent
+                             | GatewayIntents.GuildMessages
+                             | GatewayIntents.GuildMessageReactions
+            });
+
+        }
+
+        private Task DiscordClient_Log(LogMessage arg)
+        {
+            var level = _logLevelMap[arg.Severity];
+            _botLogger.Log(level, arg.Exception, "{source} {message}", arg.Source, arg.Message);
+            return Task.CompletedTask;
         }
 
         private async Task _discord_UserJoined(SocketGuildUser arg)
@@ -51,32 +79,6 @@ namespace ECSDiscord.Services
             catch (Exception ex)
             {
                 Log.Error(ex, "Failed to message user {user} on join {message}", arg.Id, ex.Message);
-            }
-        }
-
-        private async void startConnectionWatchdogAsync()
-        {
-            Log.Information("Watchdog started.");
-            string discordToken = _config["secrets:discordBotToken"];     // Get the discord token from the config file
-            while (true)
-            {
-                await Task.Delay(5000);
-                try
-                {
-                    if (_discord.ConnectionState != ConnectionState.Connected)
-                    {
-                        await Task.Delay(10000);
-                        Log.Information("Connection watchdog attempting connection...");
-                        await _discord.LoginAsync(TokenType.Bot, discordToken);     // Login to discord
-                        await _discord.StartAsync();                               // Connect to the websocket
-                        await Task.Delay(20000);
-                    }
-                }
-                catch(Exception ex)
-                {
-                    Log.Error(ex, "Connection watchdog error: " + ex.Message);
-                    await Task.Delay(120000);
-                }
             }
         }
 
@@ -118,8 +120,10 @@ namespace ECSDiscord.Services
 
         public async Task StartAsync(CancellationToken cancellationToken)
         {
-            _discord.GuildAvailable += _discord_GuildAvailable;
-            _discord.UserJoined += _discord_UserJoined;
+            _logger.LogInformation("Starting Discord bot");
+            DiscordClient.Log += DiscordClient_Log;
+            DiscordClient.GuildAvailable += _discord_GuildAvailable;
+            DiscordClient.UserJoined += _discord_UserJoined;
             loadConfig();
             string discordToken = _config["secrets:discordBotToken"];     // Get the discord token from the config file
             if (string.IsNullOrWhiteSpace(discordToken))
@@ -128,20 +132,18 @@ namespace ECSDiscord.Services
                 throw new Exception("Bot token not found in configuration file.");
             }
 
-            await _discord.SetActivityAsync(new Game("github.com/BIOS9/ECSDiscord"));
-            startConnectionWatchdogAsync();
-
-            await _commands.AddModulesAsync(Assembly.GetEntryAssembly(), _provider);     // Load commands and modules into the command service
-
-            await _discord.LoginAsync(TokenType.Bot, discordToken);     // Login to discord
-            await _discord.StartAsync();                               // Connect to the websocket
+            await DiscordClient.SetActivityAsync(new Game("github.com/BIOS9/ECSDiscord"));
+            await DiscordClient.LoginAsync(TokenType.Bot, discordToken);     // Login to discord
+            await DiscordClient.StartAsync();                               // Connect to the websocket
         }
 
-        public Task StopAsync(CancellationToken cancellationToken)
+        public async Task StopAsync(CancellationToken cancellationToken)
         {
-            _discord.GuildAvailable -= _discord_GuildAvailable;
-            _discord.UserJoined -= _discord_UserJoined;
-            return Task.CompletedTask;
+            _logger.LogInformation("Stopping Discord bot");
+            await DiscordClient.StopAsync();
+            DiscordClient.GuildAvailable -= _discord_GuildAvailable;
+            DiscordClient.UserJoined -= _discord_UserJoined;
+            DiscordClient.Log += DiscordClient_Log;
         }
     }
 }
