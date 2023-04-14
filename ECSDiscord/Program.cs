@@ -46,7 +46,6 @@ await Host.CreateDefaultBuilder(args)
         builder.RegisterType<ECSDiscord.Services.RemoteDataAccessService>().AsSelf().As<IHostedService>().SingleInstance();
         builder.RegisterType<ECSDiscord.Services.AdministrationService>().AsSelf().As<IHostedService>().SingleInstance();
         builder.RegisterType<ECSDiscord.Services.ServerMessageService>().AsSelf().As<IHostedService>().SingleInstance();
-        builder.RegisterType<ECSDiscord.Services.ImportService>().SingleInstance();
 
         builder.RegisterModule<SlashCommandsModule>();
     })
