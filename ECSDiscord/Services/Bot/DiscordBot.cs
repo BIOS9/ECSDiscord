@@ -52,6 +52,8 @@ namespace ECSDiscord.Services.Bot
                 MessageCacheSize = 1000,
                 GatewayIntents = GatewayIntents.Guilds
                              | GatewayIntents.MessageContent
+                             | GatewayIntents.DirectMessages
+                             | GatewayIntents.GuildMembers
                              | GatewayIntents.GuildMessages
                              | GatewayIntents.GuildMessageReactions
             });
