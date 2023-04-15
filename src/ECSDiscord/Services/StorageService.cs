@@ -746,11 +746,6 @@ namespace ECSDiscord.Services
                 else
                     Log.Information("New Discord user created {discordUser}.", discordId);
             }
-
-            public async Task Cleanup()
-            {
-
-            }
         }
 
 
@@ -1262,11 +1257,6 @@ namespace ECSDiscord.Services
                     Log.Debug("Successfully deleted alias from database {name}. Rows affected: {rowsAffected}", name, rowsAffected);
                 }
             }
-
-            public async Task Cleanup()
-            {
-
-            }
         }
 
         public ServerMessageStorage ServerMessages { get; private set; }
@@ -1451,11 +1441,6 @@ namespace ECSDiscord.Services
                     }
                 }
             }
-
-            public async Task Cleanup()
-            {
-
-            }
         }
 
         public async Task<string> GetUserDataAsync(ulong user)
@@ -1479,20 +1464,6 @@ namespace ECSDiscord.Services
         protected MySqlConnection GetMySqlConnection()
         {
             return new MySqlConnection(_mysqlConnectionString);
-        }
-
-        public async Task<bool> TestConnection()
-        {
-            try
-            {
-                
-                return true;
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "Failed to connect to MySql {message}", ex.Message);
-                return false;
-            }
         }
 
         public async Task StartAsync(CancellationToken cancellationToken)
@@ -1519,8 +1490,6 @@ namespace ECSDiscord.Services
             {
                 Log.Information("Database cleanup executed.");
                 await Verification.Cleanup();
-                await Users.Cleanup();
-                await Courses.Cleanup();
                 Log.Debug("Database cleanup finished.");
             }
             catch (Exception ex)

@@ -12,6 +12,7 @@ using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -459,12 +460,11 @@ namespace ECSDiscord.Services
                     HtmlWeb web = new HtmlWeb();
                     HtmlDocument document = new HtmlDocument();
 
-                    using (WebClient wc = new WebClient())
+                    using (var client = new HttpClient())
                     {
-                        byte[] data = await wc.DownloadDataTaskAsync(url);
-                        using (MemoryStream ms = new MemoryStream(data))
+                        await using (Stream stream = await client.GetStreamAsync(url))
                         {
-                            document.Load(ms);
+                            document.Load(stream);
 
                             HtmlNode[] nodes = document.DocumentNode.SelectNodes("//p[@class='courseid']").ToArray();
                             foreach (HtmlNode item in nodes)
@@ -478,10 +478,10 @@ namespace ECSDiscord.Services
                                 if (CourseRegex.IsMatch(courseCode))
                                 {
                                     if (!courses.TryAdd(courseCode, new CachedCourse(courseCode, courseDescription.Trim())))
-                                        Log.Debug("Duplicate course from download: {course}", courseCode);
+                                        Log.Verbose("Duplicate course from download: {Course}", courseCode);
                                 }
                                 else
-                                    Log.Warning("Invalid course code from web download: {course}", courseCode);
+                                    Log.Warning("Invalid course code from web download: {Course}", courseCode);
                             }
                         }
                     }
@@ -523,10 +523,10 @@ namespace ECSDiscord.Services
                 _verifiedAllowPerms = ulong.Parse(_config["courses:defaultChannelPermissions:allowed:verified"]);
                 _verifiedDenyPerms = ulong.Parse(_config["courses:defaultChannelPermissions:denied:verified"]);
             }
-            catch (Exception ex)
+            catch
             {
                 Log.Error("Failed to load defaultCoursePermissions from config. Please use a valid Discord permission value. See https://discordapi.com/permissions.html");
-                throw ex;
+                throw;
             }
 
             try
@@ -544,10 +544,10 @@ namespace ECSDiscord.Services
                     });
                 }
             }
-            catch(Exception ex)
+            catch
             {
                 Log.Error("Failed to load role permission overrides from config. Please use a valid Discord permission value. See https://discordapi.com/permissions.html");
-                throw ex;
+                throw;
             }
         }
 
