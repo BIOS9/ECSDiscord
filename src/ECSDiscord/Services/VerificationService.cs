@@ -115,7 +115,7 @@ namespace ECSDiscord.Services
             TokenExpired
         }
 
-        public async Task<EmailResult> StartVerificationAsync(string email, SocketUser user)
+        public async Task<EmailResult> StartVerificationAsync(string email, IUser user)
         {
             try
             {
@@ -429,7 +429,7 @@ namespace ECSDiscord.Services
         /// <summary>
         /// Fills context details into a template string.
         /// </summary>
-        private static string FillTemplate(string template, string email, string username, string verificationCode, SocketUser user, SocketGuild guild)
+        private static string FillTemplate(string template, string email, string username, string verificationCode, IUser user, SocketGuild guild)
         {
             return template
                 .Replace("{emailAddress}", email)
