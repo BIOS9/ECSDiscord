@@ -21,12 +21,12 @@ jobs:
         
     - name: Install dependencies
       run: dotnet restore
-      working-directory: ./
+      working-directory: ./src
       
     - name: Build
       run: dotnet build --configuration Release --no-restore
-      working-directory: ./
+      working-directory: ./src
       
     - name: Execute unit tests
       run: dotnet test --configuration Release --no-build
-      working-directory: ./
+      working-directory: ./src
