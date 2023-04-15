@@ -61,11 +61,11 @@ namespace ECSDiscord.Services.Translations
             { "ENROLLMENT_LEAVE_SUCCESS",  ":outbox_tray:  **{0}** - Removed you from {0} successfully.\n" },
             { "ENROLLMENT_MAX_COURSE_COUNT",  ":warning:  You have reached the maximum number of courses you can join.\n" },
             { "ENROLLMENT_VERIFICATION_REQUIRED",  ":warning:  **{0}** - Sorry you must be verified before you can join any courses.\n" +
-                "**Private message** me the following command to verify: ```+verify username@myvuw.ac.nz```" },
+                "Use ```/verify username@myvuw.ac.nz``` to verify your account." },
             { "ENROLLMENT_VERIFICATION_REQUIRED_ANY",  ":warning:  Sorry you must be verified before you can join any courses.\n" +
-                "**Private message** me the following command to verify: ```+verify username@myvuw.ac.nz```" },
+                "Use ```/verify username@myvuw.ac.nz``` to verify your account." },
             { "ALLCOURSES_VERIFICATION_REQUIRED", "You aren't verified yet which means you can't join any courses!\n" +
-                "Private message me the following command to verify: ```+verify username@myvuw.ac.nz```" },
+                "Use ```/verify username@myvuw.ac.nz``` to verify your account." },
             { "ENROLLMENT_NO_COURSES_JOINED",  ":warning:  You are not in any courses." },
             { "IMPORT_PERMISSIONS_START",  "**Import:** Converting role permissions to user override permissions on course channels.\n" +
                 "This may take a while." },
