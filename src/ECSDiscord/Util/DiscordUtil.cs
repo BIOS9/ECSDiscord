@@ -14,7 +14,7 @@ namespace ECSDiscord.Util
         /// </summary>
         public static bool CheckConfigChannel(this SocketCommandContext context, string category, IConfiguration config)
         {
-            if (context.IsPrivate || (context.User as IGuildUser).GuildPermissions.Administrator) // Allow administrators to use any command in any channel
+            if (context.IsPrivate || ((IGuildUser)context.User).GuildPermissions.Administrator) // Allow administrators to use any command in any channel
                 return true;
 
             IConfigurationSection section = config.GetSection("forcedChannels").GetSection(category); // Get command category from config
@@ -26,10 +26,9 @@ namespace ECSDiscord.Util
                     continue;
 
                 // Attempt to convert configured channel to a ulong
-                ulong allowedChannel;
-                if (!ulong.TryParse(child.Value, out allowedChannel))
+                if (!ulong.TryParse(child.Value, out ulong allowedChannel))
                 {
-                    Log.Error("Invalid forced channel configuration. Expected unsigned long integer or null, found \"{channel}\" in section {section}", 
+                    Log.Error("Invalid forced channel configuration. Expected unsigned long integer or null, found \"{Channel}\" in section {Section}", 
                         child.Value, category);
                 }
 
@@ -39,13 +38,13 @@ namespace ECSDiscord.Util
                     return true;
             }
 
-            if (allowedChannels.Count == 0) // If no channels are allowed, assume unconfigured so allow all.
+            if (allowedChannels.Count == 0) // If no channels are allowed, assume not configured so allow all.
                 return true;
 
             // Log and send message to user.
             context.Channel.SendMessageAsync("Sorry, that command can only be used in " +
-                allowedChannels.Select(x => MentionUtils.MentionChannel(x)).Aggregate((x, y) => $"{x}, {y}"));
-            Log.Information("User {user} was disallowed access to command because execution is not allowed in channel {channel}",
+                allowedChannels.Select(MentionUtils.MentionChannel).Aggregate((x, y) => $"{x}, {y}"));
+            Log.Information("User {User} was disallowed access to command because execution is not allowed in channel {Channel}",
                 context.User.ToString(), context.Channel.Name);
 
             // Disallow access.
