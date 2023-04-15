@@ -6,7 +6,6 @@ using Discord.WebSocket;
 using Microsoft.Extensions.Configuration;
 using Serilog;
 using Microsoft.Extensions.Hosting;
-using ECSDiscord;
 using ECSDiscord.Services.SlashCommands;
 using ECSDiscord.Services.Bot;
 using ECSDiscord.Services.PrefixCommands;
@@ -36,7 +35,6 @@ await Host.CreateDefaultBuilder(args)
         builder.RegisterType<ECSDiscord.Services.StorageService>().AsSelf().As<IHostedService>().SingleInstance();
         builder.RegisterType<ECSDiscord.Services.VerificationService>().AsSelf().As<IHostedService>().SingleInstance();
         builder.RegisterType<ECSDiscord.Services.RemoteDataAccessService>().AsSelf().As<IHostedService>().SingleInstance();
-        builder.RegisterType<ECSDiscord.Services.AdministrationService>().AsSelf().As<IHostedService>().SingleInstance();
         builder.RegisterType<ECSDiscord.Services.ServerMessageService>().AsSelf().As<IHostedService>().SingleInstance();
 
         builder.RegisterModule(new BotModule(context.Configuration));
