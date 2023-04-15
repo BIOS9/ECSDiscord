@@ -1,4 +1,5 @@
 ﻿using Autofac;
+using ECSDiscord.Services.SlashCommands.Commands;
 using Microsoft.Extensions.Hosting;
 
 namespace ECSDiscord.Services.SlashCommands;
@@ -11,5 +12,6 @@ public class SlashCommandsModule : Module
             .AsSelf()
             .As<IHostedService>()
             .SingleInstance();
+        builder.RegisterType<VerifyCommand>().As<ISlashCommand>();
     }
 }
