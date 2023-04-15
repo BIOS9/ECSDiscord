@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace ECSDiscord.Core.Translations
+namespace ECSDiscord.Services.Translations
 {
     public interface ITranslator
     {

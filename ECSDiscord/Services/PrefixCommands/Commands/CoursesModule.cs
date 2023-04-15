@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 using System.Linq;
 using Discord.WebSocket;
 using ECSDiscord.Util;
-using ECSDiscord.Core.Translations;
+using ECSDiscord.Services.Translations;
 
 namespace ECSDiscord.Services.PrefixCommands.Commands
 {

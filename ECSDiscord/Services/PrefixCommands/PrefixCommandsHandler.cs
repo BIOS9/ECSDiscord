@@ -6,10 +6,10 @@ using System;
 using System.Reflection;
 using System.Threading.Tasks;
 using Discord;
-using ECSDiscord.Core.Translations;
 using Microsoft.Extensions.Hosting;
 using System.Threading;
 using ECSDiscord.Services.Bot;
+using ECSDiscord.Services.Translations;
 
 namespace ECSDiscord.Services.PrefixCommands
 {

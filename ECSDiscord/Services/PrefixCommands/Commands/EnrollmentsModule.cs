@@ -1,6 +1,5 @@
 ﻿using System;
 using Discord.Commands;
-using ECSDiscord.Util;
 using Microsoft.Extensions.Configuration;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,9 +8,10 @@ using System.Threading.Tasks;
 using static ECSDiscord.Services.EnrollmentsService;
 using Discord;
 using Discord.WebSocket;
-using ECSDiscord.Core.Translations;
 using System.IO;
 using Discord.Rest;
+using ECSDiscord.Util;
+using ECSDiscord.Services.Translations;
 
 namespace ECSDiscord.Services.PrefixCommands.Commands
 {

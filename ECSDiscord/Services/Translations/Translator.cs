@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Text;
 
-namespace ECSDiscord.Core.Translations
+namespace ECSDiscord.Services.Translations
 {
     public class Translator : ITranslator
     {
