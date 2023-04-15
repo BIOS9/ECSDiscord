@@ -85,7 +85,7 @@ namespace ECSDiscord.Services
             catch (Exception ex)
             {
                 Log.Error(ex, "Error checking user verification {user} requirement.", user.Id);
-                throw ex;
+                throw;
             }
         }
 
