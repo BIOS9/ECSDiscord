@@ -9,6 +9,7 @@ using ECSDiscord.Services.Email.Sendgrid;
 using ECSDiscord.Services.Enrollments;
 using ECSDiscord.Services.PrefixCommands;
 using ECSDiscord.Services.Translations;
+using ECSDiscord.Services.Verification;
 
 await Host.CreateDefaultBuilder(args)
     .ConfigureAppConfiguration(config =>
@@ -25,12 +26,12 @@ await Host.CreateDefaultBuilder(args)
         // all very ugly right now, will clean soon
         builder.RegisterType<ECSDiscord.Services.CourseService>().AsSelf().As<IHostedService>().SingleInstance();
         builder.RegisterType<ECSDiscord.Services.StorageService>().AsSelf().As<IHostedService>().SingleInstance();
-        builder.RegisterType<ECSDiscord.Services.VerificationService>().AsSelf().As<IHostedService>().SingleInstance();
         builder.RegisterType<ECSDiscord.Services.ServerMessageService>().AsSelf().As<IHostedService>().SingleInstance();
 
         builder.RegisterModule(new BotModule(context.Configuration));
         builder.RegisterModule(new SendGridModule(context.Configuration));
         builder.RegisterModule(new EnrollmentsModule(context.Configuration));
+        builder.RegisterModule(new VerificationModule(context.Configuration));
         builder.RegisterModule(new PrefixCommandsModule(context.Configuration));
         builder.RegisterModule<SlashCommandsModule>();
         builder.RegisterModule<TranslationsModule>();

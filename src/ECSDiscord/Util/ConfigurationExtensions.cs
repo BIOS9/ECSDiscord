@@ -1,5 +1,6 @@
 ﻿using System;
 using Autofac;
+using FluentValidation;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 
@@ -29,13 +30,13 @@ public static class ConfigurationHelpers
         return configurationSection;
     }
 
-    public static ContainerBuilder ConfigureWithValidation<TOptions>(this ContainerBuilder builder,
+    public static void ConfigureWithValidation<TOptions>(this ContainerBuilder builder,
         IConfiguration config) where TOptions : class
     {
-        return builder.ConfigureWithValidation<TOptions>(Options.DefaultName, config);
+        builder.ConfigureWithValidation<TOptions>(Options.DefaultName, config);
     }
 
-    public static ContainerBuilder ConfigureWithValidation<TOptions>(this ContainerBuilder builder, string name,
+    public static void ConfigureWithValidation<TOptions>(this ContainerBuilder builder, string name,
         IConfiguration config) where TOptions : class
     {
         _ = config ?? throw new ArgumentNullException(nameof(config));
@@ -45,29 +46,37 @@ public static class ConfigurationHelpers
         builder.RegisterInstance<IConfigureOptions<TOptions>>(new NamedConfigureFromConfigurationOptions<TOptions>(name, config, _ => { }))
             .SingleInstance();
         builder.AddDataAnnotationValidatedOptions<TOptions>(name);
-        return builder;
     }
 
-    public static ContainerBuilder ConfigureWithValidation<TOptions>(this ContainerBuilder builder,
+    public static void ConfigureWithValidation<TOptions>(this ContainerBuilder builder,
         Action<TOptions> configureOptions) where TOptions : class
     {
-        return builder.ConfigureWithValidation(Options.DefaultName, configureOptions);
+        builder.ConfigureWithValidation(Options.DefaultName, configureOptions);
     }
 
-    public static ContainerBuilder ConfigureWithValidation<TOptions>(this ContainerBuilder builder, string name,
+    public static void ConfigureWithValidation<TOptions>(this ContainerBuilder builder, string name,
         Action<TOptions> configureOptions) where TOptions : class
     {
         builder.RegisterInstance<IConfigureOptions<TOptions>>(new ConfigureNamedOptions<TOptions>(name, configureOptions))
             .SingleInstance();
         builder.AddDataAnnotationValidatedOptions<TOptions>(name);
-        return builder;
     }
 
-    private static ContainerBuilder AddDataAnnotationValidatedOptions<TOptions>(this ContainerBuilder builder,
+    private static void AddDataAnnotationValidatedOptions<TOptions>(this ContainerBuilder builder,
         string name) where TOptions : class
     {
         builder.RegisterInstance<IValidateOptions<TOptions>>(new DataAnnotationValidateOptions<TOptions>(name))
             .SingleInstance();
-        return builder;
+    }
+
+    public static void AddFluentValidator<TOptions, TValidator>(this ContainerBuilder builder) 
+        where TValidator : IValidator
+        where TOptions : class
+    {
+        builder.RegisterType<FluentValidationOptions<TOptions>>()
+            .As<IValidateOptions<TOptions>>();
+        builder.RegisterType<TValidator>()
+            .AsImplementedInterfaces()
+            .SingleInstance();
     }
 }

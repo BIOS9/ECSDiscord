@@ -16,6 +16,8 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using ECSDiscord.Services.Email;
+using ECSDiscord.Services.Verification;
+using Microsoft.Extensions.Options;
 using static ECSDiscord.Services.StorageService;
 using static ECSDiscord.Services.StorageService.VerificationStorage;
 
@@ -28,42 +30,24 @@ namespace ECSDiscord.Services
 
         private const int RandomTokenLength = 5; // Length in bytes. Base32 encodes 5 bytes into 8 characters.
 
+        private readonly VerificationOptions _options;
         private readonly DiscordBot _discord;
         private readonly IMailSender _mailSender;
         private readonly StorageService _storageService;
-        private readonly IConfiguration _config;
-        private Regex _emailPattern;
-        private int _emailUsernameGroup;
+        private readonly X509Certificate2 _publicKeyCert;
+        private readonly Regex _emailPattern;
+        
 
-        private string
-            _subjectTemplate,
-            _bodyTemplate,
-            _publicKeyCertPath;
-        private bool
-            _bodyHtml,
-            _skipBots;
-        private X509Certificate2 _publicKeyCert;
-
-        private ulong
-            _verifiedRoleId,
-            _mutedRoleId,
-            _deletedMessagesChannelId;
-
-
-        public VerificationService(IConfiguration config, DiscordBot discordBot, IMailSender mailSender, StorageService storageService)
+        public VerificationService(IOptions<VerificationOptions> options, DiscordBot discordBot, IMailSender mailSender, StorageService storageService)
         {
             Log.Debug("Verification service loading");
-            _config = config;
+            _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
             _discord = discordBot ?? throw new ArgumentNullException(nameof(discordBot));;
             _mailSender = mailSender ?? throw new ArgumentNullException(nameof(mailSender));
             _storageService = storageService;
-            _bodyHtml = true;
+            _publicKeyCert = new X509Certificate2(_options.PublicKeyPath);
+            _emailPattern = new Regex(_options.EmailPattern, RegexOptions.IgnoreCase);
             Log.Debug("Verification service loaded");
-        }
-
-        private async Task _discord_MessageReceived(SocketMessage arg)
-        {
-            await ScrubDeletedMessage(arg);
         }
 
         private async Task _discord_RoleDeleted(SocketRole arg)
@@ -133,9 +117,9 @@ namespace ECSDiscord.Services
 
                 if (!await _mailSender.SendMailAsync(
                         email,
-                        FillTemplate(_subjectTemplate, email, username, verificationCode, user, guild),
-                        FillTemplate(_bodyTemplate, email, username, verificationCode, user, guild),
-                        _bodyHtml))
+                        FillTemplate(_options.MailSubjectTemplate, email, username, verificationCode, user, guild),
+                        FillTemplate(_options.MailBodyTemplate, email, username, verificationCode, user, guild),
+                        _options.MailBodyIsHtml))
                 {
                     return EmailResult.Failure;
                 }
@@ -249,7 +233,7 @@ namespace ECSDiscord.Services
                 return false;
             }
 
-            username = match.Groups[_emailUsernameGroup].Value;
+            username = match.Groups[_options.UsernamePatternGroup].Value;
             return true;
         }
 
@@ -285,7 +269,7 @@ namespace ECSDiscord.Services
         {
             Log.Debug("Checking user {User} verificaton status", user.Id);
 
-            if(_skipBots && user.IsBot)
+            if(user.IsBot)
             {
                 Log.Debug("Skipping bot user {User}", user.Id);
                 return true;
@@ -293,8 +277,8 @@ namespace ECSDiscord.Services
 
             SocketGuild guild = _discord.DiscordClient.GetGuild(_discord.GuildId);
             SocketGuildUser guildUser = guild.GetUser(user.Id);
-            SocketRole verifiedRole = guild.GetRole(_verifiedRoleId);
-            SocketRole mutedRole = guild.GetRole(_mutedRoleId);
+            SocketRole verifiedRole = guild.GetRole(_options.VerifiedRoleId);
+            SocketRole mutedRole = guild.GetRole(_options.MutedRoleId);
 
             if (verifiedRole == null)
             {
@@ -309,7 +293,7 @@ namespace ECSDiscord.Services
 
             if (await IsUserVerifiedAsync(user))
             {
-                if (mutedRole != null && guildUser.Roles.Any(x => x.Id == _mutedRoleId))
+                if (mutedRole != null && guildUser.Roles.Any(x => x.Id == _options.MutedRoleId))
                 {
                     Log.Information("Removing verified role from muted user {User}", user.Id);
                     await guildUser.RemoveRoleAsync(verifiedRole);
@@ -317,7 +301,7 @@ namespace ECSDiscord.Services
                     return false;
                 } 
                 
-                if (!guildUser.Roles.Any(x => x.Id == _verifiedRoleId))
+                if (!guildUser.Roles.Any(x => x.Id == _options.VerifiedRoleId))
                 {
                     Log.Information("Giving verified role to user {User}", user.Id);
                     await guildUser.AddRoleAsync(verifiedRole);
@@ -328,7 +312,7 @@ namespace ECSDiscord.Services
             }
             else if(allowUnverification)
             {
-                if (guildUser.Roles.Any(x => x.Id == _verifiedRoleId))
+                if (guildUser.Roles.Any(x => x.Id == _options.VerifiedRoleId))
                 {
                     Log.Information("Removing verified role for user {User}", user.Id);
                     await guildUser.RemoveRoleAsync(verifiedRole);
@@ -437,100 +421,11 @@ namespace ECSDiscord.Services
                 .Replace("{verificationCode}", verificationCode);
         }
 
-        private async Task ScrubDeletedMessage(SocketMessage arg)
-        {
-            if(arg.Channel.Id == _deletedMessagesChannelId)
-            {
-                if (arg.Embeds.First().Description.ToLower().Contains("+verify"))
-                {
-                    await arg.DeleteAsync();
-                    Log.Information("Scrubbed verify command from deleted messages channel");
-                }
-            }
-        }
-
-        private void LoadConfig()
-        {
-            // Ensure the email regex is configured
-            try
-            {
-                _emailPattern = new Regex(_config["verification:emailPattern"] ?? throw new Exception("Missing email pattern"), RegexOptions.IgnoreCase);
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "Invalid emailPattern regex configured in verification settings");
-                throw;
-            }
-
-            // Ensure the username group is configured
-            if (!int.TryParse(_config["verification:usernameGroup"], out _emailUsernameGroup))
-            {
-                Log.Error("Invalid regex usernameGroup configured in verification settings");
-                throw new ArgumentException("Invalid regex usernameGroup configured in verification settings.");
-            }
-
-            if (!bool.TryParse(_config["verification:skipBots"], out _skipBots))
-            {
-                Log.Error("Invalid skipBots configured in verification settings");
-                throw new ArgumentException("Invalid skipBots configured in verification settings.");
-            }
-
-            _subjectTemplate = _config["verification:subjectTemplate"];
-            if (string.IsNullOrWhiteSpace(_subjectTemplate))
-            {
-                Log.Error("Verification email subject cannot be empty!");
-                throw new ArgumentException("Verification email subject cannot be empty!");
-            }
-            _bodyTemplate = _config["verification:bodyTemplate"];
-            if (string.IsNullOrWhiteSpace(_bodyTemplate))
-            {
-                Log.Error("Verification email subject cannot be empty!");
-                throw new ArgumentException("Verification email subject cannot be empty!");
-            }
-
-            if (!ulong.TryParse(_config["verification:verifiedRoleId"], out _verifiedRoleId))
-            {
-                Log.Error("Invalid verifiedRoleId configured in verification settings");
-                throw new ArgumentException("Invalid verifiedRoleId configured in verification settings.");
-            }
-
-            if (!ulong.TryParse(_config["verification:mutedRoleId"], out _mutedRoleId))
-            {
-                Log.Error("Invalid mutedRoleId configured in verification settings");
-                throw new ArgumentException("Invalid mutedRoleId configured in verification settings.");
-            }
-
-            if (!ulong.TryParse(_config["deletedMessagesChannelId"], out _deletedMessagesChannelId))
-            {
-                Log.Error("Invalid deletedMessagesChannelId configured in settings");
-                throw new ArgumentException("Invalid deletedMessagesChannelId configured in settings.");
-            }
-
-            _publicKeyCertPath = _config["verification:publicKeyCertPath"];
-            if (!File.Exists(_publicKeyCertPath))
-            {
-                Log.Error("Could not find public key certificate file using the path specified in verification settings");
-                throw new FileNotFoundException("Could not find public key certificate file using the path specified in verification settings.");
-            }
-
-            try
-            {
-                _publicKeyCert = new X509Certificate2(_publicKeyCertPath);
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "Error loading verification certificate file {Message}", ex.Message);
-                throw;
-            }
-        }
-
         public Task StartAsync(CancellationToken cancellationToken)
         {
             _discord.DiscordClient.UserJoined += _discord_UserJoined;
             _discord.DiscordClient.GuildMemberUpdated += _discord_GuildMemberUpdated;
             _discord.DiscordClient.RoleDeleted += _discord_RoleDeleted;
-            _discord.DiscordClient.MessageReceived += _discord_MessageReceived;
-            LoadConfig();
             return Task.CompletedTask;
         }
 
@@ -539,7 +434,6 @@ namespace ECSDiscord.Services
             _discord.DiscordClient.UserJoined -= _discord_UserJoined;
             _discord.DiscordClient.GuildMemberUpdated -= _discord_GuildMemberUpdated;
             _discord.DiscordClient.RoleDeleted -= _discord_RoleDeleted;
-            _discord.DiscordClient.MessageReceived -= _discord_MessageReceived;
             return Task.CompletedTask;
         }
     }
