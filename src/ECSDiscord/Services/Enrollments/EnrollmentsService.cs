@@ -8,21 +8,20 @@ using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using ECSDiscord.Services.Enrollments;
+using Microsoft.Extensions.Options;
 
 namespace ECSDiscord.Services
 {
     public class EnrollmentsService : IHostedService
     {
-        private readonly DiscordSocketClient _discord;
+        private readonly EnrollmentsOptions _options;
+        private readonly DiscordBot _discord;
         private readonly CourseService _courses;
         private readonly StorageService _storage;
         private readonly VerificationService _verification;
-        private readonly IConfiguration _config;
-        
-        private bool _requireVerificationToJoin;
 
         public enum EnrollmentResult
         {
@@ -35,12 +34,12 @@ namespace ECSDiscord.Services
             Failure
         }
 
-        public EnrollmentsService(DiscordBot discordBot, CourseService courses, StorageService storage, VerificationService verification, IConfiguration config)
+        public EnrollmentsService(IOptions<EnrollmentsOptions> options, DiscordBot discordBot, CourseService courses, StorageService storage, VerificationService verification, IConfiguration config)
         {
             Log.Debug("Enrollments service loading.");
-            _discord = discordBot.DiscordClient;
+            _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
+            _discord = discordBot;
             _courses = courses;
-            _config = config;
             _storage = storage;
             _verification = verification;
             
@@ -49,14 +48,13 @@ namespace ECSDiscord.Services
 
         public Task StartAsync(CancellationToken cancellationToken)
         {
-            _discord.UserJoined += _discord_UserJoined;
-            loadConfig();
+            _discord.DiscordClient.UserJoined += _discord_UserJoined;
             return Task.CompletedTask;
         }
 
         public Task StopAsync(CancellationToken cancellationToken)
         {
-            _discord.UserJoined -= _discord_UserJoined;
+            _discord.DiscordClient.UserJoined -= _discord_UserJoined;
             return Task.CompletedTask;
         }
 
@@ -74,7 +72,7 @@ namespace ECSDiscord.Services
 
         public async Task<bool> RequiresVerification(SocketUser user)
         {
-            if (!_requireVerificationToJoin)
+            if (!_options.RequireVerificationToJoin)
                 return false;
 
             try
@@ -92,7 +90,7 @@ namespace ECSDiscord.Services
         {
             try
             {
-                if (_requireVerificationToJoin)
+                if (_options.RequireVerificationToJoin)
                 {
                     try
                     {
@@ -114,8 +112,8 @@ namespace ECSDiscord.Services
                     return EnrollmentResult.Blacklisted;
                 }
 
-                SocketGuild guild = _discord.GetGuild(ulong.Parse(_config["guildId"]));
-                await _discord.DownloadUsersAsync(new List<IGuild> { guild });
+                SocketGuild guild = _discord.DiscordClient.GetGuild(_discord.GuildId);
+                await _discord.DiscordClient.DownloadUsersAsync(new List<IGuild> { guild });
 
                 StorageService.CourseStorage.CourseAlias alias = await _storage.Courses.GetAliasAsync(_courses.NormaliseCourseName(courseName));
                 Console.WriteLine(alias == null);
@@ -168,8 +166,8 @@ namespace ECSDiscord.Services
         {
             try
             {
-                SocketGuild guild = _discord.GetGuild(ulong.Parse(_config["guildId"]));
-                await _discord.DownloadUsersAsync(new List<IGuild> { guild });
+                SocketGuild guild = _discord.DiscordClient.GetGuild(_discord.GuildId);
+                await _discord.DiscordClient.DownloadUsersAsync(new List<IGuild> { guild });
 
                 CourseService.Course course = await IsCourseValidAsync(courseName);
                 if (course == null)
@@ -208,7 +206,7 @@ namespace ECSDiscord.Services
 
         public async Task<IList<SocketUser>> GetCourseMembers(string course)
         {
-            return (await _storage.Courses.GetCourseUsersAsync(_courses.NormaliseCourseName(course))).Select(x => _discord.GetUser(x)).Where(x => x != null).ToList();
+            return (await _storage.Courses.GetCourseUsersAsync(_courses.NormaliseCourseName(course))).Select(x => _discord.DiscordClient.GetUser(x)).Where(x => x != null).ToList();
         }
 
         public async Task<CourseService.Course> IsCourseValidAsync(string name)
@@ -228,7 +226,7 @@ namespace ECSDiscord.Services
         public async Task ApplyUserCoursePermissions(SocketUser user)
         {
             Log.Information("Applying permission for all courses of user {user}#{discriminator} {discordId}", user.Username, user.Discriminator, user.Id);
-            SocketGuild guild = _discord.GetGuild(ulong.Parse(_config["guildId"]));
+            SocketGuild guild = _discord.DiscordClient.GetGuild(_discord.GuildId);
             List<string> courses = await GetUserCourses(user);
             foreach(string courseName in courses)
             {
@@ -249,15 +247,6 @@ namespace ECSDiscord.Services
                     Log.Error(ex, "Failed to apply permissions for user course {user}#{discriminator} {discordId}, {course}, {message}", user.Username, user.Discriminator, user.Id, courseName, ex.Message);
                 }
             }            
-        }
-
-        private void loadConfig()
-        {
-            if (!bool.TryParse(_config["courses:requireVerificationToJoin"], out _requireVerificationToJoin))
-            {
-                Log.Error("Invalid boolean for requireVerificationToJoin setting.");
-                throw new Exception("Invalid boolean for requireVerificationToJoin setting.");
-            }
         }
     }
 }

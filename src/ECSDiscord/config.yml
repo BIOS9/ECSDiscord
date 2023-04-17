@@ -6,6 +6,8 @@ SendGrid:
   FromAddress: null
   FromName: null
   ApiKey: null
+Enrollments:
+  RequireVerificationToJoin: true
 prefix: +
 logChannelId: null
 deletedMessagesChannelId: null
@@ -24,7 +26,6 @@ courses:
       roleId: null
       allowed: 0
       denied: 0
-  requireVerificationToJoin: false
 verification:
   emailPattern: "^([a-z0-9]{1,30})@(ecs\\.|my)?(vuw|wgtn)\\.ac\\.nz$"
   usernameGroup: 1
