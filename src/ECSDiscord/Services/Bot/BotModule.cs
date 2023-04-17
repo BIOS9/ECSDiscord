@@ -4,25 +4,24 @@ using Microsoft.Extensions.Hosting;
 using System;
 using ECSDiscord.Util;
 
-namespace ECSDiscord.Services.Bot
+namespace ECSDiscord.Services.Bot;
+
+internal class BotModule : Module
 {
-    internal class BotModule : Module
+    private readonly IConfiguration _configuration;
+
+    public BotModule(IConfiguration configuration)
     {
-        private readonly IConfiguration _configuration;
+        _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+    }
 
-        public BotModule(IConfiguration configuration)
-        {
-            _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
-        }
-
-        protected override void Load(ContainerBuilder builder)
-        {
-            builder.RegisterType<DiscordBot>()
-                .AsSelf()
-                .As<IHostedService>()
-                .SingleInstance();
-            builder.ConfigureWithValidation<DiscordBotOptions>(
-                _configuration.GetExistingSectionOrThrow(DiscordBotOptions.Name));
-        }
+    protected override void Load(ContainerBuilder builder)
+    {
+        builder.RegisterType<DiscordBot>()
+            .AsSelf()
+            .As<IHostedService>()
+            .SingleInstance();
+        builder.ConfigureWithValidation<DiscordBotOptions>(
+            _configuration.GetExistingSectionOrThrow(DiscordBotOptions.Name));
     }
 }
