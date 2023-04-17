@@ -7,6 +7,7 @@ using Serilog;
 using Microsoft.Extensions.Hosting;
 using ECSDiscord.Services.SlashCommands;
 using ECSDiscord.Services.Bot;
+using ECSDiscord.Services.Email.Sendgrid;
 using ECSDiscord.Services.PrefixCommands;
 using ECSDiscord.Services.Translations;
 
@@ -36,6 +37,7 @@ await Host.CreateDefaultBuilder(args)
         builder.RegisterType<ECSDiscord.Services.ServerMessageService>().AsSelf().As<IHostedService>().SingleInstance();
 
         builder.RegisterModule(new BotModule(context.Configuration));
+        builder.RegisterModule(new SendGridModule(context.Configuration));
         builder.RegisterModule<SlashCommandsModule>();
         builder.RegisterModule<PrefixCommandsModule>();
         builder.RegisterModule<TranslationsModule>();
