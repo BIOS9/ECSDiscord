@@ -2,6 +2,10 @@ DiscordBot:
   Token: null
   GuildId: null
   StatusText: github.com/BIOS9/ECSDiscord
+SendGrid:
+  FromAddress: null
+  FromName: null
+  ApiKey: null
 prefix: +
 logChannelId: null
 deletedMessagesChannelId: null
@@ -27,11 +31,6 @@ verification:
   subjectTemplate: null
   bodyTemplate: null
   bodyHtml: false
-  smtpServer: null
-  smtpPort: null
-  smtpFromAddress: null
-  smtpFromName: null
-  smtpUseSsl: false
   verifiedRoleId: null
   mutedRoleId: null
   publicKeyCertPath: pub.crt

@@ -7,13 +7,14 @@ public class SendGridOptions
     public static string Name => "SendGrid";
 
     [Required(AllowEmptyStrings = false)]
-    public string Token { get; init; }
+    public string ApiKey { get; init; }
     
-    [Required]
-    [Range(1, ulong.MaxValue)]
-    public ulong GuildId { get; init; }
+    [Required(AllowEmptyStrings = false)]
+    public string FromAddress { get; init; }
     
-    [StringLength(128)]
-    public string StatusText { get; init; } = string.Empty;
+    [Required(AllowEmptyStrings = false)]
+    public string FromName { get; init; }
     
+    
+
 }
