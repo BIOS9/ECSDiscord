@@ -16,10 +16,11 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using ECSDiscord.Services.Email;
+using ECSDiscord.Services.Storage;
 using ECSDiscord.Services.Verification;
 using Microsoft.Extensions.Options;
-using static ECSDiscord.Services.StorageService;
-using static ECSDiscord.Services.StorageService.VerificationStorage;
+using static ECSDiscord.Services.Storage.StorageService;
+using static ECSDiscord.Services.Storage.StorageService.VerificationStorage;
 
 namespace ECSDiscord.Services
 {

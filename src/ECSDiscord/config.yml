@@ -19,8 +19,8 @@ Verification:
   PublicKeyPath: null
 PrefixCommands:
   Prefix: +
-logChannelId: null
-deletedMessagesChannelId: null
+Storage:
+  ConnectionString: Server=<server>;Port=3306;Database=<db>;Uid=<user>;Pwd=<password>;
 courses:
   defaultChannelPermissions:
     allowed:
@@ -36,16 +36,6 @@ courses:
       roleId: null
       allowed: 0
       denied: 0
-forcedChannels:
-  help: null
-  enrollments: null
-  unknownCommandReply: null
-database:
-  server: null
-  port: null
-  database: null
-  username: null
-  password: null
 Serilog:
   WriteTo:
     - Console
