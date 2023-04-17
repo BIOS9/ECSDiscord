@@ -29,7 +29,7 @@ namespace ECSDiscord.Services
 
         private const int RandomTokenLength = 5; // Length in bytes. Base32 encodes 5 bytes into 8 characters.
 
-        private readonly DiscordSocketClient _discord;
+        private readonly DiscordBot _discord;
         private readonly StorageService _storageService;
         private readonly IConfiguration _config;
         private Regex _emailPattern;
@@ -46,7 +46,6 @@ namespace ECSDiscord.Services
         private bool
             _skipBots;
         private X509Certificate2 _publicKeyCert;
-        private ulong _guildId;
 
         private ulong
             _verifiedRoleId,
@@ -58,7 +57,7 @@ namespace ECSDiscord.Services
         {
             Log.Debug("Verification service loading");
             _config = config;
-            _discord = discordBot.DiscordClient;
+            _discord = discordBot;
             _storageService = storageService;
             Log.Debug("Verification service loaded");
         }
@@ -131,7 +130,7 @@ namespace ECSDiscord.Services
                 // Create persistent verification code
                 string verificationCode = await CreateVerificationCodeAsync(user.Id, username);
 
-                SocketGuild guild = _discord.GetGuild(_guildId);
+                SocketGuild guild = _discord.DiscordClient.GetGuild(_discord.GuildId);
 
                 Log.Information("Sending verification email for {Username} {Id}", user.Username, user.Id);
                 var client = new SendGridClient(_sendgridApiKey);
@@ -177,7 +176,7 @@ namespace ECSDiscord.Services
                         pendingVerification.DiscordId,
                         pendingVerification.EncryptedUsername);
 
-                    SocketGuild guild = _discord.GetGuild(_guildId);
+                    SocketGuild guild = _discord.DiscordClient.GetGuild(_discord.GuildId);
                     IGuildUser guildUser = guild.GetUser(user.Id);
                     if (guildUser == null)
                     {
@@ -267,7 +266,7 @@ namespace ECSDiscord.Services
             Log.Debug("User verification check for {Id}", discordId);
             try
             {
-                SocketGuild guild = _discord.GetGuild(_guildId);
+                SocketGuild guild = _discord.DiscordClient.GetGuild(_discord.GuildId);
                 SocketGuildUser guildUser = guild.GetUser(discordId);
                 if(guildUser == null)
                 {
@@ -295,7 +294,7 @@ namespace ECSDiscord.Services
                 return true;
             }
 
-            SocketGuild guild = _discord.GetGuild(_guildId);
+            SocketGuild guild = _discord.DiscordClient.GetGuild(_discord.GuildId);
             SocketGuildUser guildUser = guild.GetUser(user.Id);
             SocketRole verifiedRole = guild.GetRole(_verifiedRoleId);
             SocketRole mutedRole = guild.GetRole(_mutedRoleId);
@@ -366,7 +365,7 @@ namespace ECSDiscord.Services
         public async Task ApplyAllUserVerificationAsync(bool allowUnverification = true)
         {
             Log.Information("Running mass verification check");
-            SocketGuild guild = _discord.GetGuild(_guildId);
+            SocketGuild guild = _discord.DiscordClient.GetGuild(_discord.GuildId);
             foreach (SocketGuildUser user in guild.Users)
             {
                 await Task.Delay(200);
@@ -384,7 +383,7 @@ namespace ECSDiscord.Services
 
         public async Task AddUserVerificationOverride(SocketUser user)
         {
-            SocketGuild guild = _discord.GetGuild(_guildId);
+            SocketGuild guild = _discord.DiscordClient.GetGuild(_discord.GuildId);
             if(guild.GetUser(user.Id) == null)
             {
                 Log.Warning("Cannot add verification override for user. User is not in guild. {User}", user.Id);
@@ -396,7 +395,7 @@ namespace ECSDiscord.Services
 
         public async Task AddRoleVerificationOverride(SocketRole role)
         {
-            SocketGuild guild = _discord.GetGuild(_guildId);
+            SocketGuild guild = _discord.DiscordClient.GetGuild(_discord.GuildId);
             if (guild.GetRole(role.Id) == null)
             {
                 Log.Warning("Cannot add verification override for role. Role does not exist. {Role}", role.Id);
@@ -473,8 +472,6 @@ namespace ECSDiscord.Services
                 throw new ArgumentException("Invalid regex usernameGroup configured in verification settings.");
             }
 
-            _guildId = ulong.Parse(_config["guildId"] ?? throw new Exception("Missing email pattern"));
-
             _sendgridFromAddress = _config["verification:fromAddress"];
             _sendgridFromName = _config["verification:fromName"];
 
@@ -542,20 +539,20 @@ namespace ECSDiscord.Services
 
         public Task StartAsync(CancellationToken cancellationToken)
         {
-            _discord.UserJoined += _discord_UserJoined;
-            _discord.GuildMemberUpdated += _discord_GuildMemberUpdated;
-            _discord.RoleDeleted += _discord_RoleDeleted;
-            _discord.MessageReceived += _discord_MessageReceived;
+            _discord.DiscordClient.UserJoined += _discord_UserJoined;
+            _discord.DiscordClient.GuildMemberUpdated += _discord_GuildMemberUpdated;
+            _discord.DiscordClient.RoleDeleted += _discord_RoleDeleted;
+            _discord.DiscordClient.MessageReceived += _discord_MessageReceived;
             LoadConfig();
             return Task.CompletedTask;
         }
 
         public Task StopAsync(CancellationToken cancellationToken)
         {
-            _discord.UserJoined -= _discord_UserJoined;
-            _discord.GuildMemberUpdated -= _discord_GuildMemberUpdated;
-            _discord.RoleDeleted -= _discord_RoleDeleted;
-            _discord.MessageReceived -= _discord_MessageReceived;
+            _discord.DiscordClient.UserJoined -= _discord_UserJoined;
+            _discord.DiscordClient.GuildMemberUpdated -= _discord_GuildMemberUpdated;
+            _discord.DiscordClient.RoleDeleted -= _discord_RoleDeleted;
+            _discord.DiscordClient.MessageReceived -= _discord_MessageReceived;
             return Task.CompletedTask;
         }
     }

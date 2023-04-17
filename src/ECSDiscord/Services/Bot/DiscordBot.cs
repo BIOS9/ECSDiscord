@@ -7,13 +7,15 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Options;
 
 namespace ECSDiscord.Services.Bot
 {
     public class DiscordBot : IHostedService
     {
         public DiscordSocketClient DiscordClient { get; }
-
+        public ulong GuildId => _options.GuildId;
+        
         private readonly DiscordBotOptions _options;
         private readonly ILogger<DiscordSocketClient> _botLogger;
         private readonly ILogger<DiscordBot> _logger;
@@ -29,9 +31,9 @@ namespace ECSDiscord.Services.Bot
                 { LogSeverity.Critical, LogLevel.Critical }
             };
 
-        public DiscordBot(DiscordBotOptions options, ILoggerFactory loggerFactory)
+        public DiscordBot(IOptions<DiscordBotOptions> options, ILoggerFactory loggerFactory)
         {
-            _options = options ?? throw new ArgumentNullException(nameof(options));
+            _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
 
             if (loggerFactory == null)
             {

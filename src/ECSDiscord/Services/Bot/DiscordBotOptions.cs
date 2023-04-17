@@ -6,10 +6,11 @@ public class DiscordBotOptions
 {
     public static string Name => "DiscordBot";
 
-    [Required]
+    [Required(AllowEmptyStrings = false)]
     public string Token { get; init; }
     
     [Required]
+    [Range(1, ulong.MaxValue)]
     public ulong GuildId { get; init; }
     
     [StringLength(128)]

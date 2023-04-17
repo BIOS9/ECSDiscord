@@ -3,7 +3,6 @@ using Discord.Rest;
 using Discord.WebSocket;
 using ECSDiscord.Services.Bot;
 using HtmlAgilityPack;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Serilog;
 using System;
@@ -11,11 +10,11 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
 
 namespace ECSDiscord.Services
 {
@@ -49,11 +48,9 @@ namespace ECSDiscord.Services
             CourseRegex = new Regex("([A-Za-z]+)[ \\-_]?([0-9]+)"), // Pattern for course names
             DiscordChannelRegex = new Regex("<#[0-9]{1,20}>");
 
-
         private readonly IConfiguration _config;
-        private readonly DiscordSocketClient _discord;
+        private readonly DiscordBot _discord;
         private readonly StorageService _storage;
-        private ulong _guildId;
 
         // Permissions
         private ulong
@@ -82,7 +79,7 @@ namespace ECSDiscord.Services
         {
             Log.Debug("Course service loading.");
             _config = config;
-            _discord = discordBot.DiscordClient;
+            _discord = discordBot;
             _storage = storage;
             Log.Debug("Course service loaded.");
         }
@@ -128,14 +125,14 @@ namespace ECSDiscord.Services
         public async Task CreateCourseCategoryAsync(string name, Regex autoImportPattern, int autoImportPriority)
         {
             Log.Information("Creating course category {categoryName}", name);
-            RestCategoryChannel category = await _discord.GetGuild(_guildId).CreateCategoryChannelAsync(name);
+            RestCategoryChannel category = await _discord.DiscordClient.GetGuild(_discord.GuildId).CreateCategoryChannelAsync(name);
             await _storage.Courses.CreateCategoryAsync(category.Id, autoImportPattern?.ToString(), autoImportPriority);
         }
 
         public async Task RemoveCourseCategoryAsync(ulong discordId)
         {
             Log.Information("Deleting course category {id}", discordId);
-            SocketCategoryChannel category = _discord.GetGuild(_guildId).GetCategoryChannel(discordId);
+            SocketCategoryChannel category = _discord.DiscordClient.GetGuild(_discord.GuildId).GetCategoryChannel(discordId);
             if (category != null)
             {
                 await category.DeleteAsync();
@@ -147,7 +144,7 @@ namespace ECSDiscord.Services
         {
             string courseName = NormaliseCourseName(name);
             Log.Information("Creating course {name}", courseName);
-            SocketGuild guild = _discord.GetGuild(_guildId);
+            SocketGuild guild = _discord.DiscordClient.GetGuild(_discord.GuildId);
             RestTextChannel channel = await guild.CreateTextChannelAsync(courseName, (a) =>
             {
                 if (_cachedCourses.ContainsKey(courseName))
@@ -162,13 +159,13 @@ namespace ECSDiscord.Services
 
         public async Task CreateCourseAsync(IGuildChannel channel)
         {
-            if (_discord.GetGuild(_guildId).GetCategoryChannel(channel.Id) != null)
+            if (_discord.DiscordClient.GetGuild(_discord.GuildId).GetCategoryChannel(channel.Id) != null)
             {
                 Log.Debug("Skipping creating course using category {channelid} {channelName}", channel.Id, channel.Name);
                 return;
             }
 
-            if (_discord.GetGuild(_guildId).GetVoiceChannel(channel.Id) != null)
+            if (_discord.DiscordClient.GetGuild(_discord.GuildId).GetVoiceChannel(channel.Id) != null)
             {
                 Log.Debug("Skipping creating course using voice channel {channelid} {channelName}", channel.Id, channel.Name);
                 return;
@@ -194,13 +191,13 @@ namespace ECSDiscord.Services
         {
             Log.Debug("Organising course position for {channelid} {channelName}", channel.Id, channel.Name);
 
-            if (_discord.GetGuild(_guildId).GetCategoryChannel(channel.Id) != null)
+            if (_discord.DiscordClient.GetGuild(_discord.GuildId).GetCategoryChannel(channel.Id) != null)
             {
                 Log.Debug("Skipping organising category {channelid} {channelName}", channel.Id, channel.Name);
                 return;
             }
 
-            if (_discord.GetGuild(_guildId).GetVoiceChannel(channel.Id) != null)
+            if (_discord.DiscordClient.GetGuild(_discord.GuildId).GetVoiceChannel(channel.Id) != null)
             {
                 Log.Debug("Skipping creating course using voice channel {channelid} {channelName}", channel.Id, channel.Name);
                 return;
@@ -246,7 +243,7 @@ namespace ECSDiscord.Services
                 return false;
             }
 
-            SocketGuild guild = _discord.GetGuild(_guildId);
+            SocketGuild guild = _discord.DiscordClient.GetGuild(_discord.GuildId);
 
             SocketRole verifiedRole = guild.GetRole(_verifiedRoleId);
 
@@ -311,7 +308,7 @@ namespace ECSDiscord.Services
                     {
                         if (overwrite.Permissions.AllowValue != _joinedAllowPerms || overwrite.Permissions.DenyValue != _joinedDenyPerms)
                         {
-                            SocketUser user = _discord.GetUser(overwrite.TargetId);
+                            SocketUser user = _discord.DiscordClient.GetUser(overwrite.TargetId);
                             if (user == null)
                                 continue;
                             Log.Information("Updating permission mismatch on channel {channemName} {channelId} for {user} {userId}", channel.Name, channel.Id, user.Username, user.Id);
@@ -335,7 +332,7 @@ namespace ECSDiscord.Services
             foreach (ulong extraMember in extraMembers)
             {
                 await Task.Delay(100); // To help reduce API throttling
-                SocketUser user = _discord.GetUser(extraMember);
+                SocketUser user = _discord.DiscordClient.GetUser(extraMember);
                 if (user == null)
                     continue;
                 await channel.RemovePermissionOverwriteAsync(user);
@@ -345,7 +342,7 @@ namespace ECSDiscord.Services
             foreach (ulong joinedMember in courseMemberIds)
             {
                 await Task.Delay(100); // To help reduce API throttling
-                SocketUser user = _discord.GetUser(joinedMember);
+                SocketUser user = _discord.DiscordClient.GetUser(joinedMember);
                 if (user == null)
                     continue;
                 await channel.AddPermissionOverwriteAsync(user, new OverwritePermissions(_joinedAllowPerms, _joinedDenyPerms));
@@ -364,7 +361,7 @@ namespace ECSDiscord.Services
             {
                 try
                 {
-                    course = ((SocketGuildChannel)_discord.GetChannel(MentionUtils.ParseChannel(course))).Name;
+                    course = ((SocketGuildChannel)_discord.DiscordClient.GetChannel(MentionUtils.ParseChannel(course))).Name;
                 }
                 catch (Exception ex)
                 {
@@ -504,8 +501,6 @@ namespace ECSDiscord.Services
 
         private void loadConfig()
         {
-            _guildId = ulong.Parse(_config["guildId"]);
-
             if (!ulong.TryParse(_config["verification:verifiedRoleId"], out _verifiedRoleId))
             {
                 Log.Error("Invalid verifiedRoleId configured in verification settings.");
@@ -553,14 +548,14 @@ namespace ECSDiscord.Services
 
         public async Task StartAsync(CancellationToken cancellationToken)
         {
-            _discord.ChannelDestroyed += _discord_ChannelDestroyed;
+            _discord.DiscordClient.ChannelDestroyed += _discord_ChannelDestroyed;
             loadConfig();
             await DownloadCourseList();
         }
 
         public Task StopAsync(CancellationToken cancellationToken)
         {
-            _discord.ChannelDestroyed -= _discord_ChannelDestroyed;
+            _discord.DiscordClient.ChannelDestroyed -= _discord_ChannelDestroyed;
             return Task.CompletedTask;
         }
     }
