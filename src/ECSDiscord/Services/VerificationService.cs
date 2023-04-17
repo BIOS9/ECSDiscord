@@ -4,8 +4,6 @@ using ECSDiscord.Services.Bot;
 using ECSDiscord.Util;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
-using SendGrid;
-using SendGrid.Helpers.Mail;
 using Serilog;
 using System;
 using System.Collections.Generic;
@@ -17,6 +15,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using ECSDiscord.Services.Email;
 using static ECSDiscord.Services.StorageService;
 using static ECSDiscord.Services.StorageService.VerificationStorage;
 
@@ -30,20 +29,18 @@ namespace ECSDiscord.Services
         private const int RandomTokenLength = 5; // Length in bytes. Base32 encodes 5 bytes into 8 characters.
 
         private readonly DiscordBot _discord;
+        private readonly IMailSender _mailSender;
         private readonly StorageService _storageService;
         private readonly IConfiguration _config;
         private Regex _emailPattern;
         private int _emailUsernameGroup;
 
         private string
-            _sendgridFromAddress,
-            _sendgridFromName,
-            _sendgridSubjectTemplate,
-            _sendgridBodyTemplate,
-            _sendgridApiKey,
-
+            _subjectTemplate,
+            _bodyTemplate,
             _publicKeyCertPath;
         private bool
+            _bodyHtml,
             _skipBots;
         private X509Certificate2 _publicKeyCert;
 
@@ -53,12 +50,14 @@ namespace ECSDiscord.Services
             _deletedMessagesChannelId;
 
 
-        public VerificationService(IConfiguration config, DiscordBot discordBot, StorageService storageService)
+        public VerificationService(IConfiguration config, DiscordBot discordBot, IMailSender mailSender, StorageService storageService)
         {
             Log.Debug("Verification service loading");
             _config = config;
-            _discord = discordBot;
+            _discord = discordBot ?? throw new ArgumentNullException(nameof(discordBot));;
+            _mailSender = mailSender ?? throw new ArgumentNullException(nameof(mailSender));
             _storageService = storageService;
+            _bodyHtml = true;
             Log.Debug("Verification service loaded");
         }
 
@@ -132,18 +131,16 @@ namespace ECSDiscord.Services
 
                 SocketGuild guild = _discord.DiscordClient.GetGuild(_discord.GuildId);
 
-                Log.Information("Sending verification email for {Username} {Id}", user.Username, user.Id);
-                var client = new SendGridClient(_sendgridApiKey);
-                var msg = new SendGridMessage
+                if (!await _mailSender.SendMailAsync(
+                        email,
+                        FillTemplate(_subjectTemplate, email, username, verificationCode, user, guild),
+                        FillTemplate(_bodyTemplate, email, username, verificationCode, user, guild),
+                        _bodyHtml))
                 {
-                    From = new EmailAddress(_sendgridFromAddress, _sendgridFromName),
-                    Subject = FillTemplate(_sendgridSubjectTemplate, email, username, verificationCode, user, guild),
-                    HtmlContent = FillTemplate(_sendgridBodyTemplate, email, username, verificationCode, user, guild)
-                };
-                msg.AddTo(new EmailAddress(email));
-                var response = await client.SendEmailAsync(msg);
+                    return EmailResult.Failure;
+                }
 
-                return response.IsSuccessStatusCode ? EmailResult.Success : EmailResult.Failure;
+                return EmailResult.Success;
             }
             catch (Exception ex)
             {
@@ -472,33 +469,23 @@ namespace ECSDiscord.Services
                 throw new ArgumentException("Invalid regex usernameGroup configured in verification settings.");
             }
 
-            _sendgridFromAddress = _config["verification:fromAddress"];
-            _sendgridFromName = _config["verification:fromName"];
-
             if (!bool.TryParse(_config["verification:skipBots"], out _skipBots))
             {
                 Log.Error("Invalid skipBots configured in verification settings");
                 throw new ArgumentException("Invalid skipBots configured in verification settings.");
             }
 
-            _sendgridSubjectTemplate = _config["verification:subjectTemplate"];
-            if (string.IsNullOrWhiteSpace(_sendgridSubjectTemplate))
+            _subjectTemplate = _config["verification:subjectTemplate"];
+            if (string.IsNullOrWhiteSpace(_subjectTemplate))
             {
                 Log.Error("Verification email subject cannot be empty!");
                 throw new ArgumentException("Verification email subject cannot be empty!");
             }
-            _sendgridBodyTemplate = _config["verification:bodyTemplate"];
-            if (string.IsNullOrWhiteSpace(_sendgridBodyTemplate))
+            _bodyTemplate = _config["verification:bodyTemplate"];
+            if (string.IsNullOrWhiteSpace(_bodyTemplate))
             {
                 Log.Error("Verification email subject cannot be empty!");
                 throw new ArgumentException("Verification email subject cannot be empty!");
-            }
-
-            _sendgridApiKey = _config["verification:sendgridApiKey"];
-            if (string.IsNullOrWhiteSpace(_sendgridApiKey))
-            {
-                Log.Error("Verification sendgrid API Key cannot be empty!");
-                throw new ArgumentException("Verification sendgrid API Key cannot be empty!");
             }
 
             if (!ulong.TryParse(_config["verification:verifiedRoleId"], out _verifiedRoleId))
