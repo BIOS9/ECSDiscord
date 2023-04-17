@@ -11,6 +11,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using ECSDiscord.Services.Enrollments;
+using ECSDiscord.Services.Storage;
 using Microsoft.Extensions.Options;
 
 namespace ECSDiscord.Services

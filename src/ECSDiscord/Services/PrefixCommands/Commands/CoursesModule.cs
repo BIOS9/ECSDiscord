@@ -9,6 +9,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Linq;
 using Discord.WebSocket;
+using ECSDiscord.Services.Storage;
 using ECSDiscord.Util;
 using ECSDiscord.Services.Translations;
 

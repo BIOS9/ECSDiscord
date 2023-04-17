@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
+using ECSDiscord.Services.Storage;
 using static ECSDiscord.Services.VerificationService;
 
 namespace ECSDiscord.Services.PrefixCommands.Commands

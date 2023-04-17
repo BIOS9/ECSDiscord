@@ -10,6 +10,7 @@ using Discord;
 using Discord.WebSocket;
 using System.IO;
 using Discord.Rest;
+using ECSDiscord.Services.Storage;
 using ECSDiscord.Util;
 using ECSDiscord.Services.Translations;
 

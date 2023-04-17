@@ -1,23 +1,20 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 using MySqlConnector;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Serilog;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
-namespace ECSDiscord.Services
+namespace ECSDiscord.Services.Storage
 {
     public class StorageService : IHostedService
     {
-        private readonly IConfiguration _config;
+        private readonly StorageOptions _options;
         private string _mysqlConnectionString;
         private static readonly DateTime Epoch = new DateTime(1970, 1, 1);
         private static readonly TimeSpan CleanupPeriod = TimeSpan.FromDays(1);
@@ -1468,7 +1465,6 @@ namespace ECSDiscord.Services
 
         public async Task StartAsync(CancellationToken cancellationToken)
         {
-            loadConfig();
             Log.Debug("Testing MySql connection.");
             using (MySqlConnection con = GetMySqlConnection())
             {
@@ -1509,32 +1505,16 @@ namespace ECSDiscord.Services
             }
         }
 
-        public StorageService(IConfiguration config)
+        public StorageService(IOptions<StorageOptions> options)
         {
             Log.Debug("Storage service loading.");
-            _config = config;
-
+            _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
+            _mysqlConnectionString = _options.ConnectionString;
             Verification = new VerificationStorage(this);
             Users = new UserStorage(this);
             Courses = new CourseStorage(this);
             ServerMessages = new ServerMessageStorage(this);
             Log.Debug("Storage service loaded.");
-        }
-
-        private void loadConfig()
-        {
-            string server = _config["database:server"];
-            string database = _config["database:database"];
-            string username = _config["database:username"];
-            string password = _config["database:password"];
-
-            if (!int.TryParse(_config["database:port"], out int port))
-            {
-                Log.Error("Invalid port number configured in database settings.");
-                throw new ArgumentException("Invalid port number configured in database settings.");
-            }
-
-            _mysqlConnectionString = $"SERVER={server};PORT={port};DATABASE={database};UID={username};PASSWORD={password};";
         }
     }
 }
