@@ -13,7 +13,6 @@ public static class ConfigurationHelpers
         var configurationSection = configuration.GetSection(key);
 
         if (!configurationSection.Exists())
-        {
             throw configuration switch
             {
                 IConfigurationRoot configurationIsRoot => new ArgumentException(
@@ -25,7 +24,6 @@ public static class ConfigurationHelpers
                 _ => new ArgumentException($"Failed to find configuration at '{configurationSection.Path}'",
                     nameof(key))
             };
-        }
 
         return configurationSection;
     }
@@ -41,9 +39,11 @@ public static class ConfigurationHelpers
     {
         _ = config ?? throw new ArgumentNullException(nameof(config));
 
-        builder.RegisterInstance<IOptionsChangeTokenSource<TOptions>>(new ConfigurationChangeTokenSource<TOptions>(name, config))
+        builder.RegisterInstance<IOptionsChangeTokenSource<TOptions>>(
+                new ConfigurationChangeTokenSource<TOptions>(name, config))
             .SingleInstance();
-        builder.RegisterInstance<IConfigureOptions<TOptions>>(new NamedConfigureFromConfigurationOptions<TOptions>(name, config, _ => { }))
+        builder.RegisterInstance<IConfigureOptions<TOptions>>(
+                new NamedConfigureFromConfigurationOptions<TOptions>(name, config, _ => { }))
             .SingleInstance();
         builder.AddDataAnnotationValidatedOptions<TOptions>(name);
     }
@@ -57,7 +57,8 @@ public static class ConfigurationHelpers
     public static void ConfigureWithValidation<TOptions>(this ContainerBuilder builder, string name,
         Action<TOptions> configureOptions) where TOptions : class
     {
-        builder.RegisterInstance<IConfigureOptions<TOptions>>(new ConfigureNamedOptions<TOptions>(name, configureOptions))
+        builder.RegisterInstance<IConfigureOptions<TOptions>>(
+                new ConfigureNamedOptions<TOptions>(name, configureOptions))
             .SingleInstance();
         builder.AddDataAnnotationValidatedOptions<TOptions>(name);
     }
@@ -69,7 +70,7 @@ public static class ConfigurationHelpers
             .SingleInstance();
     }
 
-    public static void AddFluentValidator<TOptions, TValidator>(this ContainerBuilder builder) 
+    public static void AddFluentValidator<TOptions, TValidator>(this ContainerBuilder builder)
         where TValidator : IValidator
         where TOptions : class
     {

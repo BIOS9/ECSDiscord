@@ -14,7 +14,7 @@ public class VerificationModule : Module
     {
         _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
     }
-    
+
     protected override void Load(ContainerBuilder builder)
     {
         builder.RegisterType<VerificationService>()

@@ -9,8 +9,8 @@ namespace ECSDiscord.Services.Email.Sendgrid;
 
 public class SendGridMailSender : IMailSender
 {
-    private readonly SendGridOptions _options;
     private readonly ILogger<SendGridMailSender> _logger;
+    private readonly SendGridOptions _options;
 
     public SendGridMailSender(IOptions<SendGridOptions> options, ILogger<SendGridMailSender> logger)
     {
@@ -27,16 +27,12 @@ public class SendGridMailSender : IMailSender
             From = new EmailAddress(_options.FromAddress, _options.FromName),
             Subject = subject
         };
-        
+
         if (bodyIsHtml)
-        {
             msg.HtmlContent = body;
-        }
         else
-        {
             msg.PlainTextContent = body;
-        }
-        
+
         msg.AddTo(new EmailAddress(recipientAddress));
         var response = await client.SendEmailAsync(msg);
 

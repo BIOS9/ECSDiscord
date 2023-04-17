@@ -1,6 +1,5 @@
 ﻿using System;
 using Autofac;
-using ECSDiscord.Services.Verification;
 using ECSDiscord.Util;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
@@ -15,7 +14,7 @@ public class StorageModule : Module
     {
         _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
     }
-    
+
     protected override void Load(ContainerBuilder builder)
     {
         builder.RegisterType<StorageService>()
