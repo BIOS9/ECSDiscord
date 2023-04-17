@@ -21,8 +21,7 @@ namespace ECSDiscord.Services
         private readonly StorageService _storage;
         private readonly VerificationService _verification;
         private readonly IConfiguration _config;
-
-        private ulong _guildId;
+        
         private bool _requireVerificationToJoin;
 
         public enum EnrollmentResult
@@ -254,7 +253,6 @@ namespace ECSDiscord.Services
 
         private void loadConfig()
         {
-            _guildId = ulong.Parse(_config["guildId"]);
             if (!bool.TryParse(_config["courses:requireVerificationToJoin"], out _requireVerificationToJoin))
             {
                 Log.Error("Invalid boolean for requireVerificationToJoin setting.");

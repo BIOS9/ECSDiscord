@@ -1,14 +1,11 @@
 ﻿using Discord;
-using Discord.Rest;
 using Discord.WebSocket;
 using ECSDiscord.Services.Bot;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -16,23 +13,19 @@ namespace ECSDiscord.Services
 {
     public class ServerMessageService : IHostedService
     {
-        private readonly DiscordSocketClient _discord;
-        private readonly IConfiguration _config;
+        private readonly DiscordBot _discord;
         private readonly StorageService _storage;
-        private ulong _guildId;
 
-        public ServerMessageService(DiscordBot discordBot, IConfiguration config, StorageService storage)
+        public ServerMessageService(DiscordBot discordBot, StorageService storage)
         {
             Log.Debug("Server Message service loading.");
-            _discord = discordBot.DiscordClient;
-            _config = config;
+            _discord = discordBot;
             _storage = storage;
             Log.Debug("Server Message service loaded.");
         }
 
         public Task StartAsync(CancellationToken cancellationToken)
         {
-            loadConfig();
             return Task.CompletedTask;
         }
 
@@ -93,8 +86,8 @@ namespace ECSDiscord.Services
             var storageMessages = await _storage.ServerMessages.GetServerMessagesAsync();
             return await Task.WhenAll(storageMessages.Select((x) => ServerMessage.CreateFromStorageAsync(
                 x,
-                _discord.GetGuild(_guildId),
-                _discord)));
+                _discord.DiscordClient.GetGuild(_discord.GuildId),
+                _discord.DiscordClient)));
         }
 
         public async Task<ServerMessage> CreateMessageAsync(string content, string name, IUser creator, SocketTextChannel channel)
@@ -113,8 +106,8 @@ namespace ECSDiscord.Services
                 name));
             return await ServerMessage.CreateFromStorageAsync(
                 await _storage.ServerMessages.GetServerMessageAsync(msg.Id),
-                _discord.GetGuild(_guildId),
-                _discord);
+                _discord.DiscordClient.GetGuild(_discord.GuildId),
+                _discord.DiscordClient);
         }
 
         public async Task<ServerMessage> GetMessageAsync(ulong id)
@@ -124,14 +117,14 @@ namespace ECSDiscord.Services
 
             return await ServerMessage.CreateFromStorageAsync(
                 await _storage.ServerMessages.GetServerMessageAsync(id),
-                _discord.GetGuild(_guildId),
-                _discord);
+                _discord.DiscordClient.GetGuild(_discord.GuildId),
+                _discord.DiscordClient);
         }
 
         public async Task<ServerMessage> EditMessageAsync(ulong messageID, string content, string name, IUser user)
         {
             var storageMsg = await _storage.ServerMessages.GetServerMessageAsync(messageID);
-            var guild = _discord.GetGuild(_guildId);
+            var guild = _discord.DiscordClient.GetGuild(_discord.GuildId);
             var channel = guild.GetTextChannel(storageMsg.ChannelID);
             if (channel == null)
                 throw new Exception("Channel not found.");
@@ -158,7 +151,7 @@ namespace ECSDiscord.Services
             return await ServerMessage.CreateFromStorageAsync(
                 await _storage.ServerMessages.GetServerMessageAsync(msg.Id),
                 guild,
-                _discord);
+                _discord.DiscordClient);
         }
 
         public async Task DeleteMessageAsync(ulong messageID)
@@ -170,7 +163,7 @@ namespace ECSDiscord.Services
 
             try
             {
-                IMessage message = await _discord.GetGuild(_guildId)
+                IMessage message = await _discord.DiscordClient.GetGuild(_discord.GuildId)
                 .GetTextChannel(storageMessage.ChannelID)
                 .GetMessageAsync(storageMessage.MessageID);
                 await message.DeleteAsync();
@@ -194,15 +187,10 @@ namespace ECSDiscord.Services
             if (storageMessage == null)
                 throw new KeyNotFoundException("Server Message not found.");
 
-            IMessage message = await _discord.GetGuild(_guildId)
+            IMessage message = await _discord.DiscordClient.GetGuild(_discord.GuildId)
                 .GetTextChannel(storageMessage.ChannelID)
                 .GetMessageAsync(storageMessage.MessageID);
             return message != null;
-        }
-
-        private void loadConfig()
-        {
-            _guildId = ulong.Parse(_config["guildId"]);
         }
     }
 }
