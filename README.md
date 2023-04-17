@@ -1,5 +1,6 @@
 # ECSDiscord Bot
 ![.NET Build](https://github.com/BIOS9/ECSDiscord/workflows/.NET%20Build/badge.svg)
+![CodeQL](https://github.com/BIOS9/ECSDiscord/workflows/CodeQL/badge.svg)
 
 A bot designed for the VUW Engineering and Computer Science Discord server that provides various services including:
 * Discord user verification for university students.
