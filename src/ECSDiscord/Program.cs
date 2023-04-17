@@ -1,7 +1,5 @@
 ﻿using Autofac.Extensions.DependencyInjection;
 using Autofac;
-using Discord;
-using Discord.Commands;
 using Microsoft.Extensions.Configuration;
 using Serilog;
 using Microsoft.Extensions.Hosting;
@@ -24,12 +22,6 @@ await Host.CreateDefaultBuilder(args)
     .UseServiceProviderFactory(new AutofacServiceProviderFactory())
     .ConfigureContainer<ContainerBuilder>((context, builder) =>
     {
-        builder.RegisterInstance(new CommandService(new CommandServiceConfig
-        {                                       // Add the command service to the collection
-            LogLevel = LogSeverity.Verbose,     // Tell the logger to give Verbose amount of info
-            DefaultRunMode = RunMode.Async,     // Force all commands to run async by default
-        })).SingleInstance();
-
         // all very ugly right now, will clean soon
         builder.RegisterType<ECSDiscord.Services.CourseService>().AsSelf().As<IHostedService>().SingleInstance();
         builder.RegisterType<ECSDiscord.Services.StorageService>().AsSelf().As<IHostedService>().SingleInstance();
