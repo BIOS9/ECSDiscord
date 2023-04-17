@@ -10,29 +10,30 @@ using Microsoft.Extensions.Hosting;
 using System.Threading;
 using ECSDiscord.Services.Bot;
 using ECSDiscord.Services.Translations;
+using Microsoft.Extensions.Options;
 
 namespace ECSDiscord.Services.PrefixCommands
 {
     public class PrefixCommandsHandler : IHostedService
     {
+        private readonly PrefixCommandsOptions _options;
         private readonly DiscordSocketClient _discord;
         private readonly CommandService _commands;
-        private readonly IConfiguration _config;
         private readonly IServiceProvider _provider;
         private readonly ITranslator _translator;
 
         // DiscordSocketClient, CommandService, IConfigurationRoot, and IServiceProvider are injected automatically from the IServiceProvider
         public PrefixCommandsHandler(
+            IOptions<PrefixCommandsOptions> options,
             DiscordBot discordBot,
             CommandService commands,
-            IConfiguration config,
             IServiceProvider provider,
             ITranslator translator)
         {
             Log.Debug("Command service loading.");
+            _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
             _discord = discordBot.DiscordClient;
             _commands = commands;
-            _config = config;
             _provider = provider;
             _translator = translator;
         }
@@ -61,7 +62,7 @@ namespace ECSDiscord.Services.PrefixCommands
             var context = new SocketCommandContext(_discord, msg); // Create the command context
 
             int argPos = 0; // Check if the message has a valid command prefix
-            if (msg.HasStringPrefix(_config["prefix"], ref argPos) || msg.HasMentionPrefix(_discord.CurrentUser, ref argPos))
+            if (msg.HasStringPrefix(_options.Prefix, ref argPos) || msg.HasMentionPrefix(_discord.CurrentUser, ref argPos))
             {
                 if (msg.Content.ToLower().Equals("+vewify"))
                 {
@@ -76,15 +77,12 @@ namespace ECSDiscord.Services.PrefixCommands
                     switch (result.Error)
                     {
                         case CommandError.UnknownCommand:
-                            string replyChannel = _config["forcedChannels:unknownCommandReply"];
-                            if (replyChannel != null && ulong.Parse(replyChannel) != s.Channel.Id)
-                                return;
                             Log.Debug("User {discordUser} sent unknown command.", s.Author.Id);
-                            await context.Channel.SendMessageAsync($"Sorry, that is an unknown command.\nTry `{_config["prefix"]}help` to see a list of commands.");
+                            await context.Channel.SendMessageAsync($"Sorry, that is an unknown command.\nTry `{_options.Prefix}help` to see a list of commands.");
                             break;
                         case CommandError.BadArgCount:
                             Log.Debug("User {discordUser} sent command with invalid number of arguments.", s.Author.Id);
-                            await context.Channel.SendMessageAsync($"Sorry, you supplied an invalid number of arguments.\nTry `{_config["prefix"]}help <command>`");
+                            await context.Channel.SendMessageAsync($"Sorry, you supplied an invalid number of arguments.\nTry `{_options.Prefix}help <command>`");
                             break;
                         case CommandError.UnmetPrecondition:
                             if (result.ErrorReason.StartsWith("User requires guild permission"))

@@ -39,8 +39,8 @@ await Host.CreateDefaultBuilder(args)
         builder.RegisterModule(new BotModule(context.Configuration));
         builder.RegisterModule(new SendGridModule(context.Configuration));
         builder.RegisterModule(new EnrollmentsModule(context.Configuration));
+        builder.RegisterModule(new PrefixCommandsModule(context.Configuration));
         builder.RegisterModule<SlashCommandsModule>();
-        builder.RegisterModule<PrefixCommandsModule>();
         builder.RegisterModule<TranslationsModule>();
     })
     .Build()
