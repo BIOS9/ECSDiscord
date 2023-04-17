@@ -8,7 +8,8 @@ SendGrid:
   ApiKey: null
 Enrollments:
   RequireVerificationToJoin: true
-prefix: +
+PrefixCommands:
+  Prefix: +
 logChannelId: null
 deletedMessagesChannelId: null
 courses:
