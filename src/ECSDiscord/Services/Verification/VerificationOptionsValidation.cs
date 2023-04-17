@@ -1,5 +1,4 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using System.Text.RegularExpressions;
 using FluentValidation;
 
@@ -22,7 +21,7 @@ public class VerificationOptionsValidation : AbstractValidator<VerificationOptio
                 {
                     _ = new Regex(pattern);
                 }
-                catch (Exception ex)
+                catch
                 {
                     context.AddFailure("Invalid RegEx pattern");
                 }

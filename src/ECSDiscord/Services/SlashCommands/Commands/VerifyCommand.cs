@@ -7,14 +7,14 @@ namespace ECSDiscord.Services.SlashCommands.Commands;
 
 public class VerifyCommand : ISlashCommand
 {
-    public string Name => "verify";
-
     private readonly VerificationService _verificationService;
 
     public VerifyCommand(VerificationService verificationService)
     {
         _verificationService = verificationService ?? throw new ArgumentNullException(nameof(verificationService));
     }
+
+    public string Name => "verify";
 
     public SlashCommandProperties Build()
     {
@@ -31,19 +31,24 @@ public class VerifyCommand : ISlashCommand
 
     public async Task ExecuteAsync(ISlashCommandInteraction command)
     {
-        string email = (string)command.Data.Options.First().Value;
-        VerificationService.EmailResult result = await _verificationService.StartVerificationAsync(email, command.User);
+        var email = (string)command.Data.Options.First().Value;
+        var result = await _verificationService.StartVerificationAsync(email, command.User);
         switch (result)
         {
             case VerificationService.EmailResult.InvalidEmail:
-                await command.RespondAsync($":warning:  Invalid email address.\nPlease use a VUW student email address. e.g. `username@myvuw.ac.nz`", ephemeral: true);
+                await command.RespondAsync(
+                    ":warning:  Invalid email address.\nPlease use a VUW student email address. e.g. `username@myvuw.ac.nz`",
+                    ephemeral: true);
                 break;
             case VerificationService.EmailResult.Success:
-                await command.RespondAsync($":white_check_mark:  Verification email sent!\nPlease check your email for further instructions.", ephemeral: true);
+                await command.RespondAsync(
+                    ":white_check_mark:  Verification email sent!\nPlease check your email for further instructions.",
+                    ephemeral: true);
                 break;
             case VerificationService.EmailResult.Failure:
             default:
-                await command.RespondAsync($":fire:  A server error occured. Please ask an admin to check the logs.", ephemeral: true);
+                await command.RespondAsync(":fire:  A server error occured. Please ask an admin to check the logs.",
+                    ephemeral: true);
                 break;
         }
     }

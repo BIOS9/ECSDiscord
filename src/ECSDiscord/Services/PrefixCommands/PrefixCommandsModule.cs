@@ -16,13 +16,14 @@ public class PrefixCommandsModule : Module
     {
         _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
     }
-    
+
     protected override void Load(ContainerBuilder builder)
     {
         builder.RegisterInstance(new CommandService(new CommandServiceConfig
-        {                                       // Add the command service to the collection
-            LogLevel = LogSeverity.Verbose,     // Tell the logger to give Verbose amount of info
-            DefaultRunMode = RunMode.Async,     // Force all commands to run async by default
+        {
+            // Add the command service to the collection
+            LogLevel = LogSeverity.Verbose, // Tell the logger to give Verbose amount of info
+            DefaultRunMode = RunMode.Async // Force all commands to run async by default
         })).SingleInstance();
         builder.RegisterType<PrefixCommandsHandler>()
             .AsSelf()

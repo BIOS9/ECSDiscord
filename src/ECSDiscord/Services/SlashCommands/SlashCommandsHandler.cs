@@ -1,22 +1,22 @@
-﻿using Discord.Net;
-using Discord.WebSocket;
-using Discord;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Discord;
+using Discord.Net;
+using Discord.WebSocket;
 using ECSDiscord.Services.Bot;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 
 namespace ECSDiscord.Services.SlashCommands;
 
 public class SlashCommandsHandler : IHostedService
 {
+    private readonly IEnumerable<ISlashCommand> _commands;
     private readonly DiscordSocketClient _discordClient;
     private readonly ILogger<SlashCommandsHandler> _logger;
-    private readonly IEnumerable<ISlashCommand> _commands;
 
     private readonly Dictionary<ulong, ISlashCommand>
         _registeredCommands = new(); // I am aware that this is still mutable.
@@ -56,7 +56,7 @@ public class SlashCommandsHandler : IHostedService
             foreach (var command in _commands)
             {
                 _logger.LogTrace("Registering slash command {command}", command.Name);
-                SocketApplicationCommand result =
+                var result =
                     await _discordClient.CreateGlobalApplicationCommandAsync(command.Build());
                 _registeredCommands.Add(result.Id, command);
                 _logger.LogInformation("Successfully registered slash command {command}. Discord ID {id}", command.Name,
@@ -78,7 +78,7 @@ public class SlashCommandsHandler : IHostedService
     private Task DiscordClientOnSlashCommandExecuted(ISlashCommandInteraction command)
     {
         _logger.LogTrace("Slash command received {command}", command.Data.Name);
-        if (!_registeredCommands.TryGetValue(command.Data.Id, out ISlashCommand commandModule))
+        if (!_registeredCommands.TryGetValue(command.Data.Id, out var commandModule))
         {
             _logger.LogError("Unhandled command executed {name} {id}", command.Data.Name, command.Data.Id);
             return Task.CompletedTask;
@@ -90,7 +90,7 @@ public class SlashCommandsHandler : IHostedService
     }
 
     /// <summary>
-    /// Runs slash command with exception handling.
+    ///     Runs slash command with exception handling.
     /// </summary>
     private async void RunSlashCommand(ISlashCommand commandModule, ISlashCommandInteraction command)
     {

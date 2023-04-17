@@ -1,7 +1,7 @@
-﻿using Autofac;
-using Microsoft.Extensions.Configuration;
-using System;
+﻿using System;
+using Autofac;
 using ECSDiscord.Util;
+using Microsoft.Extensions.Configuration;
 
 namespace ECSDiscord.Services.Email.Sendgrid;
 

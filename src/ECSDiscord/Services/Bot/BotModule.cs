@@ -1,8 +1,8 @@
-﻿using Autofac;
+﻿using System;
+using Autofac;
+using ECSDiscord.Util;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
-using System;
-using ECSDiscord.Util;
 
 namespace ECSDiscord.Services.Bot;
 

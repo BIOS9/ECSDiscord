@@ -1,65 +1,68 @@
-﻿using Discord;
+﻿using System.Collections.Generic;
+using System.Linq;
+using Discord;
 using Discord.Commands;
 using Microsoft.Extensions.Configuration;
 using Serilog;
-using System.Collections.Generic;
-using System.Linq;
 
-namespace ECSDiscord.Util
+namespace ECSDiscord.Util;
+
+public static class DiscordUtil
 {
-    public static class DiscordUtil
+    /// <summary>
+    ///     Ensure command is only executed in allowed channels.
+    /// </summary>
+    public static bool CheckConfigChannel(this SocketCommandContext context, string category, IConfiguration config)
     {
-        /// <summary>
-        /// Ensure command is only executed in allowed channels.
-        /// </summary>
-        public static bool CheckConfigChannel(this SocketCommandContext context, string category, IConfiguration config)
+        if (context.IsPrivate ||
+            ((IGuildUser)context.User).GuildPermissions
+            .Administrator) // Allow administrators to use any command in any channel
+            return true;
+
+        var section = config.GetSection("forcedChannels").GetSection(category); // Get command category from config
+
+        var allowedChannels = new List<ulong>(); // List of allowed channels to show user
+        foreach (var child in section.GetChildren())
         {
-            if (context.IsPrivate || ((IGuildUser)context.User).GuildPermissions.Administrator) // Allow administrators to use any command in any channel
+            if (string.IsNullOrWhiteSpace(child.Value)) // Ignore null or empty channels
+                continue;
+
+            // Attempt to convert configured channel to a ulong
+            if (!ulong.TryParse(child.Value, out var allowedChannel))
+                Log.Error(
+                    "Invalid forced channel configuration. Expected unsigned long integer or null, found \"{Channel}\" in section {Section}",
+                    child.Value, category);
+
+            allowedChannels.Add(allowedChannel);
+
+            if (context.Channel.Id == allowedChannel) // Check if channels match
                 return true;
-
-            IConfigurationSection section = config.GetSection("forcedChannels").GetSection(category); // Get command category from config
-
-            List<ulong> allowedChannels = new List<ulong>(); // List of allowed channels to show user
-            foreach (IConfigurationSection child in section.GetChildren())
-            {
-                if (string.IsNullOrWhiteSpace(child.Value)) // Ignore null or empty channels
-                    continue;
-
-                // Attempt to convert configured channel to a ulong
-                if (!ulong.TryParse(child.Value, out ulong allowedChannel))
-                {
-                    Log.Error("Invalid forced channel configuration. Expected unsigned long integer or null, found \"{Channel}\" in section {Section}", 
-                        child.Value, category);
-                }
-
-                allowedChannels.Add(allowedChannel);
-
-                if (context.Channel.Id == allowedChannel) // Check if channels match
-                    return true;
-            }
-
-            if (allowedChannels.Count == 0) // If no channels are allowed, assume not configured so allow all.
-                return true;
-
-            // Log and send message to user.
-            context.Channel.SendMessageAsync("Sorry, that command can only be used in " +
-                allowedChannels.Select(MentionUtils.MentionChannel).Aggregate((x, y) => $"{x}, {y}"));
-            Log.Information("User {User} was disallowed access to command because execution is not allowed in channel {Channel}",
-                context.User.ToString(), context.Channel.Name);
-
-            // Disallow access.
-            return false;     
         }
 
-        /// <summary>
-        /// Prevent @mentions from pinging.
-        /// </summary>
-        /// <remarks>
-        /// Helps prevent the bot being used to abuse @mentions
-        /// </remarks>
-        public static string SanitizeMentions(this string message)
-        {
-            return message.Replace("@", "＠"); // Replace @ mentions with weird alternate @ symbol that doesnt trigger mention
-        }
+        if (allowedChannels.Count == 0) // If no channels are allowed, assume not configured so allow all.
+            return true;
+
+        // Log and send message to user.
+        context.Channel.SendMessageAsync("Sorry, that command can only be used in " +
+                                         allowedChannels.Select(MentionUtils.MentionChannel)
+                                             .Aggregate((x, y) => $"{x}, {y}"));
+        Log.Information(
+            "User {User} was disallowed access to command because execution is not allowed in channel {Channel}",
+            context.User.ToString(), context.Channel.Name);
+
+        // Disallow access.
+        return false;
+    }
+
+    /// <summary>
+    ///     Prevent @mentions from pinging.
+    /// </summary>
+    /// <remarks>
+    ///     Helps prevent the bot being used to abuse @mentions
+    /// </remarks>
+    public static string SanitizeMentions(this string message)
+    {
+        return
+            message.Replace("@", "＠"); // Replace @ mentions with weird alternate @ symbol that doesnt trigger mention
     }
 }
