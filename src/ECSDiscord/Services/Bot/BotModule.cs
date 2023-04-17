@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using System;
+using ECSDiscord.Util;
 
 namespace ECSDiscord.Services.Bot
 {
@@ -20,6 +21,8 @@ namespace ECSDiscord.Services.Bot
                 .AsSelf()
                 .As<IHostedService>()
                 .SingleInstance();
+            builder.ConfigureWithValidation<DiscordBotOptions>(
+                _configuration.GetExistingSectionOrThrow(DiscordBotOptions.Name));
         }
     }
 }
