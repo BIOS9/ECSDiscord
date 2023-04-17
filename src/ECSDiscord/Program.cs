@@ -5,6 +5,7 @@ using Serilog;
 using Microsoft.Extensions.Hosting;
 using ECSDiscord.Services.SlashCommands;
 using ECSDiscord.Services.Bot;
+using ECSDiscord.Services.Courses;
 using ECSDiscord.Services.Email.Sendgrid;
 using ECSDiscord.Services.Enrollments;
 using ECSDiscord.Services.PrefixCommands;
@@ -25,13 +26,11 @@ await Host.CreateDefaultBuilder(args)
     .UseServiceProviderFactory(new AutofacServiceProviderFactory())
     .ConfigureContainer<ContainerBuilder>((context, builder) =>
     {
-        // all very ugly right now, will clean soon
-        builder.RegisterType<ECSDiscord.Services.CourseService>().AsSelf().As<IHostedService>().SingleInstance();
-
         builder.RegisterModule(new BotModule(context.Configuration));
         builder.RegisterModule(new StorageModule(context.Configuration));
         builder.RegisterModule(new SendGridModule(context.Configuration));
         builder.RegisterModule(new EnrollmentsModule(context.Configuration));
+        builder.RegisterModule(new CoursesModule(context.Configuration));
         builder.RegisterModule(new VerificationModule(context.Configuration));
         builder.RegisterModule(new PrefixCommandsModule(context.Configuration));
         builder.RegisterModule<SlashCommandsModule>();
