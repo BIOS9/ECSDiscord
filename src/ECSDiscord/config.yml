@@ -1,7 +1,8 @@
+DiscordBot:
+  Token: null
+  GuildId: null
+  StatusText: github.com/BIOS9/ECSDiscord
 prefix: +
-guildId: null
-dmUsersOnJoin: false
-joinDmTemplate: null
 logChannelId: null
 deletedMessagesChannelId: null
 courses:
@@ -39,8 +40,6 @@ forcedChannels:
   help: null
   enrollments: null
   unknownCommandReply: null
-secrets:
-  discordBotToken: null
 database:
   server: null
   port: null
