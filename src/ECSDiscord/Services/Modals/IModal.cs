@@ -6,6 +6,8 @@ namespace ECSDiscord.Services.Modals;
 
 public interface IModal
 {
-    string CustomId { get; }
+    string Name { get; }
+    string CustomId { get; set; }
+    Task<Modal> BuildAsync(string customId);
     Task ExecuteAsync(SocketModal modalInteraction);
 }

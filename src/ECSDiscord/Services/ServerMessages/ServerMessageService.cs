@@ -137,7 +137,7 @@ public class ServerMessageService : IHostedService
         var storageMessage =
             await _storage.ServerMessages.GetServerMessageAsync(messageID);
         if (storageMessage == null)
-            throw new KeyNotFoundException("Server Message not found.");
+            return false;
 
         var message = await _discord.DiscordClient.GetGuild(_discord.GuildId)
             .GetTextChannel(storageMessage.ChannelID)
