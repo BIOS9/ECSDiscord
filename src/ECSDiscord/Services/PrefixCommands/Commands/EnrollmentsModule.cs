@@ -43,9 +43,6 @@ public class EnrollmentsModule : ModuleBase<SocketCommandContext>
     [Summary("Join a uni course channel.")]
     public async Task JoinAsync(params string[] courses)
     {
-        // Ensure command is only executed in allowed channels
-        if (!Context.CheckConfigChannel("enrollments", _config)) return;
-
         // Ensure course list is valid
         if (!checkCourses(courses, true, out var errorMessage, out var formattedCourses))
         {
@@ -123,9 +120,6 @@ public class EnrollmentsModule : ModuleBase<SocketCommandContext>
     [Summary("Leave a uni course channel.")]
     public async Task LeaveAsync(params string[] courses)
     {
-        // Ensure command is only executed in allowed channels
-        if (!Context.CheckConfigChannel("enrollments", _config)) return;
-
         if (courses.Length == 1 && courses[0].Equals("all", StringComparison.OrdinalIgnoreCase))
         {
             await LeaveAllAsync();
@@ -173,8 +167,6 @@ public class EnrollmentsModule : ModuleBase<SocketCommandContext>
     [Summary("Removes you from all courses.")]
     public async Task LeaveAllAsync()
     {
-        if (!Context.CheckConfigChannel("enrollments", _config)) return;
-
         var courses = await _enrollments.GetUserCourses(Context.User);
         if (courses.Count == 0)
         {
@@ -216,9 +208,6 @@ public class EnrollmentsModule : ModuleBase<SocketCommandContext>
     [Summary("Join or leave a uni course channel.")]
     public async Task ToggleCourseAsync(params string[] courses)
     {
-        // Ensure command is only executed in allowed channels
-        if (!Context.CheckConfigChannel("enrollments", _config)) return;
-
         // Ensure course list is valid
         if (!checkCourses(courses, true, out var errorMessage, out var formattedCourses))
         {
@@ -282,9 +271,6 @@ public class EnrollmentsModule : ModuleBase<SocketCommandContext>
     [Summary("List the courses you are in.")]
     public async Task CoursesAsync()
     {
-        if (!Context.CheckConfigChannel("enrollments", _config))
-            return; // Ensure command is only executed in allowed channels
-
         var courses = await _enrollments.GetUserCourses(Context.User);
         if (courses.Count == 0)
             await ReplyAsync(
