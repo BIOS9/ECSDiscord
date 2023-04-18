@@ -13,5 +13,10 @@ public class SlashCommandsModule : Module
             .As<IHostedService>()
             .SingleInstance();
         builder.RegisterType<VerifyCommand>().As<ISlashCommand>();
+        builder.RegisterType<JoinCommand>().As<ISlashCommand>();
+        builder.RegisterType<LeaveCommand>().As<ISlashCommand>();
+        builder.RegisterType<LeaveAllCommand>().As<ISlashCommand>();
+        builder.RegisterType<ListCoursesCommand>().As<ISlashCommand>();
+        builder.RegisterType<MyCoursesCommand>().As<ISlashCommand>();
     }
 }
