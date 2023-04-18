@@ -23,8 +23,6 @@ public class HelpModule : ModuleBase<SocketCommandContext>
     [Command("help")]
     public async Task HelpAsync()
     {
-        if (!Context.CheckConfigChannel("help", _config)) return; // Ensure command is only executed in allowed channels
-
         var prefix = _config["prefix"];
         var builder = new EmbedBuilder
         {
@@ -64,8 +62,6 @@ public class HelpModule : ModuleBase<SocketCommandContext>
     [Command("help")]
     public async Task HelpAsync(string command)
     {
-        if (!Context.CheckConfigChannel("help", _config)) return; // Ensure command is only executed in allowed channels
-
         var result = _service.Search(Context, command);
 
         if (!result.IsSuccess)

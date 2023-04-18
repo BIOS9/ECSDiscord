@@ -354,8 +354,6 @@ public class CoursesModule : ModuleBase<SocketCommandContext>
     [Summary("Lists all available courses.")]
     public async Task AllCoursesAsync()
     {
-        if (!Context.CheckConfigChannel("enrollments", _config)) return;
-
         await ReplyAsync(_translator.T("COMMAND_PROCESSING"));
 
         var courseNames = new HashSet<string>();
