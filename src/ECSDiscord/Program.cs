@@ -27,7 +27,6 @@ await Host.CreateDefaultBuilder(args)
     .UseServiceProviderFactory(new AutofacServiceProviderFactory())
     .ConfigureContainer<ContainerBuilder>((context, builder) =>
     {
-        builder.RegisterModule(new BotModule(context.Configuration));
         builder.RegisterModule(new StorageModule(context.Configuration));
         builder.RegisterModule(new SendGridModule(context.Configuration));
         builder.RegisterModule(new EnrollmentsModule(context.Configuration));
@@ -38,6 +37,7 @@ await Host.CreateDefaultBuilder(args)
         builder.RegisterModule<ServerMessagesModule>();
         builder.RegisterModule<TranslationsModule>();
         builder.RegisterModule<ModerationLogModule>();
+        builder.RegisterModule(new BotModule(context.Configuration));
     })
     .Build()
     .RunAsync();
