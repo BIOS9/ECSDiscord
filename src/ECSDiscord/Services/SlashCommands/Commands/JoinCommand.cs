@@ -29,7 +29,7 @@ public class JoinCommand : ISlashCommand
             .WithDescription("Join one or more course channels.")
             .AddOption(new SlashCommandOptionBuilder()
                 .WithName("courses")
-                .WithDescription("The space-separated list of course channels you want to join. e.g. comp102 engr101 cybr171")
+                .WithDescription("Space-separated list of course channels you want to join. e.g. comp102 engr101 cybr171")
                 .WithRequired(true)
                 .WithType(ApplicationCommandOptionType.String))
             .Build();
