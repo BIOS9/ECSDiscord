@@ -45,7 +45,7 @@ public class ServerMessageService : IHostedService
     }
 
     public async Task<ServerMessage> CreateMessageAsync(string content, string name, IUser creator,
-        SocketTextChannel channel)
+        ISocketMessageChannel channel)
     {
         if (channel == null)
             throw new Exception("Channel not found.");
