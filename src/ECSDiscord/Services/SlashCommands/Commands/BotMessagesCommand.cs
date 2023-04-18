@@ -139,7 +139,7 @@ public class BotMessagesCommand : ISlashCommand
         List<EmbedFieldBuilder> fields = new();
         foreach (var message in messages)
         {
-            if (command.ChannelId == null || command.ChannelId != command.ChannelId.Value)
+            if (command.ChannelId == null || message.ChannelID != command.ChannelId.Value)
             {
                 continue;
             }
