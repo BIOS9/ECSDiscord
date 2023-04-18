@@ -34,6 +34,8 @@ public class BotMessagesCommand : ISlashCommand
         return new SlashCommandBuilder()
             .WithName(Name)
             .WithDescription("Sends and edits messages sent using this bot.")
+            .WithDefaultMemberPermissions(GuildPermission.Administrator)
+            .WithDMPermission(false)
             .AddOption(new SlashCommandOptionBuilder()
                 .WithName("create")
                 .WithDescription("Create a new bot message in the current channel.")
