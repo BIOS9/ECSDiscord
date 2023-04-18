@@ -6,6 +6,7 @@ using Discord;
 using Discord.Net;
 using Discord.WebSocket;
 using ECSDiscord.Services.Bot;
+using ECSDiscord.Services.ModerationLog;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -15,6 +16,7 @@ namespace ECSDiscord.Services.SlashCommands;
 public class SlashCommandsHandler : IHostedService
 {
     private readonly IEnumerable<ISlashCommand> _commands;
+    private readonly ModerationLogger _moderationLogger;
     private readonly DiscordSocketClient _discordClient;
     private readonly ILogger<SlashCommandsHandler> _logger;
 
@@ -23,10 +25,12 @@ public class SlashCommandsHandler : IHostedService
 
     public SlashCommandsHandler(
         DiscordBot discordBot,
+        ModerationLogger moderationLogger,
         ILogger<SlashCommandsHandler> logger,
         IEnumerable<ISlashCommand> commands)
     {
         _discordClient = discordBot.DiscordClient ?? throw new ArgumentNullException(nameof(discordBot));
+        _moderationLogger = moderationLogger ?? throw new ArgumentNullException(nameof(moderationLogger));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _commands = commands ?? throw new ArgumentNullException(nameof(commands));
     }
@@ -84,15 +88,23 @@ public class SlashCommandsHandler : IHostedService
             return Task.CompletedTask;
         }
 
-        RunSlashCommand(commandModule, command);
-
+        if (command.GuildId != null)
+        {
+            _moderationLogger.Log(
+                $"{command.User.Mention} used `/{command.Data.Name}` in <#{command.ChannelId}>",
+                string.Empty,
+                command.User,
+                _discordClient.GetGuild(command.GuildId.Value));
+        }
+        
+        _ = RunSlashCommand(commandModule, command);
         return Task.CompletedTask;
     }
 
     /// <summary>
     ///     Runs slash command with exception handling.
     /// </summary>
-    private async void RunSlashCommand(ISlashCommand commandModule, ISlashCommandInteraction command)
+    private async Task RunSlashCommand(ISlashCommand commandModule, ISlashCommandInteraction command)
     {
         try
         {

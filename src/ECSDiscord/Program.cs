@@ -4,6 +4,7 @@ using ECSDiscord.Services.Bot;
 using ECSDiscord.Services.Courses;
 using ECSDiscord.Services.Email.Sendgrid;
 using ECSDiscord.Services.Enrollments;
+using ECSDiscord.Services.ModerationLog;
 using ECSDiscord.Services.PrefixCommands;
 using ECSDiscord.Services.ServerMessages;
 using ECSDiscord.Services.SlashCommands;
@@ -36,6 +37,7 @@ await Host.CreateDefaultBuilder(args)
         builder.RegisterModule<SlashCommandsModule>();
         builder.RegisterModule<ServerMessagesModule>();
         builder.RegisterModule<TranslationsModule>();
+        builder.RegisterModule<ModerationLogModule>();
     })
     .Build()
     .RunAsync();
