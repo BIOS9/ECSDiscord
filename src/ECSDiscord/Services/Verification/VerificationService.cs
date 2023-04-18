@@ -254,7 +254,7 @@ public class VerificationService : IHostedService
         return true;
     }
 
-    public async Task<bool> IsUserVerifiedAsync(SocketUser user)
+    public async Task<bool> IsUserVerifiedAsync(IUser user)
     {
         return await IsUserVerifiedAsync(user.Id);
     }

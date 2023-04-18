@@ -44,7 +44,7 @@ public class EnrollmentsModule : ModuleBase<SocketCommandContext>
     public async Task JoinAsync(params string[] courses)
     {
         // Ensure course list is valid
-        if (!checkCourses(courses, true, out var errorMessage, out var formattedCourses))
+        if (!_enrollments.CheckCourseString(courses, true, out var errorMessage, out var formattedCourses))
         {
             await ReplyAsync(errorMessage.SanitizeMentions());
             return;
@@ -127,7 +127,7 @@ public class EnrollmentsModule : ModuleBase<SocketCommandContext>
         }
 
         // Ensure course list is valid
-        if (!checkCourses(courses, true, out var errorMessage, out var formattedCourses))
+        if (!_enrollments.CheckCourseString(courses, true, out var errorMessage, out var formattedCourses))
         {
             await ReplyAsync(errorMessage.SanitizeMentions());
             return;
@@ -209,7 +209,7 @@ public class EnrollmentsModule : ModuleBase<SocketCommandContext>
     public async Task ToggleCourseAsync(params string[] courses)
     {
         // Ensure course list is valid
-        if (!checkCourses(courses, true, out var errorMessage, out var formattedCourses))
+        if (!_enrollments.CheckCourseString(courses, true, out var errorMessage, out var formattedCourses))
         {
             await ReplyAsync(errorMessage.SanitizeMentions());
             return;
@@ -387,7 +387,7 @@ public class EnrollmentsModule : ModuleBase<SocketCommandContext>
     public async Task RemoveCourseAsync(SocketUser user, params string[] courses)
     {
         // Ensure course list is valid
-        if (!checkCourses(courses, true, out var errorMessage, out var formattedCourses))
+        if (!_enrollments.CheckCourseString(courses, true, out var errorMessage, out var formattedCourses))
         {
             await ReplyAsync(errorMessage.SanitizeMentions());
             return;
@@ -523,44 +523,5 @@ public class EnrollmentsModule : ModuleBase<SocketCommandContext>
 
         await _storage.Users.AllowUserCourseJoinAsync(user.Id, true);
         await ReplyAsync("Done.");
-    }
-
-    private bool checkCourses(string[] courses, bool ignoreDuplicates, out string errorMessage,
-        out ISet<string> formattedCourses)
-    {
-        // Ensure courses are provided by user
-        if (courses == null || courses.Length == 0)
-        {
-            errorMessage = "Please specify one or more courses to join (separated by spaces) e.g\n```" +
-                           _config["prefix"] + "join comp102 engr101```";
-            formattedCourses = null;
-            return false;
-        }
-
-        var distinctCourses = new HashSet<string>();
-        var duplicateCourses = new HashSet<string>();
-
-        foreach (var course in courses)
-        {
-            var normalised = _courses.NormaliseCourseName(course);
-
-            if (!string.IsNullOrEmpty(normalised) &&
-                !distinctCourses.Add(normalised)) // Enrusre there are no duplicate courses
-                duplicateCourses.Add('`' + normalised + '`');
-        }
-
-        if (duplicateCourses.Count != 0 && !ignoreDuplicates) // Error duplicate courses
-        {
-            var s = duplicateCourses.Count > 1 ? "s" : "";
-            var courseList = duplicateCourses.Aggregate((x, y) => $"{x}, {y}");
-            errorMessage = $"\nDuplicate course{s} found: {courseList}.Please ensure there are no duplicate course.";
-            ;
-            formattedCourses = null;
-            return false;
-        }
-
-        errorMessage = string.Empty;
-        formattedCourses = distinctCourses;
-        return true;
     }
 }

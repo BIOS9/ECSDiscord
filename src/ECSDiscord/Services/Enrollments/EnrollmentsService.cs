@@ -71,7 +71,7 @@ public class EnrollmentsService : IHostedService
         }
     }
 
-    public async Task<bool> RequiresVerification(SocketUser user)
+    public async Task<bool> RequiresVerification(IUser user)
     {
         if (!_options.RequireVerificationToJoin)
             return false;
@@ -87,7 +87,7 @@ public class EnrollmentsService : IHostedService
         }
     }
 
-    public async Task<EnrollmentResult> EnrollUser(string courseName, SocketUser user)
+    public async Task<EnrollmentResult> EnrollUser(string courseName, IUser user)
     {
         try
         {
@@ -155,7 +155,7 @@ public class EnrollmentsService : IHostedService
         }
     }
 
-    public async Task<EnrollmentResult> DisenrollUser(string courseName, SocketUser user)
+    public async Task<EnrollmentResult> DisenrollUser(string courseName, IUser user)
     {
         try
         {
@@ -193,7 +193,7 @@ public class EnrollmentsService : IHostedService
         }
     }
 
-    public async Task<List<string>> GetUserCourses(SocketUser user)
+    public async Task<List<string>> GetUserCourses(IUser user)
     {
         return await _storage.Users.GetUserCoursesAsync(user.Id);
     }
@@ -238,5 +238,44 @@ public class EnrollmentsService : IHostedService
                     "Failed to apply permissions for user course {user}#{discriminator} {discordId}, {course}, {message}",
                     user.Username, user.Discriminator, user.Id, courseName, ex.Message);
             }
+    }
+    
+    
+    public bool CheckCourseString(string[] courses, bool ignoreDuplicates, out string errorMessage,
+        out ISet<string> formattedCourses)
+    {
+        // Ensure courses are provided by user
+        if (courses == null || courses.Length == 0)
+        {
+            errorMessage = "Please specify one or more courses to join (separated by spaces) e.g\n```/join comp102 engr101```";
+            formattedCourses = null;
+            return false;
+        }
+
+        var distinctCourses = new HashSet<string>();
+        var duplicateCourses = new HashSet<string>();
+
+        foreach (var course in courses)
+        {
+            var normalised = _courses.NormaliseCourseName(course);
+
+            if (!string.IsNullOrEmpty(normalised) &&
+                !distinctCourses.Add(normalised)) // Enrusre there are no duplicate courses
+                duplicateCourses.Add('`' + normalised + '`');
+        }
+
+        if (duplicateCourses.Count != 0 && !ignoreDuplicates) // Error duplicate courses
+        {
+            var s = duplicateCourses.Count > 1 ? "s" : "";
+            var courseList = duplicateCourses.Aggregate((x, y) => $"{x}, {y}");
+            errorMessage = $"\nDuplicate course{s} found: {courseList}.Please ensure there are no duplicate course.";
+            ;
+            formattedCourses = null;
+            return false;
+        }
+
+        errorMessage = string.Empty;
+        formattedCourses = distinctCourses;
+        return true;
     }
 }
