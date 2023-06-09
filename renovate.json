@@ -7,24 +7,33 @@
   "timezone": "Pacific/Auckland",
   "packageRules": [
     {
-      "matchUpdateTypes": ["digest", "minor", "patch"],
+      "matchUpdateTypes": [
+        "digest",
+        "minor",
+        "patch"
+      ],
       "matchCurrentVersion": "!/^0/",
       "automerge": true,
-	  "automergeType": "pr",
-	  "platformAutomerge": true
+      "automergeType": "branch",
+      "platformAutomerge": true
     },
     {
-      "matchDepTypes": ["devDependencies"],
-      "matchPackagePatterns": ["lint", "prettier"],
+      "matchDepTypes": [
+        "devDependencies"
+      ],
+      "matchPackagePatterns": [
+        "lint",
+        "prettier"
+      ],
       "automerge": true,
-	  "automergeType": "pr",
-	  "platformAutomerge": true
+      "automergeType": "pr",
+      "platformAutomerge": true
     }
   ],
   "lockFileMaintenance": {
     "enabled": true,
     "automerge": true,
-	"automergeType": "pr",
-	"platformAutomerge": true
+    "automergeType": "pr",
+    "platformAutomerge": true
   }
 }
