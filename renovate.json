@@ -26,14 +26,14 @@
         "prettier"
       ],
       "automerge": true,
-      "automergeType": "pr",
+      "automergeType": "branch",
       "platformAutomerge": true
     }
   ],
   "lockFileMaintenance": {
     "enabled": true,
     "automerge": true,
-    "automergeType": "pr",
+    "automergeType": "branch",
     "platformAutomerge": true
   }
 }
