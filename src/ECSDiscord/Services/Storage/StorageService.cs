@@ -1191,6 +1191,52 @@ public class StorageService : IHostedService
             }
         }
 
+        public async Task SetCourseUsersAsync(string courseName, IList<ulong> users)
+        {
+            Log.Debug("Setting users in database for course {course}", courseName);
+            await using var con = _storageService.GetMySqlConnection();
+            await con.OpenAsync();
+
+            await using var transaction =  await con.BeginTransactionAsync();
+            
+            using (var cmd = new MySqlCommand())
+            {
+                
+                cmd.Connection = con;
+                cmd.CommandText =
+                    $"DELETE FROM `{UserCoursesTable}` WHERE `courseName` = @course;";
+                cmd.Prepare();
+                cmd.Parameters.AddWithValue("@course", courseName);
+
+                int rowsAffected = await cmd.ExecuteNonQueryAsync();
+                Log.Debug("Successfully removed all users from course {courseName}. Rows affected: {rowsAffected}",
+                    courseName, rowsAffected);
+            }
+            
+            using (var cmd = new MySqlCommand())
+            {
+                
+                cmd.Connection = con;
+                cmd.CommandText =
+                    $"INSERT INTO `{UserCoursesTable}` (`userDiscordSnowflake`, `courseName`) VALUES (@user, @course);";
+                await cmd.PrepareAsync();
+                cmd.Parameters.AddWithValue("@course", courseName);
+                cmd.Parameters.Add("@user", MySqlDbType.UInt64);
+
+                int rowsAdded = 0;
+                foreach (ulong user in users)
+                {
+                    cmd.Parameters["@user"].Value = user;
+                    rowsAdded += await cmd.ExecuteNonQueryAsync();
+                }
+                
+                Log.Debug("Successfully added users to course {courseName}. Rows affected: {rowsAffected}",
+                    courseName, rowsAdded);
+            }
+
+            await transaction.CommitAsync();
+        }
+        
         public async Task<List<string>> GetAutoCreatePatternsAsync()
         {
             Log.Debug("Getting join creation prefixes from database");
