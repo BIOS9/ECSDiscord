@@ -2,18 +2,14 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Discord;
-using ECSDiscord.Services.Modals;
-using ECSDiscord.Services.Modals.Modals;
 
 namespace ECSDiscord.Services.SlashCommands.Commands;
 
 public class ResetCourseCommand : ISlashCommand
 {
-    private readonly ModalsHandler _modalsHandler;
-
-    public ResetCourseCommand(ModalsHandler modalsHandler)
+    public ResetCourseCommand()
     {
-        _modalsHandler = modalsHandler ?? throw new ArgumentNullException(nameof(modalsHandler));
+        
     }
 
     public string Name => "resetcourse";
