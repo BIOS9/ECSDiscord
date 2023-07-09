@@ -198,7 +198,7 @@ public class ResetCourseCommand : ISlashCommand
             {
                 sb.AppendLine(courseNames.Dequeue());
             }
-            await command.FollowupAsync(sb.ToString());
+            await command.FollowupAsync(sb.ToString(), ephemeral: true);
         }
     }
 
