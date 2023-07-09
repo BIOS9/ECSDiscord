@@ -82,8 +82,8 @@ public class ResetCourseCommand : ISlashCommand
                     .WithButton("Cancel", "cancel", ButtonStyle.Secondary)
             });
         
-        await command.RespondAsync("## :warning: Are you sure you want to reset the current channel? :warning:\n" +
-                                   "This means all of the following will be __deleted__:\n" +
+        await command.RespondAsync("##  :warning: Are you sure you want to reset the current channel?  :warning:\n" +
+                                   "This means all of the following will be **__deleted__**:\n" +
                                    "* messages\n" +
                                    "* attachments\n" +
                                    "* images\n" +
