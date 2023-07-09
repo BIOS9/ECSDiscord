@@ -1,4 +1,4 @@
-﻿using Autofac;
+using Autofac;
 using ECSDiscord.Services.SlashCommands.Commands;
 using Microsoft.Extensions.Hosting;
 
@@ -19,5 +19,6 @@ public class SlashCommandsModule : Module
         builder.RegisterType<ListCoursesCommand>().As<ISlashCommand>();
         builder.RegisterType<MyCoursesCommand>().As<ISlashCommand>();
         builder.RegisterType<BotMessagesCommand>().As<ISlashCommand>();
+        builder.RegisterType<ResetCourseCommand>().As<ISlashCommand>();
     }
 }
