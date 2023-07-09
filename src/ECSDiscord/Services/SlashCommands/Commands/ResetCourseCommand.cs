@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -9,6 +8,7 @@ using Discord;
 using Discord.WebSocket;
 using ECSDiscord.Services.Bot;
 using ECSDiscord.Util;
+using Microsoft.Extensions.Logging;
 
 namespace ECSDiscord.Services.SlashCommands.Commands;
 
@@ -17,12 +17,14 @@ public class ResetCourseCommand : ISlashCommand
     private readonly DiscordBot _discordBot;
     private readonly CourseService _courseService;
     private readonly EnrollmentsService _enrollmentsService;
-    
-    public ResetCourseCommand(DiscordBot discordBot, CourseService courseService, EnrollmentsService enrollmentsService)
+    private readonly ILogger<ResetCourseCommand> _logger;
+
+    public ResetCourseCommand(DiscordBot discordBot, CourseService courseService, EnrollmentsService enrollmentsService, ILogger<ResetCourseCommand> logger)
     {
         _discordBot = discordBot ?? throw new ArgumentNullException(nameof(discordBot));
         _courseService = courseService ?? throw new ArgumentNullException(nameof(courseService));
         _enrollmentsService = enrollmentsService ?? throw new ArgumentNullException(nameof(enrollmentsService));
+        _logger = logger;
     }
 
     public string Name => "resetcourse";
@@ -168,7 +170,14 @@ public class ResetCourseCommand : ISlashCommand
 
                 foreach (var course in courses)
                 {
-                    await ResetCourseChannel((SocketTextChannel)_discordBot.DiscordClient.GetChannel(course.DiscordId));
+                    var channel = (SocketTextChannel)_discordBot.DiscordClient.GetChannel(course.DiscordId);
+                    var messages = await channel.GetMessagesAsync().FlattenAsync();
+                    if (!messages.Any())
+                    {
+                        _logger.LogInformation("Skipping empty course {Course}", course.Code);
+                        continue;
+                    }
+                    await ResetCourseChannel(channel);
                     await Task.Delay(1000); // Help prevent API throttling.
                 }
 
