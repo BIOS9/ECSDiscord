@@ -90,7 +90,7 @@ public class ResetCourseCommand : ISlashCommand
                     .WithButton("Cancel", cancelId, ButtonStyle.Secondary)
             });
 
-        async Task ButtonEventHandler(SocketMessageComponent component)
+        async Task DoDelete(SocketMessageComponent component)
         {
             if (component.Data.CustomId == confirmId)
             {
@@ -111,6 +111,12 @@ public class ResetCourseCommand : ISlashCommand
                     properties.Components = null;
                 });
             }
+        }
+
+        Task ButtonEventHandler(SocketMessageComponent component)
+        {
+            _ = Task.Run(() => DoDelete(component));
+            return Task.CompletedTask;
         }
 
         _discordBot.DiscordClient.ButtonExecuted += ButtonEventHandler;
@@ -149,7 +155,7 @@ public class ResetCourseCommand : ISlashCommand
         List<CourseService.Course> courses =
             (await _courseService.GetCourses()).Where(x => courseRule.IsMatch(x.Code)).OrderBy(x => x.Code).ToList();
 
-        async Task ButtonEventHandler(SocketMessageComponent component)
+        async Task DoDelete(SocketMessageComponent component)
         {
             if (component.Data.CustomId == confirmId)
             {
@@ -163,6 +169,7 @@ public class ResetCourseCommand : ISlashCommand
                 foreach (var course in courses)
                 {
                     await ResetCourseChannel((SocketTextChannel)_discordBot.DiscordClient.GetChannel(course.DiscordId));
+                    await Task.Delay(1000); // Help prevent API throttling.
                 }
 
                 await component.FollowupAsync("## :white_check_mark:  All channels reset complete.", ephemeral: true);
@@ -176,6 +183,12 @@ public class ResetCourseCommand : ISlashCommand
                     properties.Components = null;
                 });
             }
+        }
+        
+        Task ButtonEventHandler(SocketMessageComponent component)
+        {
+            _ = Task.Run(() => DoDelete(component));
+            return Task.CompletedTask;
         }
 
         _discordBot.DiscordClient.ButtonExecuted += ButtonEventHandler;
