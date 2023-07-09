@@ -298,7 +298,7 @@ public class CourseService : IHostedService
                             channel.Name, channel.Id, user.Username, user.Id);
                         await channel.AddPermissionOverwriteAsync(user,
                             new OverwritePermissions(_joinedAllowPerms, _joinedDenyPerms));
-                        await Task.Delay(200); // Help prevent API throttling
+                        await Task.Delay(500); // Help prevent API throttling
                     }
                 }
                 catch (Exception ex)
@@ -318,7 +318,7 @@ public class CourseService : IHostedService
 
         foreach (var extraMember in extraMembers)
         {
-            await Task.Delay(200); // To help reduce API throttling
+            await Task.Delay(500); // To help reduce API throttling
             var user = _discord.DiscordClient.GetUser(extraMember);
             if (user == null)
                 continue;
@@ -329,7 +329,7 @@ public class CourseService : IHostedService
 
         foreach (var joinedMember in courseMemberIds)
         {
-            await Task.Delay(200); // To help reduce API throttling
+            await Task.Delay(500); // To help reduce API throttling
             var user = _discord.DiscordClient.GetUser(joinedMember);
             if (user == null)
                 continue;
