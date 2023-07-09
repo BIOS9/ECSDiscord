@@ -1,4 +1,4 @@
-using Autofac;
+﻿using Autofac;
 using ECSDiscord.Services.SlashCommands.Commands;
 using Microsoft.Extensions.Hosting;
 
