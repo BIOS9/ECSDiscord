@@ -10,7 +10,7 @@ public class VerificationOptionsValidation : AbstractValidator<VerificationOptio
     {
         RuleFor(x => x.PublicKeyPath)
             .NotEmpty()
-            .Must(path => File.Exists(path)).When(path => path != null)
+            .Must(File.Exists).When(path => path != null)
             .WithMessage(c => $"Path does not exist \"{c.PublicKeyPath}\"");
 
         RuleFor(x => x.EmailPattern)
