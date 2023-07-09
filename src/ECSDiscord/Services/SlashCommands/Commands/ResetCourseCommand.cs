@@ -33,15 +33,6 @@ public class ResetCourseCommand : ISlashCommand
                 .WithName("select")
                 .WithDescription("Opens selection menu to chose channels to reset.")
                 .WithType(ApplicationCommandOptionType.SubCommand))
-            .AddOption(new SlashCommandOptionBuilder()
-                .WithName("regex")
-                .WithDescription("Reset all course channels matching a regex pattern (DANGER!!).")
-                .WithType(ApplicationCommandOptionType.SubCommand)
-                .AddOption(new SlashCommandOptionBuilder()
-                    .WithName("pattern")
-                    .WithDescription("The regex pattern of the courses you want to reset.")
-                    .WithRequired(true)
-                    .WithType(ApplicationCommandOptionType.String)))
             .Build();
     }
 
@@ -62,9 +53,6 @@ public class ResetCourseCommand : ISlashCommand
                 break;
             case "select":
                 await ExecuteSelectAsync(command);
-                break;
-            case "regex":
-                await ExecuteRegexAsync(command);
                 break;
             default:
                 await command.RespondAsync("Unknown sub-command.", ephemeral: true);
@@ -108,10 +96,6 @@ public class ResetCourseCommand : ISlashCommand
                     .WithButton("Confirm", "confirm", ButtonStyle.Danger)
                     .WithButton("Cancel", "cancel", ButtonStyle.Secondary)
             });
-    }
-
-    private async Task ExecuteRegexAsync(ISlashCommandInteraction command)
-    {
-        
+        await command.RespondAsync("Please choose which channels you want to reset.", components: builder.Build(), ephemeral: true);
     }
 }
