@@ -203,6 +203,20 @@ public class EnrollmentsService : IHostedService
         return (await _storage.Courses.GetCourseUsersAsync(_courses.NormaliseCourseName(course)))
             .Select(x => _discord.DiscordClient.GetUser(x)).Where(x => x != null).ToList();
     }
+    
+    public async Task SetCourseMembers(string courseName, IList<ulong> members)
+    {
+        var course = await IsCourseValidAsync(courseName);
+        if (course == null) throw new ArgumentException("Invalid course");
+        var guild = _discord.DiscordClient.GetGuild(_discord.GuildId);
+        IGuildChannel channel = guild.GetChannel(course.DiscordId);
+        if (channel == null)
+        {
+            throw new ArgumentException("Course channel not found.");
+        }
+        await _storage.Courses.SetCourseUsersAsync(courseName, members);
+        await _courses.ApplyChannelPermissionsAsync(channel);
+    }
 
     public async Task<CourseService.Course> IsCourseValidAsync(string name)
     {
