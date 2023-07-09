@@ -1,6 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
+using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
@@ -36,8 +39,8 @@ public class ResetCourseCommand : ISlashCommand
                 .WithDescription("Reset the current course channel.")
                 .WithType(ApplicationCommandOptionType.SubCommand))
             .AddOption(new SlashCommandOptionBuilder()
-                .WithName("select")
-                .WithDescription("Opens selection menu to chose channels to reset.")
+                .WithName("all")
+                .WithDescription("Reset all course channels.")
                 .WithType(ApplicationCommandOptionType.SubCommand))
             .Build();
     }
@@ -57,8 +60,8 @@ public class ResetCourseCommand : ISlashCommand
             case "current":
                 await ExecuteCurrentAsync(command);
                 break;
-            case "select":
-                await ExecuteSelectAsync(command);
+            case "all":
+                await ExecuteAllAsync(command);
                 break;
             default:
                 await command.RespondAsync("Unknown sub-command.", ephemeral: true);
@@ -121,24 +124,82 @@ public class ResetCourseCommand : ISlashCommand
                                    "* pins", components: components.Build(), ephemeral: true);
     }
     
-    private async Task ExecuteSelectAsync(ISlashCommandInteraction command)
+    private async Task ExecuteAllAsync(ISlashCommandInteraction command)
     {
-        var builder = new ComponentBuilder()
+        var channel = await _discordBot.DiscordClient
+            .GetChannelAsync(command.ChannelId ?? throw new ArgumentNullException("ChannelId"));
+        if (await _courseService.CourseExists(channel.Name))
+        {
+            await command.RespondAsync(":no_entry_sign:  You cannot execute this command in a course channel.", ephemeral: true);
+            return;
+        }
+        
+        string confirmId = "coursereset-confirm" + StringExtensions.RandomString(50);
+        string cancelId = "coursereset-cancel" + StringExtensions.RandomString(50);
+
+        var components = new ComponentBuilder()
             .WithRows(new[]
             {
                 new ActionRowBuilder()
-                    .WithSelectMenu(
-                        new SelectMenuBuilder()
-                            .WithCustomId("channels")
-                            .WithType(ComponentType.ChannelSelect)
-                            .WithChannelTypes(ChannelType.Text)
-                            .WithMaxValues(int.MaxValue)),
-                        
-                new ActionRowBuilder()
-                    .WithButton("Confirm", "confirm", ButtonStyle.Danger)
-                    .WithButton("Cancel", "cancel", ButtonStyle.Secondary)
+                    .WithButton("Confirm", confirmId, ButtonStyle.Danger)
+                    .WithButton("Cancel", cancelId, ButtonStyle.Secondary)
             });
-        await command.RespondAsync("Please choose which channels you want to reset.", components: builder.Build(), ephemeral: true);
+
+        Regex courseRule = new Regex("^[A-Z]{4}-[0-9]{3}$");
+        List<CourseService.Course> courses =
+            (await _courseService.GetCourses()).Where(x => courseRule.IsMatch(x.Code)).OrderBy(x => x.Code).ToList();
+
+        async Task ButtonEventHandler(SocketMessageComponent component)
+        {
+            if (component.Data.CustomId == confirmId)
+            {
+                _discordBot.DiscordClient.ButtonExecuted -= ButtonEventHandler;
+                await component.UpdateAsync(properties =>
+                {
+                    properties.Content = "## :clock1:  All channels reset in progress (This may take a while).";
+                    properties.Components = null;
+                });
+
+                foreach (var course in courses)
+                {
+                    await ResetCourseChannel((SocketTextChannel)_discordBot.DiscordClient.GetChannel(course.DiscordId));
+                }
+
+                await component.FollowupAsync("## :white_check_mark:  All channels reset complete.", ephemeral: true);
+            }
+            else if (component.Data.CustomId == cancelId)
+            {
+                _discordBot.DiscordClient.ButtonExecuted -= ButtonEventHandler;
+                await component.UpdateAsync(properties =>
+                {
+                    properties.Content = "## :no_entry_sign:  All channels reset cancelled.";
+                    properties.Components = null;
+                });
+            }
+        }
+
+        _discordBot.DiscordClient.ButtonExecuted += ButtonEventHandler;
+        
+        await command.RespondAsync("## :warning:  Are you sure you want to **ALL** course channels?  :warning:\n" +
+                                   "This means all of the following will be **__deleted__**:\n" +
+                                   "* messages\n" +
+                                   "* attachments\n" +
+                                   "* images\n" +
+                                   "* threads\n" +
+                                   "* pins", components: components.Build(), ephemeral: true);
+
+        Queue<string> courseNames = new Queue<string>();
+        courses.Select(x => x.Code).ToList().ForEach(courseNames.Enqueue);
+        while (courseNames.Any())
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.AppendLine("**Affected channels include:**");
+            while (sb.Length <= 1500 && courseNames.Any())
+            {
+                sb.AppendLine(courseNames.Dequeue());
+            }
+            await command.FollowupAsync(sb.ToString());
+        }
     }
 
     private async Task ResetCourseChannel(SocketTextChannel channel)
