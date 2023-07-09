@@ -79,16 +79,13 @@ public class ResetCourseCommand : ISlashCommand
         string confirmId = "coursereset-confirm" + StringExtensions.RandomString(50);
         string cancelId = "coursereset-cancel" + StringExtensions.RandomString(50);
 
-        ComponentBuilder getButtonBuilder(bool disabled)
-        {
-            return new ComponentBuilder()
-                .WithRows(new[]
-                {
-                    new ActionRowBuilder()
-                        .WithButton("Confirm", confirmId, ButtonStyle.Danger, disabled: disabled)
-                        .WithButton("Cancel", cancelId, ButtonStyle.Secondary, disabled: disabled)
-                });
-        }
+        var components = new ComponentBuilder()
+            .WithRows(new[]
+            {
+                new ActionRowBuilder()
+                    .WithButton("Confirm", confirmId, ButtonStyle.Danger)
+                    .WithButton("Cancel", cancelId, ButtonStyle.Secondary)
+            });
 
         async Task ButtonEventHandler(SocketMessageComponent component)
         {
@@ -121,7 +118,7 @@ public class ResetCourseCommand : ISlashCommand
                                    "* attachments\n" +
                                    "* images\n" +
                                    "* threads\n" +
-                                   "* pins", components: getButtonBuilder(false).Build(), ephemeral: true);
+                                   "* pins", components: components.Build(), ephemeral: true);
     }
     
     private async Task ExecuteSelectAsync(ISlashCommandInteraction command)
