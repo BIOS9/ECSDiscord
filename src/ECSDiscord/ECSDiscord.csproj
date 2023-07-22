@@ -20,7 +20,7 @@
         <PackageReference Include="Microsoft.Extensions.Options" Version="7.0.1" />
         <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="7.0.0" />
         <PackageReference Include="Microsoft.Extensions.Options.DataAnnotations" Version="7.0.0" />
-        <PackageReference Include="MySqlConnector" Version="2.2.6" />
+        <PackageReference Include="MySqlConnector" Version="2.2.7" />
         <PackageReference Include="NetEscapades.Configuration.Yaml" Version="3.1.0" />
         <PackageReference Include="SendGrid" Version="9.28.1" />
         <PackageReference Include="Serilog" Version="2.12.0" />
