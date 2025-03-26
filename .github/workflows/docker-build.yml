@@ -2,7 +2,10 @@ name: Docker Build
 
 on:
   push:
-    tags: [ '*.*.*' ]
+    branches:
+      - 'master'
+    tags:
+      - 'v*'
   pull_request:
     branches: [ "master" ]
 
