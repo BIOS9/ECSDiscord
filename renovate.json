@@ -1,7 +1,7 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:base",
+    "config:recommended",
     "schedule:daily"
   ],
   "timezone": "Pacific/Auckland",
@@ -21,13 +21,13 @@
       "matchDepTypes": [
         "devDependencies"
       ],
-      "matchPackagePatterns": [
-        "lint",
-        "prettier"
-      ],
       "automerge": true,
       "automergeType": "branch",
-      "platformAutomerge": true
+      "platformAutomerge": true,
+      "matchPackageNames": [
+        "/lint/",
+        "/prettier/"
+      ]
     }
   ],
   "lockFileMaintenance": {
