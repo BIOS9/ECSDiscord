@@ -42,18 +42,11 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Generate tag
-        run: |
-          echo "TAG=$(echo ${GITHUB_REF#refs/heads/} | tr '/' '-')-$(echo ${GITHUB_SHA::7})-$(date +%s)" >> $GITHUB_OUTPUT
-        id: generate_tag
-
       - name: Extract Docker metadata
         id: meta
         uses: docker/metadata-action@96383f45573cb7f253c731d3b3ab81c87ef81934 # v5.0.0
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=raw,value=${{ steps.generate_tag.outputs.TAG }}
 
       - name: Build and push Docker image
         id: build-and-push
