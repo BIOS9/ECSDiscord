@@ -20,5 +20,6 @@ public class SlashCommandsModule : Module
         builder.RegisterType<MyCoursesCommand>().As<ISlashCommand>();
         builder.RegisterType<BotMessagesCommand>().As<ISlashCommand>();
         builder.RegisterType<ResetCourseCommand>().As<ISlashCommand>();
+        builder.RegisterType<MinecraftCommand>().As<ISlashCommand>();
     }
 }
