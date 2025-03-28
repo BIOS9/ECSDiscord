@@ -4,6 +4,7 @@ using ECSDiscord.Services.Bot;
 using ECSDiscord.Services.Courses;
 using ECSDiscord.Services.Email.Sendgrid;
 using ECSDiscord.Services.Enrollments;
+using ECSDiscord.Services.Minecraft;
 using ECSDiscord.Services.Modals;
 using ECSDiscord.Services.ModerationLog;
 using ECSDiscord.Services.PrefixCommands;
@@ -39,6 +40,7 @@ await Host.CreateDefaultBuilder(args)
         builder.RegisterModule<ServerMessagesModule>();
         builder.RegisterModule<TranslationsModule>();
         builder.RegisterModule<ModerationLogModule>();
+        builder.RegisterModule<MinecraftModule>();
         builder.RegisterModule(new BotModule(context.Configuration));
     })
     .Build()
