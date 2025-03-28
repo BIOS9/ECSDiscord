@@ -28,6 +28,7 @@ public class StorageService : IHostedService
         Users = new UserStorage(this);
         Courses = new CourseStorage(this);
         ServerMessages = new ServerMessageStorage(this);
+        Minecraft = new MinecraftStorage(this);
         Log.Debug("Storage service loaded.");
     }
 
@@ -35,12 +36,13 @@ public class StorageService : IHostedService
 
 
     public UserStorage Users { get; }
-
-
+    
     public CourseStorage Courses { get; }
 
     public ServerMessageStorage ServerMessages { get; }
 
+    public MinecraftStorage Minecraft { get; }
+    
     public async Task StartAsync(CancellationToken cancellationToken)
     {
         Log.Debug("Testing MySql connection.");
@@ -1595,6 +1597,93 @@ public class StorageService : IHostedService
                 LastEditedAt = lastEditedAt;
                 LastEditor = lastEditor;
                 Name = name ?? throw new ArgumentNullException(nameof(name));
+            }
+        }
+    }
+    
+     public class MinecraftStorage
+    {
+        private const string MinecraftAccountsTable = "minecraftaccounts";
+        private readonly StorageService _storageService;
+
+        public MinecraftStorage(StorageService storageService)
+        {
+            _storageService = storageService;
+        }
+
+        public record MinecraftAccount(string MinecraftUuid, ulong DiscordId, DateTimeOffset CreationTime, bool IsExternal);
+
+        public async Task<IList<MinecraftAccount>> GetMinecraftAccountsAsync()
+        {
+            Log.Debug("Getting all Minecraft accounts from database.");
+
+            using (var con = _storageService.GetMySqlConnection())
+            using (var cmd = new MySqlCommand())
+            {
+                await con.OpenAsync();
+                cmd.Connection = con;
+
+                cmd.CommandText =
+                    $"SELECT `minecraftUuid`, `discordSnowflake`, `creationTime`, `isExternal` FROM `{MinecraftAccountsTable}`;";
+                cmd.Prepare();
+
+                using (var reader = await cmd.ExecuteReaderAsync())
+                {
+                    var accounts = new List<MinecraftAccount>();
+                    while (await reader.ReadAsync())
+                        accounts.Add(new MinecraftAccount(
+                            reader.GetString(0), // minecraftUUID
+                            reader.GetUInt64(1), // discordSnowflake
+                            DateTimeOffset.FromUnixTimeSeconds(reader.GetInt64(2)), // creationTime
+                            reader.GetBoolean(3) // isExternal
+                        ));
+                    return accounts;
+                }
+            }
+        }
+
+        public async Task CreateMinecraftAccountAsync(MinecraftAccount account)
+        {
+            Log.Debug("Adding/Update Minecraft account in database {id}", account.MinecraftUuid);
+            var rowsAffected = 0;
+            using (var con = _storageService.GetMySqlConnection())
+            using (var cmd = new MySqlCommand())
+            {
+                await con.OpenAsync();
+                cmd.Connection = con;
+                
+                cmd.CommandText = $"INSERT INTO `{MinecraftAccountsTable}` " +
+                                  "(`minecraftUuid`, `discordSnowflake`, `creationTime`, `isExternal`) " +
+                                  "VALUES(@minecraftUuid, @discordSnowflake, @creationTime, @isExternal);";
+                cmd.Parameters.AddWithValue("@minecraftUuid", account.MinecraftUuid);
+                cmd.Parameters.AddWithValue("@discordSnowflake", account.DiscordId);
+                cmd.Parameters.AddWithValue("@creationTime", account.CreationTime.ToUnixTimeSeconds());
+                cmd.Parameters.AddWithValue("@isExternal", account.IsExternal);
+                await cmd.PrepareAsync();
+
+                rowsAffected = await cmd.ExecuteNonQueryAsync();
+                Log.Debug("Successfully added Minecraft account to database {id}. Rows affected: {rowsAffected}",
+                    account.MinecraftUuid, rowsAffected);
+            }
+        }
+
+        public async Task DeleteMinecraftAccountAsync(ulong minecraftUuid)
+        {
+            Log.Debug("Deleting Minecraft account from database {id}", minecraftUuid);
+            var rowsAffected = 0;
+            using (var con = _storageService.GetMySqlConnection())
+            using (var cmd = new MySqlCommand())
+            {
+                await con.OpenAsync();
+                cmd.Connection = con;
+
+                cmd.CommandText = $"DELETE FROM `{MinecraftAccountsTable}` WHERE `messageID` = @minecraftUuid;";
+                cmd.Parameters.AddWithValue("@minecraftUuid", minecraftUuid);
+                cmd.Prepare();
+
+                rowsAffected = await cmd.ExecuteNonQueryAsync();
+                Log.Debug("Successfully deleted Minecraft account from database {id}. Rows affected: {rowsAffected}",
+                    minecraftUuid, rowsAffected);
             }
         }
     }
