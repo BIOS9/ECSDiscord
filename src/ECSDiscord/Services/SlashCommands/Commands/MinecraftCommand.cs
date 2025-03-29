@@ -37,7 +37,7 @@ public class MinecraftCommand : ISlashCommand
         var uuid = await _minecraftService.QueryMinecraftUuidAsync(username);
         if (uuid == null)
         {
-            await command.RespondAsync(":warning:  A Minecraft with that username count not be found!");
+            await command.RespondAsync(":warning:  A Minecraft with that username count not be found!", ephemeral: true);
             return;
         }
 
@@ -45,20 +45,20 @@ public class MinecraftCommand : ISlashCommand
         switch (verifyResult)
         {
             case MinecraftService.VerificationResult.Success:
-                await command.RespondAsync(":white_check_mark:  Minecraft account verified successfully!");
+                await command.RespondAsync(":white_check_mark:  Minecraft account verified successfully!", ephemeral: true);
                 break;
             case MinecraftService.VerificationResult.AlreadyVerified:
-                await command.RespondAsync(":information_source:  That Minecraft account has already been verified.");
+                await command.RespondAsync(":information_source:  That Minecraft account has already been verified.", ephemeral: true);
                 break;
             case MinecraftService.VerificationResult.VerificationLimitReached:
-                await command.RespondAsync(":no_entry_sign:  You cannot verify any more Minecraft accounts. Please ask the admins if you want to switch accounts.");
+                await command.RespondAsync(":no_entry_sign:  You cannot verify any more Minecraft accounts. Please ask the admins if you want to switch accounts.", ephemeral: true);
                 break;
             case MinecraftService.VerificationResult.DiscordNotVerified:
-                await command.RespondAsync(":warning:  Your Discord account must be linked to your Uni email before you can use this command.\nPlease use `/verify yourusername@myvuw.ac.nz` to verify your account.");
+                await command.RespondAsync(":warning:  Your Discord account must be linked to your Uni email before you can use this command.\nPlease use `/verify yourusername@myvuw.ac.nz` to verify your account.", ephemeral: true);
                 break;
             default:
                 Log.Warning("Unexpected minecraft verification result: {Result}", verifyResult);
-                await command.RespondAsync(":fire:  Something went wrong! Please ask one of the admins to check the logs.");
+                await command.RespondAsync(":fire:  Something went wrong! Please ask one of the admins to check the logs.", ephemeral: true);
                 break;
         }
     }
