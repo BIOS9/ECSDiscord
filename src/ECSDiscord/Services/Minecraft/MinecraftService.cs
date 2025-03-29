@@ -10,6 +10,7 @@ using System.Web;
 using Discord;
 using Discord.WebSocket;
 using ECSDiscord.Services.Bot;
+using ECSDiscord.Services.Minecraft;
 using ECSDiscord.Services.Storage;
 using Microsoft.Extensions.Hosting;
 using Serilog;
@@ -23,6 +24,7 @@ public class MinecraftService : IHostedService
     private readonly VerificationService _verification;
     private static readonly HttpClient _httpClient = new HttpClient();
     private readonly SemaphoreSlim _verifyLock = new SemaphoreSlim(1, 1);
+    private readonly MinecraftAccountUpdateSource _accountUpdateSource;
     
     public enum VerificationResult
     {
@@ -32,12 +34,13 @@ public class MinecraftService : IHostedService
         Success,
     }
     
-    public MinecraftService(DiscordBot discordBot, StorageService storage, VerificationService verification)
+    public MinecraftService(DiscordBot discordBot, StorageService storage, VerificationService verification, MinecraftAccountUpdateSource accountUpdateSource)
     {
         Log.Debug("Minecraft service loading.");
         _discord = discordBot;
         _storage = storage;
         _verification = verification;
+        _accountUpdateSource = accountUpdateSource;
         Log.Debug("Minecraft service loaded.");
     }
 
@@ -130,6 +133,7 @@ public class MinecraftService : IHostedService
                     false));
             }
 
+            _accountUpdateSource.SignalUpdate();
             return VerificationResult.Success;
         }
         finally
@@ -137,22 +141,12 @@ public class MinecraftService : IHostedService
             _verifyLock.Release();
         }
     }
-    
-    public async Task<MinecraftAccount> CreateMinecraftAccountAsync(Guid minecraftUuid, IUser discordUser, bool isExternal)
-    {
-        await _storage.Minecraft.CreateMinecraftAccountAsync(new StorageService.MinecraftStorage.MinecraftAccount(
-            minecraftUuid,
-            discordUser.Id,
-            DateTimeOffset.Now,
-            isExternal));
-        return await MinecraftAccount.CreateFromStorageAsync(
-            await _storage.Minecraft.GetMinecraftAccountAsync(minecraftUuid),
-            _discord.DiscordClient);
-    }
 
     public async Task<bool> DeleteMinecraftAccountAsync(Guid minecraftUuid)
     {
-        return await _storage.Minecraft.DeleteMinecraftAccountAsync(minecraftUuid) == 1;
+        var result = await _storage.Minecraft.DeleteMinecraftAccountAsync(minecraftUuid) == 1;
+        _accountUpdateSource.SignalUpdate();
+        return result;
     }
 
     public record MinecraftAccount(

@@ -1,5 +1,7 @@
-﻿using Autofac;
+﻿using System.Linq;
+using Autofac;
 using Autofac.Extensions.DependencyInjection;
+using ECSDiscord.Services;
 using ECSDiscord.Services.Bot;
 using ECSDiscord.Services.Courses;
 using ECSDiscord.Services.Email.Sendgrid;
@@ -13,11 +15,20 @@ using ECSDiscord.Services.SlashCommands;
 using ECSDiscord.Services.Storage;
 using ECSDiscord.Services.Translations;
 using ECSDiscord.Services.Verification;
+using Microsoft.AspNetCore;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Serilog;
 
-await Host.CreateDefaultBuilder(args)
+var builder = WebApplication.CreateBuilder(args);
+builder.Host
+    .UseServiceProviderFactory(new AutofacServiceProviderFactory())
     .ConfigureAppConfiguration(config =>
     {
         config.AddYamlFile("config.yml", true);
@@ -25,23 +36,30 @@ await Host.CreateDefaultBuilder(args)
         config.AddEnvironmentVariables();
         config.AddUserSecrets<Program>();
     })
-    .UseSerilog((context, config) => { config.ReadFrom.Configuration(context.Configuration); })
-    .UseServiceProviderFactory(new AutofacServiceProviderFactory())
-    .ConfigureContainer<ContainerBuilder>((context, builder) =>
+    .UseSerilog((context, config) =>
     {
-        builder.RegisterModule(new StorageModule(context.Configuration));
-        builder.RegisterModule(new SendGridModule(context.Configuration));
-        builder.RegisterModule(new EnrollmentsModule(context.Configuration));
-        builder.RegisterModule(new CoursesModule(context.Configuration));
-        builder.RegisterModule(new VerificationModule(context.Configuration));
-        builder.RegisterModule(new PrefixCommandsModule(context.Configuration));
-        builder.RegisterModule<ModalsModule>();
-        builder.RegisterModule<SlashCommandsModule>();
-        builder.RegisterModule<ServerMessagesModule>();
-        builder.RegisterModule<TranslationsModule>();
-        builder.RegisterModule<ModerationLogModule>();
-        builder.RegisterModule<MinecraftModule>();
-        builder.RegisterModule(new BotModule(context.Configuration));
+        config.ReadFrom.Configuration(context.Configuration);
     })
-    .Build()
-    .RunAsync();
+    .ConfigureContainer<ContainerBuilder>((context, containerBuilder) =>
+    {
+        containerBuilder.RegisterModule(new StorageModule(context.Configuration));
+        containerBuilder.RegisterModule(new SendGridModule(context.Configuration));
+        containerBuilder.RegisterModule(new EnrollmentsModule(context.Configuration));
+        containerBuilder.RegisterModule(new CoursesModule(context.Configuration));
+        containerBuilder.RegisterModule(new VerificationModule(context.Configuration));
+        containerBuilder.RegisterModule(new PrefixCommandsModule(context.Configuration));
+        containerBuilder.RegisterModule<ModalsModule>();
+        containerBuilder.RegisterModule<SlashCommandsModule>();
+        containerBuilder.RegisterModule<ServerMessagesModule>();
+        containerBuilder.RegisterModule<TranslationsModule>();
+        containerBuilder.RegisterModule<ModerationLogModule>();
+        containerBuilder.RegisterModule<MinecraftModule>();
+        containerBuilder.RegisterModule(new BotModule(context.Configuration));
+    });
+builder.Services.AddControllers();
+
+var app = builder.Build();
+app.UseRouting();
+app.MapControllers();
+
+await app.RunAsync();

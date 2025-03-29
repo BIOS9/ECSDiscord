@@ -11,5 +11,10 @@ public class MinecraftModule : Module
             .AsSelf()
             .As<IHostedService>()
             .SingleInstance();
+        builder.RegisterType<MinecraftApiController>()
+            .AsSelf()
+            .AsImplementedInterfaces();
+        builder.RegisterType<MinecraftAccountUpdateSource>()
+            .SingleInstance();
     }
 }
