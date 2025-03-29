@@ -150,9 +150,9 @@ public class MinecraftService : IHostedService
             _discord.DiscordClient);
     }
 
-    public async Task DeleteMinecraftAccountAsync(Guid minecraftUuid)
+    public async Task<bool> DeleteMinecraftAccountAsync(Guid minecraftUuid)
     {
-        await _storage.Minecraft.DeleteMinecraftAccountAsync(minecraftUuid);
+        return await _storage.Minecraft.DeleteMinecraftAccountAsync(minecraftUuid) == 1;
     }
 
     public record MinecraftAccount(
