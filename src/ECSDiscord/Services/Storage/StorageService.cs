@@ -863,6 +863,7 @@ public class StorageService : IHostedService
         {
             using (var con = _storageService.GetMySqlConnection())
             {
+                await con.OpenAsync();
                 await CreateUserIfNotExistAsync(discordId, con);
             }
         }
@@ -1603,7 +1604,7 @@ public class StorageService : IHostedService
     
      public class MinecraftStorage
     {
-        private const string MinecraftAccountsTable = "minecraftaccounts";
+        private const string MinecraftAccountsTable = "mcaccounts";
         private readonly StorageService _storageService;
 
         public MinecraftStorage(StorageService storageService)
@@ -1611,7 +1612,7 @@ public class StorageService : IHostedService
             _storageService = storageService;
         }
 
-        public record MinecraftAccount(string MinecraftUuid, ulong DiscordId, DateTimeOffset CreationTime, bool IsExternal);
+        public record MinecraftAccount(Guid MinecraftUuid, ulong DiscordId, DateTimeOffset CreationTime, bool IsExternal);
 
         public async Task<IList<MinecraftAccount>> GetMinecraftAccountsAsync()
         {
@@ -1632,7 +1633,7 @@ public class StorageService : IHostedService
                     var accounts = new List<MinecraftAccount>();
                     while (await reader.ReadAsync())
                         accounts.Add(new MinecraftAccount(
-                            reader.GetString(0), // minecraftUUID
+                            reader.GetGuid(0), // minecraftUUID
                             reader.GetUInt64(1), // discordSnowflake
                             DateTimeOffset.FromUnixTimeSeconds(reader.GetInt64(2)), // creationTime
                             reader.GetBoolean(3) // isExternal
@@ -1642,7 +1643,7 @@ public class StorageService : IHostedService
             }
         }
 
-        public async Task<MinecraftAccount> GetMinecraftAccountAsync(string minecraftUuid)
+        public async Task<MinecraftAccount> GetMinecraftAccountAsync(Guid minecraftUuid)
         {
             Log.Debug("Getting Minecraft account from database.");
 
@@ -1665,7 +1666,39 @@ public class StorageService : IHostedService
                         return null;
 
                     return new MinecraftAccount(
-                        reader.GetString(0), // minecraftUuid
+                        reader.GetGuid(0), // minecraftUuid
+                        reader.GetUInt64(1), // discordSnowflake
+                        DateTimeOffset.FromUnixTimeSeconds(reader.GetInt64(2)), // creationTime
+                        reader.GetBoolean(3)); // Is external
+                }
+            }
+        }
+        
+        public async Task<MinecraftAccount> FindMinecraftAccountAsync(ulong discordId, bool isExternal)
+        {
+            Log.Debug("Getting Minecraft account from database.");
+
+            using (var con = _storageService.GetMySqlConnection())
+            using (var cmd = new MySqlCommand())
+            {
+                await con.OpenAsync();
+                cmd.Connection = con;
+
+                cmd.CommandText =
+                    "SELECT `minecraftUuid`, `discordSnowflake`, `creationTime`, `isExternal` " +
+                    $"FROM `{MinecraftAccountsTable}` " +
+                    "WHERE `discordSnowflake` = @discordSnowflake AND `isExternal` = @isExternal;";
+                cmd.Parameters.AddWithValue("@discordSnowflake", discordId);
+                cmd.Parameters.AddWithValue("@isExternal", isExternal);
+                cmd.Prepare();
+
+                using (var reader = await cmd.ExecuteReaderAsync())
+                {
+                    if (!await reader.ReadAsync())
+                        return null;
+
+                    return new MinecraftAccount(
+                        reader.GetGuid(0), // minecraftUuid
                         reader.GetUInt64(1), // discordSnowflake
                         DateTimeOffset.FromUnixTimeSeconds(reader.GetInt64(2)), // creationTime
                         reader.GetBoolean(3)); // Is external
@@ -1681,6 +1714,7 @@ public class StorageService : IHostedService
             using (var cmd = new MySqlCommand())
             {
                 await con.OpenAsync();
+                await _storageService.Users.CreateUserIfNotExistAsync(account.DiscordId, con);
                 cmd.Connection = con;
                 
                 cmd.CommandText = $"INSERT INTO `{MinecraftAccountsTable}` " +
@@ -1698,7 +1732,7 @@ public class StorageService : IHostedService
             }
         }
 
-        public async Task DeleteMinecraftAccountAsync(string minecraftUuid)
+        public async Task DeleteMinecraftAccountAsync(Guid minecraftUuid)
         {
             Log.Debug("Deleting Minecraft account from database {id}", minecraftUuid);
             var rowsAffected = 0;
