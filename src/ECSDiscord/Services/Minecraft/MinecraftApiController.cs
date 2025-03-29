@@ -26,7 +26,12 @@ public class MinecraftApiController : ControllerBase
         {
             try
             {
-                var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(timeout));
+                var timeoutSpan = TimeSpan.FromMilliseconds(timeout);
+                if (timeoutSpan > TimeSpan.FromMinutes(5))
+                {
+                    return BadRequest("Timeout value must be less than 5 minutes.");
+                }
+                var cts = new CancellationTokenSource(timeoutSpan);
                 await _accountUpdateSource.WaitForUpdateAsync(cts.Token);
             }
             catch (OperationCanceledException e)
