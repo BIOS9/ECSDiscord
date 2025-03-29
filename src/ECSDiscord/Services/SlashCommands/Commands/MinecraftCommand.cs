@@ -37,7 +37,7 @@ public class MinecraftCommand : ISlashCommand
         var uuid = await _minecraftService.QueryMinecraftUuidAsync(username);
         if (uuid == null)
         {
-            await command.RespondAsync(":warning:  A Minecraft with that username count not be found!", ephemeral: true);
+            await command.RespondAsync(":warning:  A Minecraft account with that username count not be found!", ephemeral: true);
             return;
         }
 
