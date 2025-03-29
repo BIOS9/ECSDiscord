@@ -1732,7 +1732,7 @@ public class StorageService : IHostedService
             }
         }
 
-        public async Task DeleteMinecraftAccountAsync(Guid minecraftUuid)
+        public async Task<int> DeleteMinecraftAccountAsync(Guid minecraftUuid)
         {
             Log.Debug("Deleting Minecraft account from database {id}", minecraftUuid);
             var rowsAffected = 0;
@@ -1742,13 +1742,14 @@ public class StorageService : IHostedService
                 await con.OpenAsync();
                 cmd.Connection = con;
 
-                cmd.CommandText = $"DELETE FROM `{MinecraftAccountsTable}` WHERE `messageID` = @minecraftUuid;";
+                cmd.CommandText = $"DELETE FROM `{MinecraftAccountsTable}` WHERE `minecraftUuid` = @minecraftUuid;";
                 cmd.Parameters.AddWithValue("@minecraftUuid", minecraftUuid);
                 cmd.Prepare();
 
                 rowsAffected = await cmd.ExecuteNonQueryAsync();
                 Log.Debug("Successfully deleted Minecraft account from database {id}. Rows affected: {rowsAffected}",
                     minecraftUuid, rowsAffected);
+                return rowsAffected;
             }
         }
     }
