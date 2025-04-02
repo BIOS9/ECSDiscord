@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -68,20 +69,40 @@ public class MinecraftAdminCommand : ISlashCommand
     private async Task HandleListVerificationsAsync(ISlashCommandInteraction command)
     {
         var accounts = await _minecraftService.GetAllMinecraftAccountsAsync();
-        
+
         if (!accounts.Any())
         {
             await command.RespondAsync("No verified Minecraft accounts found.", ephemeral: true);
             return;
         }
+
+        var responseBuilder = new StringBuilder("**Verified Minecraft Accounts:**\n");
+        const int maxMessageLength = 2000;
         
-        var response = new StringBuilder("**Verified Minecraft Accounts:**\n");
+        var messageParts = new List<string>();
+
         foreach (var account in accounts)
         {
-            response.AppendLine($"- **UUID:** `{account.MinecraftUuid}` | **Discord:** {account.DiscordUser.Username} | **External:** {account.IsExternal}");
+            var entry = $"- **UUID:** `{account.MinecraftUuid}` | **Discord:** {account.DiscordUser.Username} | **External:** {account.IsExternal}\n";
+            
+            if (responseBuilder.Length + entry.Length > maxMessageLength)
+            {
+                messageParts.Add(responseBuilder.ToString());
+                responseBuilder.Clear();
+                responseBuilder.Append("**Verified Minecraft Accounts (continued):**\n");
+            }
+        
+            responseBuilder.Append(entry);
         }
         
-        await command.RespondAsync(response.ToString(), ephemeral: true);
+        messageParts.Add(responseBuilder.ToString());
+        
+        await command.RespondAsync(messageParts[0], ephemeral: true);
+        
+        for (int i = 1; i < messageParts.Count; i++)
+        {
+            await command.FollowupAsync(messageParts[i], ephemeral: true);
+        }
     }
 
     private async Task HandleDeleteVerificationAsync(ISlashCommandInteraction command)
