@@ -20,6 +20,17 @@ public class SmtpMailSender : IMailSender
 
     public async Task<bool> SendMailAsync(string recipientAddress, string subject, string body, bool bodyIsHtml = false)
     {
+        _logger.LogDebug(recipientAddress);
+        _logger.LogDebug(_options.FromAddress);
+        _logger.LogDebug(_options.FromName);
+        _logger.LogDebug(_options.Username);
+        _logger.LogDebug(_options.Password);
+        _logger.LogDebug(_options.Server);
+        _logger.LogDebug(_options.Port.ToString());
+        _logger.LogDebug(_options.Ssl.ToString());
+        _logger.LogDebug(subject);
+        _logger.LogDebug(body);
+
         _logger.LogDebug("Sending email to {Recipient}", recipientAddress);
         try
         {
