@@ -1,10 +1,8 @@
-﻿using System.Linq;
-using Autofac;
+﻿using Autofac;
 using Autofac.Extensions.DependencyInjection;
-using ECSDiscord.Services;
 using ECSDiscord.Services.Bot;
 using ECSDiscord.Services.Courses;
-using ECSDiscord.Services.Email.Sendgrid;
+using ECSDiscord.Services.Email.Smtp;
 using ECSDiscord.Services.Enrollments;
 using ECSDiscord.Services.Minecraft;
 using ECSDiscord.Services.Modals;
@@ -15,15 +13,11 @@ using ECSDiscord.Services.SlashCommands;
 using ECSDiscord.Services.Storage;
 using ECSDiscord.Services.Translations;
 using ECSDiscord.Services.Verification;
-using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -43,7 +37,7 @@ builder.Host
     .ConfigureContainer<ContainerBuilder>((context, containerBuilder) =>
     {
         containerBuilder.RegisterModule(new StorageModule(context.Configuration));
-        containerBuilder.RegisterModule(new SendGridModule(context.Configuration));
+        containerBuilder.RegisterModule(new SmtpModule(context.Configuration));
         containerBuilder.RegisterModule(new EnrollmentsModule(context.Configuration));
         containerBuilder.RegisterModule(new CoursesModule(context.Configuration));
         containerBuilder.RegisterModule(new VerificationModule(context.Configuration));
