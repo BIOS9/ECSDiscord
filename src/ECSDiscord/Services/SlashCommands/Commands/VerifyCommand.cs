@@ -32,22 +32,23 @@ public class VerifyCommand : ISlashCommand
     public async Task ExecuteAsync(ISlashCommandInteraction command)
     {
         var email = (string)command.Data.Options.First().Value;
+        await command.DeferAsync(ephemeral: true);
         var result = await _verificationService.StartVerificationAsync(email, command.User);
         switch (result)
         {
             case VerificationService.EmailResult.InvalidEmail:
-                await command.RespondAsync(
+                await command.FollowupAsync(
                     ":warning:  Invalid email address.\nPlease use a VUW student email address. e.g. `username@myvuw.ac.nz`",
                     ephemeral: true);
                 break;
             case VerificationService.EmailResult.Success:
-                await command.RespondAsync(
-                    ":white_check_mark:  Verification email sent!\nPlease check your email for further instructions.",
+                await command.FollowupAsync(
+                    ":white_check_mark:  Verification email sent!\nPlease check your email for further instructions.\n\n**Make sure to check your SPAM folder!**",
                     ephemeral: true);
                 break;
             case VerificationService.EmailResult.Failure:
             default:
-                await command.RespondAsync(":fire:  A server error occured. Please ask an admin to check the logs.",
+                await command.FollowupAsync(":fire:  A server error occured. Please ask an admin to check the logs.",
                     ephemeral: true);
                 break;
         }
