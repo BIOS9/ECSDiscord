@@ -135,7 +135,11 @@ public class VerificationService : IHostedService
                     FillTemplate(_options.MailSubjectTemplate, email, username, verificationCode, user, guild),
                     FillTemplate(_options.MailBodyTemplate, email, username, verificationCode, user, guild),
                     _options.MailBodyIsHtml))
+            {
+                Log.Error("Failed to send verification email to {Email} for user {User} {Id}", email, user.Username,
+                    user.Id);
                 return EmailResult.Failure;
+            }
 
             return EmailResult.Success;
         }
